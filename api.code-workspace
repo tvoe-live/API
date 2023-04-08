@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"workbench.sideBar.location": "left",
+		"editor.mouseWheelZoom": true,
+		"window.zoomLevel": 1.4
+	}
+}
