@@ -7,7 +7,7 @@ const AuthLog = require('../models/authLog');
 const verify = require('../middlewares/verify');
 const resError = require('../helpers/resError');
 const resSuccess = require('../helpers/resSuccess');
-const { uploadImageOnDisk } = require('../helpers/uploadImage');
+const { uploadImageToS3 } = require('../helpers/uploadImage');
 
 /*
  * Авторизация / регистрация через Яндекс и разрушение сессии
@@ -23,7 +23,7 @@ const downloadAvatar = async (default_avatar_id) => {
 		})
 
 		// Конвертирование в JPEG и запись картинки на диск
-		const { fileSrc } = await uploadImageOnDisk({
+		const { fileSrc } = await uploadImageToS3({
 			buffer: data,
 			width: 100,
 			height: 100,

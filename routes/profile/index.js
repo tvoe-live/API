@@ -5,8 +5,8 @@ const User = require('../../models/user');
 const verify = require('../../middlewares/verify');
 const resError = require('../../helpers/resError');
 const resSuccess = require('../../helpers/resSuccess');
-const { uploadImageOnDisk } = require('../../helpers/uploadImage');
-const { deleteFileFromDisk } = require('../../helpers/deleteFile');
+const { uploadImageToS3 } = require('../../helpers/uploadImage');
+const { deleteFileFromS3 } = require('../../helpers/deleteFile');
 
 /*
  * Профиль > Основное
@@ -140,7 +140,7 @@ router.post('/avatar', verify.token, uploadMemoryStorage.single('file'), async (
 		});
 	}
 
-	const { fileSrc } = await uploadImageOnDisk({
+	const { fileSrc } = await uploadImageToS3({
 		buffer,
 		width: 100,
 		height: 100,
@@ -156,7 +156,7 @@ router.post('/avatar', verify.token, uploadMemoryStorage.single('file'), async (
 	);
 
 	// Удаление старого файла
-	if(user.avatar) await deleteFileFromDisk(user.avatar)
+	if(user.avatar) await deleteFileFromS3(user.avatar)
 
 	return resSuccess({
 		res, 
@@ -178,7 +178,7 @@ router.delete('/avatar', verify.token, async (req, res) => {
 	);
 
 	// Удаление старого файла
-	if(user.avatar) await deleteFileFromDisk(user.avatar)
+	if(user.avatar) await deleteFileFromS3(user.avatar)
 
 	return resSuccess({ 
 		res, 

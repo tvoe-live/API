@@ -16,8 +16,8 @@ const Movie = require('../../models/movie');
 const verify = require('../../middlewares/verify');
 const resError = require('../../helpers/resError');
 const resSuccess = require('../../helpers/resSuccess');
-const { uploadImageOnDisk } = require('../../helpers/uploadImage');
-const { deleteFileFromDisk } = require('../../helpers/deleteFile');
+const { uploadImageToS3 } = require('../../helpers/uploadImage');
+const { deleteFileFromS3 } = require('../../helpers/deleteFile');
 
 /*
  * Админ-панель > Редактор медиа страницы
@@ -89,7 +89,7 @@ router.post('/image', verify.token, verify.isManager, existMovie, uploadMemorySt
 	const { buffer } = req.file;
 	const { name, movieId } = req.query;
 
-	const { fileId, fileSrc } = await uploadImageOnDisk({
+	const { fileId, fileSrc } = await uploadImageToS3({
 		buffer,
 		type: name === 'logo' ? 'png' : 'jpg'
 	})
@@ -107,7 +107,7 @@ router.post('/image', verify.token, verify.isManager, existMovie, uploadMemorySt
 
 	const pathToOldFile = movie[name].src
 	// Удаление старого файла
-	if(pathToOldFile) await deleteFileFromDisk(pathToOldFile)
+	if(pathToOldFile) await deleteFileFromS3(pathToOldFile)
 
 	return resSuccess({
 		res,
@@ -148,12 +148,12 @@ router.post('/video',
 		filename: thumbnailTempFileName
 	} = req.files.thumbnail[0]
 	
-	const { fileSrc: thumbnailSrc } = await uploadImageOnDisk({
+	const { fileSrc: thumbnailSrc } = await uploadImageToS3({
 		width: 640,
 		path: thumbnailTempPath
 	})
 
-	await deleteFileFromDisk(`${IMAGES_DIR}/${thumbnailTempFileName}`)
+	await deleteFileFromS3(`${IMAGES_DIR}/${thumbnailTempFileName}`)
 
 	const videoFileId = getObjectId();
 	//const videoFileName = `${videoFileId}.${videoExtension}`;
@@ -243,7 +243,7 @@ router.delete('/image', verify.token, verify.isManager, async (req, res) => {
 
 		const pathToOldFile = movie[name].src
 		// Удаление старого файла
-		if(pathToOldFile) await deleteFileFromDisk(pathToOldFile)
+		if(pathToOldFile) await deleteFileFromS3(pathToOldFile)
 
 		return resSuccess({
 			res,
@@ -332,8 +332,8 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 		}
 
 		// Удаление старых файлов
-		if(pathToOldVideo) await deleteFileFromDisk(pathToOldVideo);
-		if(pathToOldThumbnail) await deleteFileFromDisk(pathToOldThumbnail);
+		if(pathToOldVideo) await deleteFileFromS3(pathToOldVideo);
+		if(pathToOldThumbnail) await deleteFileFromS3(pathToOldThumbnail);
 
 		return resSuccess({
 			res,
@@ -364,25 +364,25 @@ router.delete('/', verify.token, verify.isManager, async (req, res) => {
 		} = movie;
 
 		// Удаление логотипа
-		if(logo && logo.src) await deleteFileFromDisk(logo.src);
+		if(logo && logo.src) await deleteFileFromS3(logo.src);
 		// Удаление обложки
-		if(cover && cover.src) await deleteFileFromDisk(cover.src);
+		if(cover && cover.src) await deleteFileFromS3(cover.src);
 		// Удаление постера
-		if(poster && poster.src) await deleteFileFromDisk(poster.src);
+		if(poster && poster.src) await deleteFileFromS3(poster.src);
 		
 		if(trailer) {
 			// Удаление трейлера
-			if(trailer.src) await deleteFileFromDisk(trailer.src);
+			if(trailer.src) await deleteFileFromS3(trailer.src);
 			// Удаление миниатюры трейлера
-			if(trailer.thumbnail) await deleteFileFromDisk(trailer.thumbnail);
+			if(trailer.thumbnail) await deleteFileFromS3(trailer.thumbnail);
 		}
 
 		if(films) {
 			films.map(async film => {
 				// Удаление всех фильмов
-				if(film.src) await deleteFileFromDisk(film.src);
+				if(film.src) await deleteFileFromS3(film.src);
 				// Удаление всех миниатюр фильмов
-				if(film.thumbnail) await deleteFileFromDisk(film.thumbnail);
+				if(film.thumbnail) await deleteFileFromS3(film.thumbnail);
 			});
 		}
 
@@ -390,9 +390,9 @@ router.delete('/', verify.token, verify.isManager, async (req, res) => {
 			series.map(season => {
 				season.map(async series => {
 					// Удаление всех серий
-					if(series.src) await deleteFileFromDisk(series.src);
+					if(series.src) await deleteFileFromS3(series.src);
 					// Удаление всех миниатюр серий
-					if(series.thumbnail) await deleteFileFromDisk(series.thumbnail);
+					if(series.thumbnail) await deleteFileFromS3(series.thumbnail);
 				});
 			});
 		}
