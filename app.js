@@ -34,12 +34,14 @@ app.use(bodyParser.urlencoded({
 	extended: true,
 }));
 
+// Создание директории временных файлов для рендера видео
+if(!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR, { recursive: true });
+
 if(process.env.NODE_ENV !== 'production') {
 	app.use('/images', express.static(STATIC_DIR + IMAGES_DIR));
 	app.use('/videos', express.static(STATIC_DIR + VIDEOS_DIR));
 
-	// Создание директорий, если не существует
-	if(!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR, { recursive: true });
+	// Создание директории статических файлов
 	//if(!fs.existsSync(STATIC_DIR + IMAGES_DIR)) fs.mkdirSync(STATIC_DIR + IMAGES_DIR, { recursive: true });
 	//if(!fs.existsSync(STATIC_DIR + VIDEOS_DIR)) fs.mkdirSync(STATIC_DIR + VIDEOS_DIR, { recursive: true });
 }
