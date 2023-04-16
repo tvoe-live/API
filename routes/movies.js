@@ -48,7 +48,15 @@ router.get('/movie', async (req, res) => {
 
 	if(!find) return resError({ res, msg: 'Ожидается Id или Alias' });
 
-	const condSrc = { src: true };
+	const videoParams = {
+		_id: true,
+		src: true,
+		duration: true,
+		qualities: true,
+		thumbnail: true,
+		thumbnails: true,
+		previewSrc: true,
+	}
 
 	try {
 		Movie.aggregate(
@@ -71,21 +79,9 @@ router.get('/movie', async (req, res) => {
 						name: true,
 						type: true
 					},
-					trailer: { 
-						_id: true,
-						src: true
-					},
-					films: {
-						_id: true,
-						...condSrc,
-						duration: true
-					},
-					series: {
-						_id: true,
-						...condSrc,
-						duration: true,
-						thumbnail: true
-					},
+					trailer: videoParams,
+					films: videoParams,
+					series: videoParams
 				},
 				limit: 1
 			}), 

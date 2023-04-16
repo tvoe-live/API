@@ -1,5 +1,13 @@
 const mongoose = require('mongoose');
 
+const videoSchema = new mongoose.Schema({
+	_id: mongoose.Schema.Types.ObjectId,
+	src: String,
+	duration: Number,
+	qualities: Array,
+	previewSrc: String,
+})
+
 const movieSchema = new mongoose.Schema({
 	name: String, // Название
 	origName: String, // Оригинальное название
@@ -33,36 +41,15 @@ const movieSchema = new mongoose.Schema({
 		_id: mongoose.Schema.Types.ObjectId,
 		src: String
 	},
-	trailer: { // Трейлер
-		_id: mongoose.Schema.Types.ObjectId,
-		src: String,
-		width: Number,
-		height: Number,
-		duration: Number,
-		thumbnail: String
-	},
-	films: [{ // Фильмы
-		_id: mongoose.Schema.Types.ObjectId,
-		src: String,
-		width: Number,
-		height: Number,
-		duration: Number,
-		thumbnail: String
-	}],
+	trailer: videoSchema, // Трейлер
+	films: [videoSchema], // Фильмы
 	series: [ // Сезоны
-		[{ // Серии
-			_id: mongoose.Schema.Types.ObjectId,
-			src: String,
-			name: String,
-			width: Number,
-			height: Number,
-			duration: Number,
-			thumbnail: String
-		}]
+		[videoSchema] // Серии
 	],
-	deletedAt: Date,
-	publishedAt: Date,
-	creatorUserId: mongoose.Schema.Types.ObjectId
+	raisedAt: Date, // Дата поднятия в списке (для актуальности)
+	deletedAt: Date, // Дата удаления
+	publishedAt: Date, // Дата публикации
+	creatorUserId: mongoose.Schema.Types.ObjectId // ID создателя 
 }, {
 	typeKey: "$type",
 	timestamps: true

@@ -8,17 +8,32 @@ const {
 } = process.env;
 const fs = require('fs');
 const customS3Client = require('./customS3Client');
-const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const {
+	ListObjectsCommand,
+	DeleteObjectCommand,
+	DeleteObjectsCommand
+} = require('@aws-sdk/client-s3');
+
+const client = customS3Client({
+	region: S3_UPLOAD_REGION,
+	endpoint: S3_UPLOAD_ENDPOINT,
+	credentials: {
+		accessKeyId: S3_UPLOAD_KEY,
+		secretAccessKey: S3_UPLOAD_SECRET,
+	}
+})
 
 /*
  * Удаление файла с диска сервера
  */
-const deleteFileFromDisk = async (path) => {
+const deleteFileFromDisk = async (path, isPathFull) => {
 	try {
-		if(fs.existsSync(STATIC_DIR + path)) {
-			fs.unlinkSync(STATIC_DIR + path)
+		filePath = isPathFull ? path : STATIC_DIR + path;
+
+		if(fs.existsSync(filePath)) {
+			fs.unlinkSync(filePath)
 		} else {
-			throw new Error(`Фаил ${STATIC_DIR + path} не существует`)
+			throw new Error(`Фаил ${filePath} не существует`)
 		}
 
 		return path
@@ -28,25 +43,36 @@ const deleteFileFromDisk = async (path) => {
 }
 
 /*
- * Удаление файла с s3
+ * Очистка папки для и ее удаление в S3
+ */
+const deleteFolderFromS3 = async (Prefix) => {
+	if(Prefix.charAt(0) == "/") Prefix = Prefix.substr(1);
+
+	try {
+		const listObjectsCommand = new ListObjectsCommand({
+			Prefix,
+			Bucket: S3_UPLOAD_BUCKET
+		});
+		const listedObjects = await client.send(listObjectsCommand);
+
+		if (!listedObjects.Contents || listedObjects.Contents.length === 0) return;
+
+		listedObjects.Contents.forEach(obj => deleteFileFromS3(obj.Key));
+	} catch (e) {
+		console.log(e);
+	}
+}
+
+/*
+ * Удаление файла с S3
  */
 const deleteFileFromS3 = async (Key) => {
 	try {
-		const client = customS3Client({
-			region: S3_UPLOAD_REGION,
-			endpoint: S3_UPLOAD_ENDPOINT,
-			credentials: {
-				accessKeyId: S3_UPLOAD_KEY,
-				secretAccessKey: S3_UPLOAD_SECRET,
-			}
-		})
-
-		const params = {
+		const command = new DeleteObjectCommand({
 			Key,
 			Bucket: S3_UPLOAD_BUCKET
-		}
+		});
 
-		const command = new DeleteObjectCommand(params);
 		const res = await client.send(command);
 
 		return res
@@ -57,5 +83,6 @@ const deleteFileFromS3 = async (Key) => {
 
 module.exports = {
 	deleteFileFromS3,
-	deleteFileFromDisk
+	deleteFileFromDisk,
+	deleteFolderFromS3
 }

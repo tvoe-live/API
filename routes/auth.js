@@ -24,6 +24,7 @@ const downloadAvatar = async (default_avatar_id) => {
 
 		// Конвертирование в JPEG и запись картинки на диск
 		const { fileSrc } = await uploadImageToS3({
+			res,
 			buffer: data,
 			width: 100,
 			height: 100,

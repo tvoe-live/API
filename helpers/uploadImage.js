@@ -9,6 +9,7 @@ const {
 } = process.env;
 const sharp = require('sharp');
 const mongoose = require('mongoose');
+const resError = require('./resError');
 const { Upload } = require('@aws-sdk/lib-storage');
 const customS3Client = require('./customS3Client');
 
@@ -19,6 +20,7 @@ const getObjectId = () => new mongoose.Types.ObjectId();
  * Загрузка картинок на диск сервера
  */
 const uploadImageOnDisk = async ({
+	res,
 	path,
 	width, 
 	height,
@@ -62,6 +64,7 @@ const uploadImageOnDisk = async ({
  * Загрузка картинок в S3
  */
 const uploadImageToS3 = async ({ 
+	res,
 	width, 
 	height,
 	buffer,

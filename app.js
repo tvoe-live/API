@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 const expressUseragent = require('express-useragent');
 const {
 	PORT,
+	TMP_DIR,
 	STATIC_DIR,
 	IMAGES_DIR,
 	VIDEOS_DIR,
@@ -38,6 +39,7 @@ if(process.env.NODE_ENV !== 'production') {
 	app.use('/videos', express.static(STATIC_DIR + VIDEOS_DIR));
 
 	// Создание директорий, если не существует
+	if(!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR, { recursive: true });
 	//if(!fs.existsSync(STATIC_DIR + IMAGES_DIR)) fs.mkdirSync(STATIC_DIR + IMAGES_DIR, { recursive: true });
 	//if(!fs.existsSync(STATIC_DIR + VIDEOS_DIR)) fs.mkdirSync(STATIC_DIR + VIDEOS_DIR, { recursive: true });
 }

@@ -141,6 +141,7 @@ router.post('/avatar', verify.token, uploadMemoryStorage.single('file'), async (
 	}
 
 	const { fileSrc } = await uploadImageToS3({
+		res,
 		buffer,
 		width: 100,
 		height: 100,
