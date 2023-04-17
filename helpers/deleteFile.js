@@ -49,15 +49,17 @@ const deleteFolderFromS3 = async (Prefix) => {
 	if(Prefix.charAt(0) == "/") Prefix = Prefix.substr(1);
 
 	try {
-		const listObjectsCommand = new ListObjectsCommand({
-			Prefix,
-			Bucket: S3_UPLOAD_BUCKET
-		});
-		const listedObjects = await client.send(listObjectsCommand);
+		while(true) {
+			const listObjectsCommand = new ListObjectsCommand({
+				Prefix,
+				Bucket: S3_UPLOAD_BUCKET
+			});
+			const listedObjects = await client.send(listObjectsCommand);
+			
+			if (!listedObjects.Contents || listedObjects.Contents.length === 0) break;
 
-		if (!listedObjects.Contents || listedObjects.Contents.length === 0) return;
-
-		listedObjects.Contents.forEach(obj => deleteFileFromS3(obj.Key));
+			listedObjects.Contents.forEach(async obj => await deleteFileFromS3(obj.Key));
+		}
 	} catch (e) {
 		console.log(e);
 	}

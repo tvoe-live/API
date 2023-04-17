@@ -12,6 +12,7 @@ const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
 const resError = require('./resError');
+const cpuCount = require("os").cpus().length;
 const { Upload } = require('@aws-sdk/lib-storage');
 const customS3Client = require('./customS3Client');
 const ffmpeg = require('../custom_modules/node-ffmpeg');
@@ -118,7 +119,10 @@ const generateThumbnails = async ({ video, videoDuration, resultPath }) => {
 */
 
 const convertVideoToHLS = async ({ video, resultPath, videoResolution }) => {
+	const threads = cpuCount > 3 ? cpuCount - 2 : 1;
+
 	const options = [
+		['-threads', threads], // Ограничение на количество потоков процессора
 		['-pix_fmt', 'yuv420p'], // Матрица 4:4:4
 		['-preset', 'medium'], ['-profile:v', 'high'], ['-level', 3.1], // Совместимость с телефонами и Смарт-ТВ
 		['-color_primaries', 1], ['-color_trc', 1], ['-colorspace', 1], // Цвет BT.709

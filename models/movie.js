@@ -3,9 +3,10 @@ const mongoose = require('mongoose');
 const videoSchema = new mongoose.Schema({
 	_id: mongoose.Schema.Types.ObjectId,
 	src: String,
+	status: String,
 	duration: Number,
 	qualities: Array,
-	previewSrc: String,
+	previewSrc: String
 })
 
 const movieSchema = new mongoose.Schema({
