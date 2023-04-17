@@ -119,15 +119,15 @@ const generateThumbnails = async ({ video, videoDuration, resultPath }) => {
 
 const convertVideoToHLS = async ({ video, resultPath, videoResolution }) => {
 	const options = [
-        ['-pix_fmt', 'yuv420p'], // Матрица 4:4:4
-        ['-preset', 'medium'], ['-profile:v', 'high'], ['-level', 3.1], // Совместимость с телефонами и Смарт-ТВ
-        ['-color_primaries', 1], ['-color_trc', 1], ['-colorspace', 1], // Цвет BT.709
-        ['-keyint_min', 48], ['-g', 48], // Расстояние между ключевыми кадрами
-        ['-sc_threshold', 0], // Чувствительность смены сцен
-        ['-hls_time', 4], // Длительность фрагмента
-        ['-hls_playlist_type', 'vod'], // Плейлист VOD
-        ['-hls_allow_cache', 1], // Кэшировать загруженные сегменты
-        ['-hls_segment_filename', `${resultPath}/%v-%d.ts`] // Название фрагмента
+		['-pix_fmt', 'yuv420p'], // Матрица 4:4:4
+		['-preset', 'medium'], ['-profile:v', 'high'], ['-level', 3.1], // Совместимость с телефонами и Смарт-ТВ
+		['-color_primaries', 1], ['-color_trc', 1], ['-colorspace', 1], // Цвет BT.709
+		['-keyint_min', 48], ['-g', 48], // Расстояние между ключевыми кадрами
+		['-sc_threshold', 0], // Чувствительность смены сцен
+		['-hls_time', 4], // Длительность фрагмента
+		['-hls_playlist_type', 'vod'], // Плейлист VOD
+		['-hls_allow_cache', 1], // Кэшировать загруженные сегменты
+		['-hls_segment_filename', `${resultPath}/%v-%d.ts`] // Название фрагмента
     ], stream = [], qualities = [];
 
 	// Генерация HLS
@@ -136,7 +136,7 @@ const convertVideoToHLS = async ({ video, resultPath, videoResolution }) => {
 
 		const map = [`v:${i}`];
 		options.push(
-			[`-vf:${i}`, `scale=w=${renditions[i].w}:h=${renditions[i].h}:force_original_aspect_ratio=decrease`],
+			[`-filter:v:${i}`, `scale=w=${renditions[i].w}:h=${renditions[i].h}:force_original_aspect_ratio=decrease`],
 			['-map', '0:v:0']
 		);
 
