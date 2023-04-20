@@ -345,7 +345,12 @@ router.post('/addLog', verify.token, async (req, res) => {
 		videoId,
 		endTime,
 		startTime,
+		action,
 	} = req.body;
+
+	// action == 'open': поток открыт
+	// action == 'close': поток закрыт
+	// action == 'watch': просмотр видео (раз в минуту)
 
 	if(!movieId) return resError({ res, msg: 'Не передан movieId' });
 	if(!videoId) return resError({ res, msg: 'Не передан videoId' });
