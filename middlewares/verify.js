@@ -7,20 +7,22 @@ const getCookie = (name, cookie) => {
 	return matches ? decodeURIComponent(matches[1]) : undefined;
 }
 
-const logout = async (res, userId, token) => {
-	// Логирование на выход из сессии
-	new AuthLog({
-		token,
-		userId,
-		type: 'LOGOUT',
-	}).save();
+const logout = async ({ res, userId, token }) => {
+	if(userId) {
+		// Логирование на выход из сессии
+		new AuthLog({
+			token,
+			userId,
+			type: 'LOGOUT',
+		}).save();
 
-	await User.updateOne(
-		{ _id: userId }, 
-		{ $pull: {
-			sessions: { token }
-		} }
-	);
+		await User.updateOne(
+			{ _id: userId }, 
+			{ $pull: {
+				sessions: { token }
+			} }
+		);
+	}
 
 	res.cookie('token', '', {
 		maxAge: -1,
@@ -53,7 +55,7 @@ const token = async (req, res, next) => {
 		let userId = decodedData.id;
 
 		if(!userId && res) {
-			await logout(res, userId, token);
+			await logout({ res, userId, token });
 			
 			return res.status(401).json({ 
 				code: 401,
@@ -90,7 +92,7 @@ const token = async (req, res, next) => {
 		const isSession = user.sessions.find(session => session.token === token);
 
 		if(!isSession && res) {
-			await logout(res, userId, token);
+			await logout({ res, userId, token });
 
 			return res.status(401).json({
 				code: 401,
@@ -100,7 +102,7 @@ const token = async (req, res, next) => {
 		}
 		
 		if(!user && res) {
-			await logout(res, userId, token);
+			await logout({ res, userId, token });
 
 			return res.status(401).json({
 				code: 401,
@@ -127,7 +129,7 @@ const token = async (req, res, next) => {
 	} catch (error) {
 		if(!res) return;
 
-		//await logout(res, userId, token);
+		await logout({ res });
 
 		return res.status(401).json({ 
 			error,
