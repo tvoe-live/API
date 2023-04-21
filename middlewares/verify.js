@@ -129,7 +129,7 @@ const token = async (req, res, next) => {
 	} catch (error) {
 		if(!res) return;
 
-		await logout({ res });
+		//await logout({ res });
 
 		return res.status(401).json({ 
 			error,
