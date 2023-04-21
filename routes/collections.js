@@ -45,7 +45,7 @@ router.get('/', async (req, res) => {
 							genreName: { $first: "$genres.name" },
 							countPageViewed: { $size: "$countPageViewed" },
 						},
-						sort: { countPageViewed: -1, publishedAt: -1 },
+						sort: { countPageViewed: -1, raisedUpAt: -1, publishedAt: -1 },
 						limit: 32
 					}),
 					{ $project: {
@@ -59,6 +59,7 @@ router.get('/', async (req, res) => {
 						addToProject: {
 							poster: { src: true }
 						},
+						sort: { raisedUpAt: -1, createdAt: -1 },
 						limit: 24
 					}),
 					{ $project: {
@@ -98,7 +99,7 @@ router.get('/', async (req, res) => {
 							poster: { src: true },
 							genres: { $first: "$genres" },
 							countPageViewed: { $size: "$countPageViewed" },
-							sort: { publishedAt: -1 },
+							sort: { raisedUpAt: -1, publishedAt: -1 },
 						},
 					}),
 					{ $unwind: { path: "$genres" } },

@@ -53,6 +53,8 @@ const token = async (req, res, next) => {
 		let userId = decodedData.id;
 
 		if(!userId && res) {
+			await logout(res, userId, token);
+			
 			return res.status(401).json({ 
 				code: 401,
 				type: 'error', 
@@ -125,7 +127,7 @@ const token = async (req, res, next) => {
 	} catch (error) {
 		if(!res) return;
 
-		await logout(res, userId, token);
+		//await logout(res, userId, token);
 
 		return res.status(401).json({ 
 			error,

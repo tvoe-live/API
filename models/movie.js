@@ -47,7 +47,7 @@ const movieSchema = new mongoose.Schema({
 	series: [ // Сезоны
 		[videoSchema] // Серии
 	],
-	raisedAt: Date, // Дата поднятия в списке (для актуальности)
+	raisedUpAt: Date, // Дата поднятия в списке (для актуальности)
 	deletedAt: Date, // Дата удаления
 	publishedAt: Date, // Дата публикации
 	creatorUserId: mongoose.Schema.Types.ObjectId // ID создателя 
