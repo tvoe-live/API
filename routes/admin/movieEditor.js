@@ -302,7 +302,6 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 
 		// Удаление старых файлов
 		if(pathToOldVideoSrc) await deleteFolderFromS3(pathToOldVideoSrc);
-		if(pathToOldPreviewSrc) await deleteFileFromS3(pathToOldPreviewSrc);
 		if(pathToOldThumbnail) await deleteFileFromS3(pathToOldThumbnail);
 
 		return resSuccess({

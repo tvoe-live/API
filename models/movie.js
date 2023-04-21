@@ -3,9 +3,8 @@ const mongoose = require('mongoose');
 const videoSchema = new mongoose.Schema({
 	_id: mongoose.Schema.Types.ObjectId,
 	src: String,
-	status: String,
 	duration: Number,
-	qualities: Array,
+	//qualities: Array,
 	thumbnail: String
 })
 
