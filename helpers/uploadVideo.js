@@ -278,7 +278,7 @@ const uploadVideoToS3 = async ({ res, tmpVideoPath }) => {
 			id,
 			src,
 			duration: videoDuration,
-			previewSrc: `${IMAGES_DIR}/${previewFileName}`,
+			thumbnail: `${IMAGES_DIR}/${previewFileName}`,
 		};
 
 		// // Создание папки для нового видео
@@ -339,7 +339,7 @@ const uploadVideoToS3 = async ({ res, tmpVideoPath }) => {
 		// 	src,
 		// 	qualities,
 		// 	duration: videoDuration,
-		// 	previewSrc: `${IMAGES_DIR}/${previewFileName}`,
+		// 	thumbnail: `${IMAGES_DIR}/${previewFileName}`,
 		// }
 	} catch(err) {
 		console.log(err)

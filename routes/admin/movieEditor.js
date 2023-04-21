@@ -128,7 +128,7 @@ router.post('/video', verify.token, verify.isManager, existMovie, uploadDiskStor
 		src,
 		duration,
 		qualities,
-		previewSrc
+		thumbnail
 	} = await uploadVideoToS3({ res, tmpVideoPath: req.file.path });
 
 	const videoParams = {
@@ -136,7 +136,7 @@ router.post('/video', verify.token, verify.isManager, existMovie, uploadDiskStor
 		src,
 		duration,
 		qualities,
-		previewSrc
+		thumbnail
 	}
 
 	let set;
@@ -276,18 +276,15 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 
 		// Пути видео и миниатюры для удаления
 		let pathToOldVideoSrc
-		let pathToOldPreviewSrc
 		let pathToOldThumbnail
 
 		switch(name) {
 			case 'trailer': 
 				pathToOldVideoSrc = movie[name].src;
-				pathToOldPreviewSrc = movie[name].previewSrc;
 				pathToOldThumbnail = movie[name].thumbnail;
 				break;
 			case 'films': 
 				pathToOldVideoSrc = movie[name].find(film => film._id.toString() === _id).src;
-				pathToOldPreviewSrc = movie[name].find(film => film._id.toString() === _id).previewSrc;
 				pathToOldThumbnail = movie[name].find(film => film._id.toString() === _id).thumbnail;
 				break;
 			case 'series': 
@@ -296,7 +293,6 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 				
 					if(found) {
 						pathToOldVideoSrc = found.src;
-						pathToOldPreviewSrc = found.previewSrc;
 						pathToOldThumbnail = found.thumbnail;
 					}
 				});
@@ -347,9 +343,7 @@ router.delete('/', verify.token, verify.isManager, async (req, res) => {
 		if(trailer) {
 			// Удаление трейлера
 			if(trailer.src) await deleteFolderFromS3(trailer.src);
-			// Удаление всех превью фильмов
-			if(trailer.previewSrc) await deleteFileFromS3(trailer.previewSrc);
-			// Удаление миниатюры трейлера
+			// Удаление превью трейлера
 			if(trailer.thumbnail) await deleteFileFromS3(trailer.thumbnail);
 		}
 
@@ -358,8 +352,6 @@ router.delete('/', verify.token, verify.isManager, async (req, res) => {
 				// Удаление всех фильмов
 				if(film.src) await deleteFolderFromS3(film.src);
 				// Удаление всех превью фильмов
-				if(film.previewSrc) await deleteFileFromS3(film.previewSrc);
-				// Удаление всех миниатюр фильмов
 				if(film.thumbnail) await deleteFileFromS3(film.thumbnail);
 			});
 		}
@@ -370,8 +362,6 @@ router.delete('/', verify.token, verify.isManager, async (req, res) => {
 					// Удаление всех серий
 					if(series.src) await deleteFolderFromS3(series.src);
 					// Удаление всех превью серий
-					if(series.previewSrc) await deleteFileFromS3(series.previewSrc);
-					// Удаление всех миниатюр серий
 					if(series.thumbnail) await deleteFileFromS3(series.thumbnail);
 				});
 			});

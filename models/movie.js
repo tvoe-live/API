@@ -6,7 +6,7 @@ const videoSchema = new mongoose.Schema({
 	status: String,
 	duration: Number,
 	qualities: Array,
-	previewSrc: String
+	thumbnail: String
 })
 
 const movieSchema = new mongoose.Schema({

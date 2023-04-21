@@ -55,7 +55,6 @@ router.get('/movie', async (req, res) => {
 		qualities: true,
 		thumbnail: true,
 		thumbnails: true,
-		previewSrc: true,
 	}
 
 	try {
