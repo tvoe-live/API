@@ -2,6 +2,7 @@ const {
 	TMP_DIR,
 	IMAGES_DIR,
 	VIDEOS_DIR,
+	STATIC_DIR,
 	S3_UPLOAD_KEY,
 	S3_UPLOAD_SECRET,
 	S3_UPLOAD_REGION,
@@ -235,7 +236,7 @@ const uploadVideoToS3 = async ({ res, tmpVideoPath }) => {
 	try {
 		const id = getObjectId(); // ID нового видео для БД
 		const name = path.parse(tmpVideoPath).name; // Название виддео без расширения
-		const src = `${VIDEOS_DIR}/${name}`; // Путь хранения в S3
+		//const src = `${VIDEOS_DIR}/${name}`; // Путь хранения в S3
 		const resultPath = `${TMP_DIR}/${name}`; // Путь к HLS на сервере
 
 		const video = await new ffmpeg(tmpVideoPath);
@@ -252,66 +253,94 @@ const uploadVideoToS3 = async ({ res, tmpVideoPath }) => {
 			});
 		}
 
-		// Создание папки для нового видео
-		fs.mkdirSync(`${TMP_DIR}/${name}`);
+
+		const src = `${VIDEOS_DIR}/${name}.mp4`;
 
 		// Генерация превью
-		const { previewFileName } = await generatePreview({
-			video,
-			resultPath,
-			videoDuration
-		})
+		const generatePreview = async () => {
+			const previewWidth = 640;
+			const previewHeight = 360;
+			const previewFileName = `${getObjectId()}.jpg`;
+			const randomInt = max => Math.floor(Math.random() * Math.floor(max));
+		
+			await ffrun(video, [
+				['-ss', videoDuration / 3 + randomInt(videoDuration / 10)],
+				['-vf', `scale=w=${previewWidth}:h=${previewHeight}:force_original_aspect_ratio=decrease`], ['-frames:v', 1]
+			], `${STATIC_DIR}/${IMAGES_DIR}/${previewFileName}`);
+		
+			return { previewFileName }
+		}
 
-		// Отправить превью в /images S3
-		await sendFilesToS3({ src: IMAGES_DIR, resultPath });
+		const { previewFileName } = await generatePreview()
 
-		// Генерация миниатюр
-		await generateThumbnails({
-			video,
-			resultPath,
-			videoDuration
-		})
-
-		// Конвертирование MP4 в HLS
-		let qualities;
-
-		convertVideoToHLS({
-			video,
-			resultPath,
-			videoDuration,
-			videoResolution
-		}).then(({ qualities: q }) => {
-			qualities = q;
-		}, error => resError({
-			res,
-			alert: true,
-			msg: 'Не удалось сконвертировать видео'
-		}));
-
-		// Загрузка каждого файла в S3 (параллельно)
-		await new Promise(resolve => {
-			(check = async () => {
-				// тут можно сделать отловку ошибок
-				await sendFilesToS3({ src, resultPath });
-
-				qualities ? resolve() : setTimeout(check, 1000);
-			})();
-		});
-
-
-		if(fs.readdirSync(resultPath).length) await sendFilesToS3({ src, resultPath });
-
-		// Удаление временных MP4 и HLS на сервере
-		if(fs.existsSync(resultPath)) fs.rmSync(resultPath, { recursive: true, force: true });
-		if(fs.existsSync(tmpVideoPath)) fs.rmSync(tmpVideoPath, { recursive: true, force: true });
 
 		return {
 			id,
 			src,
-			qualities,
 			duration: videoDuration,
 			previewSrc: `${IMAGES_DIR}/${previewFileName}`,
-		}
+		};
+
+		// // Создание папки для нового видео
+		// fs.mkdirSync(`${TMP_DIR}/${name}`);
+
+		// // Генерация превью
+		// const { previewFileName } = await generatePreview({
+		// 	video,
+		// 	resultPath,
+		// 	videoDuration
+		// })
+
+		// // Отправить превью в /images S3
+		// await sendFilesToS3({ src: IMAGES_DIR, resultPath });
+
+		// // Генерация миниатюр
+		// await generateThumbnails({
+		// 	video,
+		// 	resultPath,
+		// 	videoDuration
+		// })
+
+		// // Конвертирование MP4 в HLS
+		// let qualities;
+
+		// convertVideoToHLS({
+		// 	video,
+		// 	resultPath,
+		// 	videoDuration,
+		// 	videoResolution
+		// }).then(({ qualities: q }) => {
+		// 	qualities = q;
+		// }, error => resError({
+		// 	res,
+		// 	alert: true,
+		// 	msg: 'Не удалось сконвертировать видео'
+		// }));
+
+		// // Загрузка каждого файла в S3 (параллельно)
+		// await new Promise(resolve => {
+		// 	(check = async () => {
+		// 		// тут можно сделать отловку ошибок
+		// 		await sendFilesToS3({ src, resultPath });
+
+		// 		qualities ? resolve() : setTimeout(check, 1000);
+		// 	})();
+		// });
+
+
+		// if(fs.readdirSync(resultPath).length) await sendFilesToS3({ src, resultPath });
+
+		// // Удаление временных MP4 и HLS на сервере
+		// if(fs.existsSync(resultPath)) fs.rmSync(resultPath, { recursive: true, force: true });
+		// if(fs.existsSync(tmpVideoPath)) fs.rmSync(tmpVideoPath, { recursive: true, force: true });
+
+		// return {
+		// 	id,
+		// 	src,
+		// 	qualities,
+		// 	duration: videoDuration,
+		// 	previewSrc: `${IMAGES_DIR}/${previewFileName}`,
+		// }
 	} catch(err) {
 		console.log(err)
 	}

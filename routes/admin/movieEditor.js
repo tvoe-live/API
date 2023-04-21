@@ -36,7 +36,10 @@ const uploadMemoryStorage = multer({ storage: memoryStorage });
 // Загрузка видео сразу на диск
 const diskStorage = multer.diskStorage({
 	destination: (req, file, cb) => {
-		cb(null, TMP_DIR);
+		// Временно загрузка на диск!
+		cb(null, STATIC_DIR + '/' + VIDEOS_DIR);
+
+		//cb(null, TMP_DIR);
 	},
 	filename: (req, file, cb) => {
 		const fileType = file.mimetype.split('/')[1];

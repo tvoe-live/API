@@ -42,8 +42,8 @@ if(process.env.NODE_ENV !== 'production') {
 	app.use('/videos', express.static(STATIC_DIR + VIDEOS_DIR));
 
 	// Создание директории статических файлов
-	//if(!fs.existsSync(STATIC_DIR + IMAGES_DIR)) fs.mkdirSync(STATIC_DIR + IMAGES_DIR, { recursive: true });
-	//if(!fs.existsSync(STATIC_DIR + VIDEOS_DIR)) fs.mkdirSync(STATIC_DIR + VIDEOS_DIR, { recursive: true });
+	if(!fs.existsSync(STATIC_DIR + IMAGES_DIR)) fs.mkdirSync(STATIC_DIR + IMAGES_DIR, { recursive: true });
+	if(!fs.existsSync(STATIC_DIR + VIDEOS_DIR)) fs.mkdirSync(STATIC_DIR + VIDEOS_DIR, { recursive: true });
 }
 
 const auth = require('./routes/auth');

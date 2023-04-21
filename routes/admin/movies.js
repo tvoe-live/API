@@ -74,7 +74,7 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 						...cursorMatch,
 					} },
 					{ $project: { __v: false } },
-					{ $sort : { _id : -1 } },
+					{ $sort : { raisedUpAt: -1, _id : -1 } },
 					{ $limit: limit }
 				]
 				
@@ -206,6 +206,14 @@ router.put('/publish', verify.token, verify.isManager, async (req, res) => {
 
 	const { _id } = req.body;
 
+	if(!_id) {
+		return resError({
+			res, 
+			alert: true,
+			msg: 'Не получен _id'
+		});
+	}
+
 	try {
 		const movie = await Movie.findOne({ _id });
 
@@ -256,6 +264,42 @@ router.put('/publish', verify.token, verify.isManager, async (req, res) => {
 			...set,
 			alert: true,
 			msg: 'Успешно опубликовано'
+		})
+	} catch(err) {
+		return resError({ res, msg: err });
+	}
+});
+
+/*
+ * Поднять медиа страницу во всех списках 
+ */
+router.put('/raiseUp', verify.token, verify.isManager, async (req, res) => {
+	try {
+		const { _id } = req.body;
+
+		if(!_id) {
+			return resError({
+				res, 
+				alert: true,
+				msg: 'Не получен _id'
+			});
+		}
+		
+		const set = {
+			raisedUpAt: new Date()
+		}
+
+		await Movie.updateOne(
+			{ _id },
+			{ $set: set }
+		);
+		
+		return resSuccess({
+			_id,
+			res,
+			...set,
+			alert: true,
+			msg: 'Успешное поднятие'
 		})
 	} catch(err) {
 		return resError({ res, msg: err });

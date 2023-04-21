@@ -36,7 +36,7 @@ router.get('/', async (req, res) => {
 		categoryAlias,
 	} = req.query;
 
-	let sortParams = { createdAt: -1 };
+	let sortParams = { raisedUpAt: -1, createdAt: -1 };
 	const skip = +(req.query.skip ?? 0);
 	const limit = +(req.query.limit > 0 && req.query.limit <= 1000 ? req.query.limit : 1000);
 
@@ -46,7 +46,7 @@ router.get('/', async (req, res) => {
 	if(sort)
 		switch(sort) {
 			case 'new': sortParams = { dateReleased: -1 }; break;
-			case 'rating': sortParams = { rating: -1, createdAt: -1 }; break;
+			case 'rating': sortParams = { rating: -1, raisedUpAt: -1, createdAt: -1 }; break;
 			default: return resError({ res,  msg: 'Неверный sort' });
 		}
 
