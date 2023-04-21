@@ -99,8 +99,8 @@ router.get('/', async (req, res) => {
 							poster: { src: true },
 							genres: { $first: "$genres" },
 							countPageViewed: { $size: "$countPageViewed" },
-							sort: { raisedUpAt: -1, publishedAt: -1 },
 						},
+						sort: { raisedUpAt: -1, publishedAt: -1 },
 					}),
 					{ $unwind: { path: "$genres" } },
 					{ $group: {
