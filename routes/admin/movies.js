@@ -155,6 +155,16 @@ router.post('/', verify.token, verify.isManager, async (req, res) => {
 		let movie;
 
 		if(_id) {
+			// При изменении бейджа поднять медиа страницу во всех списках
+			if(badge && badge.finishAt) {
+				await Movie.updateOne(
+					{ _id },
+					{ $set: {
+						raisedUpAt: new Date()
+					} }
+				);
+			}
+
 			if(categoryAlias) {
 				movie = await Movie.findOne({ _id }, {
 					films: true,
