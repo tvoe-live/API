@@ -15,12 +15,8 @@ const getSearchQuery = require('../../middlewares/getSearchQuery');
  * Получение списка записей
  */
 router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res) => {
-	const cursorId = mongoose.Types.ObjectId(req.query.cursorId);
-	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
-
-	const cursorMatch = req.query.cursorId ? { 
-		_id: { $lt: cursorId } 
-	} : null;
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	const searchMatch = req.RegExpQuery && {
 		name: req.RegExpQuery
@@ -70,11 +66,11 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 				// Список
 				"items": [
 					{ $match: { 
-						...searchMatch,
-						...cursorMatch,
+						...searchMatch
 					} },
 					{ $project: { __v: false } },
 					{ $sort : { raisedUpAt: -1, _id : -1 } },
+					{ $skip: skip },
 					{ $limit: limit }
 				]
 				
@@ -193,6 +189,7 @@ router.post('/', verify.token, verify.isManager, async (req, res) => {
 		} else {
 			movie = await Movie.create({
 				...data,
+				raisedUpAt: new Date(),
 				creatorUserId: req.user._id
 			});
 		}

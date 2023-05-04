@@ -153,7 +153,7 @@ router.get('/', async (req, res) => {
 									.filter(collection => collection.items.length >= 12)
 									.map(collection => ({
 										...collection,
-										items: collection.items.slice(0, 24)
+										items: collection.items.slice(0, 18)
 									}));
 
 		return res.status(200).json(collectionsFiltered);

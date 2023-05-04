@@ -37,8 +37,9 @@ router.get('/', async (req, res) => {
 	} = req.query;
 
 	let sortParams = { raisedUpAt: -1, createdAt: -1 };
-	const skip = +(req.query.skip ?? 0);
-	const limit = +(req.query.limit > 0 && req.query.limit <= 1000 ? req.query.limit : 1000);
+
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	if(!categoryAlias) return resError({ res,  msg: 'Ожидается categoryAlias' });
 
@@ -98,13 +99,12 @@ router.get('/', async (req, res) => {
 							poster: { src: true }
 						},
 						sort: sortParams
-						//limit: limit
 					}),
 					{ $skip: skip },
 					//{ $limit: limit }
 				]
 			} },
-			//{ $limit: 1 },
+			{ $limit: 1 },
 			{ $unwind: { path: "$genre", preserveNullAndEmptyArrays: true } },
 			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
 			{ $project: {
