@@ -15,12 +15,8 @@ const getSearchQuery = require('../../middlewares/getSearchQuery');
 
 // Получение списка пользователей
 router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
-	const cursorId = mongoose.Types.ObjectId(req.query.cursorId);
-	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
-
-	const cursorMatch = req.query.cursorId ? { 
-		_id: { $lt: cursorId } 
-	} : null;
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 	
 	const searchMatch = req.RegExpQuery && {
 		$or: [
@@ -46,7 +42,6 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 				"items": [
 					{ $match: { 
 						...searchMatch,
-						...cursorMatch,
 					} },
 					{ $project: {
 						role: true,
@@ -59,6 +54,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 						lastVisitAt: true,
 					} },
 					{ $sort : { _id: -1 } },
+					{ $skip: skip },
 					{ $limit: limit }
 				]
 				

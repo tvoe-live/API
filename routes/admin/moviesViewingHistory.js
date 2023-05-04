@@ -12,12 +12,8 @@ const getSearchQuery = require('../../middlewares/getSearchQuery');
 
 // Получение списка пользователей
 router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
-	const cursorId = mongoose.Types.ObjectId(req.query.cursorId);
-	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
-
-	const cursorMatch = req.query.cursorId ? { 
-		_id: { $lt: cursorId } 
-	} : null;
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	const searchMoviesMatch = req.RegExpQuery && {
 		name: req.RegExpQuery
@@ -47,9 +43,6 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 				],
 				// Список
 				"items": [
-					{ $match: {
-						...cursorMatch,
-					} },
 					{ $lookup: {
 						from: "movies",
 						localField: "movieId",
@@ -92,6 +85,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 						createdAt: false
 					} },
 					{ $sort: { _id: -1 } }, // Была сортировка updatedAt
+					{ $skip: skip },
 					{ $limit: limit },
 				]
 				

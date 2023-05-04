@@ -59,6 +59,7 @@ const existMovie = async (req, res, next) => {
 	if(movieId) return next()
 
 	const newMovie = await Movie.create({
+		raisedUpAt: new Date(),
 		creatorUserId: req.user._id
 	})
 

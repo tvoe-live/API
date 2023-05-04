@@ -35,7 +35,7 @@ router.get('/oftenSeek', async (req, res) => {
 					poster: { src: true }
 				},
 				sort: { countPageViewed: -1, raisedUpAt: -1 },
-				limit: 30
+				limit: 20
 			}),
 			{ $project: { 
 				countPageViewed: false
