@@ -7,7 +7,8 @@ const moviePageLogSchema = new mongoose.Schema({
 	endTime: Number,
 	userId: mongoose.Schema.Types.ObjectId,
 	movieId: mongoose.Schema.Types.ObjectId,
-	videoId: mongoose.Schema.Types.ObjectId
+	videoId: mongoose.Schema.Types.ObjectId,
+	streams: Number
 }, {
 	timestamps: true
 })

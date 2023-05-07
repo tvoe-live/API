@@ -348,10 +348,6 @@ router.post('/addLog', verify.token, async (req, res) => {
 		action,
 	} = req.body;
 
-	// action == 'open': поток открыт
-	// action == 'close': поток закрыт
-	// action == 'watch': просмотр видео (раз в минуту)
-
 	if(!movieId) return resError({ res, msg: 'Не передан movieId' });
 	if(!videoId) return resError({ res, msg: 'Не передан videoId' });
 	if(req.useragent.isBot) return resError({ res, msg: 'Обнаружен бот' });
@@ -369,7 +365,10 @@ router.post('/addLog', verify.token, async (req, res) => {
 	const logExists = await moviePageLog.findOne({ 
 		videoId, 
 		userId: req.user._id
-	}, { _id: true });
+	}, {
+		_id: true,
+		streams: true
+	});
 
 	const device = {
 		ip: req.ip,
@@ -384,6 +383,12 @@ router.post('/addLog', verify.token, async (req, res) => {
 
 	try {
 		if(logExists) {
+			let { streams } = logExists;
+			streams = streams ?? 0;
+
+			action == 'open' && ++streams;
+			action == 'close' && --streams;
+
 			await moviePageLog.updateOne(
 				{ 
 					videoId,
@@ -394,6 +399,7 @@ router.post('/addLog', verify.token, async (req, res) => {
 						device,
 						endTime,
 						startTime,
+						streams,
 					},
 					$inc: { '__v': 1 }
 				}
@@ -406,6 +412,7 @@ router.post('/addLog', verify.token, async (req, res) => {
 				videoId,
 				endTime,
 				startTime,
+				streams: 1,
 				userId: req.user._id
 			});
 		}
