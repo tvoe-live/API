@@ -47,7 +47,8 @@ const userSchema = new mongoose.Schema({
 	role: String,
 	lastVisitAt: Date,
 	banned: Object, // Дата блокировки и восстановления
-	deleted: Object // Дата удаления и восстановления
+	deleted: Object, // Дата удаления и восстановления
+	streams: Number // Сколько фильмов сейчас смотрит
 }, {
 	timestamps: true
 })

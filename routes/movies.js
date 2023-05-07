@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const User = require('../models/user');
 const Movie = require('../models/movie');
 const resError = require('../helpers/resError');
 const verify = require('../middlewares/verify');
@@ -415,6 +416,24 @@ router.post('/addLog', verify.token, async (req, res) => {
 				streams: 1,
 				userId: req.user._id
 			});
+		}
+
+		// Отслеживание потоков, открытых пользователем
+		if (action == 'open' || action == 'close') {
+			let { streams } = req.user;
+			streams = streams ?? 0;
+
+			action == 'open' && ++streams;
+			action == 'close' && --streams;
+
+			await User.updateOne(
+				{
+					_id: req.user._id
+				},
+				{
+					$set: { streams }
+				}
+			);
 		}
 
 		return res.status(200).json();
