@@ -60,96 +60,74 @@ const uploadImageOnDisk = async ({
 	}
 }
 
-// Временное решение!
-// Загрузка картинок на диск сервера
-const uploadImageToS3 = async ({
+/*
+ * Загрузка картинок в S3
+ */
+const uploadImageToS3 = async ({ 
 	res,
-	path,
 	width, 
 	height,
 	buffer,
 	type = 'jpg',
 	fit = 'cover'
 }) => {
-	return await uploadImageOnDisk({
-		res,
-		path,
-		width, 
-		height,
-		buffer,
-		type,
-		fit
-	})
-};
+	if(!buffer) 
+		return resError({
+			res, 
+			alert: true,
+			msg: 'Фаил не получен'
+		});
 
-/*
- * Загрузка картинок в S3
- */
-// const uploadImageToS3 = async ({ 
-// 	res,
-// 	width, 
-// 	height,
-// 	buffer,
-// 	type = 'jpg',
-// 	fit = 'cover'
-// }) => {
-// 	if(!buffer) 
-// 		return resError({
-// 			res, 
-// 			alert: true,
-// 			msg: 'Фаил не получен'
-// 		});
+	try {
+		const id = getObjectId();
+		const mimeType = `image/${type}`;
+		const name = `${getObjectId()}.${type}`;
+		const src = `${IMAGES_DIR}/${name}`;
 
-// 	try {
-// 		const id = getObjectId();
-// 		const mimeType = `image/${type}`;
-// 		const name = `${getObjectId()}.${type}`;
-// 		const src = `${IMAGES_DIR}/${name}`;
+		// Конвертирование в JPEG с сжатием без потерь
+		const file = await sharp(buffer)
+		.resize({
+			fit,
+			width,
+			height
+		})
+		.toFormat(type)
+		.toBuffer()
 
-// 		// Конвертирование в JPEG с сжатием без потерь
-// 		const file = await sharp(buffer)
-// 		.resize({
-// 			fit,
-// 			width,
-// 			height
-// 		})
-// 		.toFormat(type)
-// 		.toBuffer()
+		const params = {
+			Body: file,
+			Key: src,
+			ContentType: mimeType,
+			Bucket: S3_UPLOAD_BUCKET
+		}
 
-// 		const params = {
-// 			Body: file,
-// 			Key: src,
-// 			ContentType: mimeType,
-// 			Bucket: S3_UPLOAD_BUCKET
-// 		}
+		const parallelUploads3 = new Upload({
+			client: customS3Client({
+				region: S3_UPLOAD_REGION,
+				endpoint: S3_UPLOAD_ENDPOINT,
+				credentials: {
+					accessKeyId: S3_UPLOAD_KEY,
+					secretAccessKey: S3_UPLOAD_SECRET,
+				},
+				...params
+			}),
+			params,
+			queueSize: 4,
+			partSize: 50 * 1024 * 1024,
+			leavePartsOnError: false,
+		});
 
-// 		const parallelUploads3 = new Upload({
-// 			client: customS3Client({
-// 				region: S3_UPLOAD_REGION,
-// 				endpoint: S3_UPLOAD_ENDPOINT,
-// 				credentials: {
-// 					accessKeyId: S3_UPLOAD_KEY,
-// 					secretAccessKey: S3_UPLOAD_SECRET,
-// 				},
-// 				...params
-// 			}),
-// 			params,
-// 			queueSize: 4,
-// 			partSize: 50 * 1024 * 1024,
-// 			leavePartsOnError: false,
-// 		});
+		await parallelUploads3.done();
 
-// 		await parallelUploads3.done();
-
-// 		return {
-// 			fileId: id,
-// 			fileSrc: src,
-// 			fileName: name
-// 		}
-// 	} catch(err) {
-// 		console.log(err)
-// 	}
-// }
+		return {
+			fileId: id,
+			fileSrc: src,
+			fileName: name
+		}
+	} catch(err) {
+		console.log(err)
+	}
+}
 
 module.exports = {
 	uploadImageToS3,

@@ -1,15 +1,10 @@
 const {
-	TMP_DIR,
-	IMAGES_DIR,
-	VIDEOS_DIR,
-	STATIC_DIR,
 	S3_UPLOAD_KEY,
 	S3_UPLOAD_SECRET,
 	S3_UPLOAD_REGION,
 	S3_UPLOAD_BUCKET,
 	S3_UPLOAD_ENDPOINT
 } = process.env;
-const fs = require('fs');
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -19,7 +14,6 @@ const verify = require('../../middlewares/verify');
 const resError = require('../../helpers/resError');
 const resSuccess = require('../../helpers/resSuccess');
 const { uploadImageToS3 } = require('../../helpers/uploadImage');
-const { uploadVideoToS3 } = require('../../helpers/uploadVideo');
 const { deleteFileFromS3, deleteFolderFromS3 } = require('../../helpers/deleteFile');
 
 /*
@@ -32,23 +26,6 @@ const getObjectId = () => new mongoose.Types.ObjectId();
 // Загрузка картинок в буффер
 const memoryStorage = multer.memoryStorage();
 const uploadMemoryStorage = multer({ storage: memoryStorage });
-
-// Загрузка видео сразу на диск
-const diskStorage = multer.diskStorage({
-	destination: (req, file, cb) => {
-		// Временно загрузка на диск!
-		cb(null, STATIC_DIR + '/' + VIDEOS_DIR);
-
-		//cb(null, TMP_DIR);
-	},
-	filename: (req, file, cb) => {
-		const fileType = file.mimetype.split('/')[1];
-		const newFileName = getObjectId();
-
-		cb(null, `${newFileName}.${fileType}`)
-	}
-});
-const uploadDiskStorage = multer({ storage: diskStorage })
 
 /*
  * Создание медиа страницы, если ее не существует
@@ -67,6 +44,19 @@ const existMovie = async (req, res, next) => {
 
 	next()
 }
+
+/*
+ * Получить данные для клиента S3 
+ */
+router.get('/s3data', verify.token, verify.isManager, async (req, res) => {
+	return res.status(200).json({
+		S3_UPLOAD_KEY,
+		S3_UPLOAD_SECRET,
+		S3_UPLOAD_REGION,
+		S3_UPLOAD_BUCKET,
+		S3_UPLOAD_ENDPOINT
+	});
+});
 
 /*
  * Загрузка обложки, постера или логотипа
@@ -109,35 +99,22 @@ router.post('/image', verify.token, verify.isManager, existMovie, uploadMemorySt
 /*
  * Загрузка видео и миниатюры
  */
-router.post('/video', verify.token, verify.isManager, existMovie, uploadDiskStorage.single('file'), async (req, res) => {
+router.post('/video', verify.token, verify.isManager, existMovie, async (req, res) => {
 	const {
 		name,
 		movieId,
+		duration,
+		qualities,
 		seasonKey,
 		episodeKey
 	} = req.query
 
-	if(!req.file) 
-		return resError({
-			res, 
-			alert: true,
-			msg: 'Фаил не получен'
-		});
-
-	const {
-		id,
-		src,
-		duration,
-		qualities,
-		thumbnail
-	} = await uploadVideoToS3({ res, tmpVideoPath: req.file.path });
-
 	const videoParams = {
-		_id: id,
-		src,
-		duration,
-		qualities,
-		thumbnail
+		_id: getObjectId(),
+		duration: +duration,
+		src: `/videos/${getObjectId()}`,
+		qualities: qualities.split(','),
+		thumbnail: `/images/${getObjectId()}.jpg`
 	}
 
 	let set;
@@ -256,7 +233,6 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 						[`series.${seasonKey}`]: { _id }
 					}
 				}
-
 				break;
 			default: break;
 		}
