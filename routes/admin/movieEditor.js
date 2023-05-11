@@ -101,6 +101,7 @@ router.post('/image', verify.token, verify.isManager, existMovie, uploadMemorySt
  */
 router.post('/video', verify.token, verify.isManager, existMovie, async (req, res) => {
 	const {
+		_id,
 		name,
 		movieId,
 		duration,
@@ -157,7 +158,31 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 					});
 				}
 
-				set = { $push: { [`series.${seasonKey}`]: [videoParams] } }
+
+				let pathToOldVideoSrc;
+				let pathToOldThumbnail;
+
+				// Проверка на существование серии
+				movie[name].find(season => {
+					const found = season.find(series => series._id.toString() === _id);
+				
+					if(found) {
+						pathToOldVideoSrc = found.src;
+						pathToOldThumbnail = found.thumbnail;
+					}
+				});
+
+				// Удаление старых файлов
+				if(pathToOldVideoSrc) await deleteFolderFromS3(pathToOldVideoSrc);
+				if(pathToOldThumbnail) await deleteFileFromS3(pathToOldThumbnail);
+
+				// Заменить старую серию, либо добавить новую в конец
+				if(pathToOldVideoSrc || pathToOldThumbnail) {
+					set = { $set: { [`series.${seasonKey}.${episodeKey}`]: videoParams } }
+				} else {
+					set = { $push: { [`series.${seasonKey}`]: videoParams } }
+				}
+
 				break
 			default: break
 		}
@@ -210,7 +235,7 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 		_id,
 		name,
 		movieId,
-		seasonKey
+		seasonKey,
 	} = req.query;
 
 	let set;
@@ -228,9 +253,11 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 				}
 				break;
 			case 'series': 
+				const seriesId = mongoose.Types.ObjectId(_id);
+
 				set = { 
 					$pull: {
-						[`series.${seasonKey}`]: { _id }
+						[`series.${seasonKey}`]: { _id: seriesId }
 					}
 				}
 				break;
