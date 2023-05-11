@@ -46,7 +46,7 @@ router.get('/', async (req, res) => {
 							countPageViewed: { $size: "$countPageViewed" },
 						},
 						sort: { countPageViewed: -1, raisedUpAt: -1, publishedAt: -1 },
-						limit: 32
+						limit: 24
 					}),
 					{ $project: {
 						countPageViewed: false
@@ -137,6 +137,7 @@ router.get('/', async (req, res) => {
 					},
 					{
 						name: "Новинки",
+						type: "new",
 						items: "$new"
 					}
 				],
@@ -150,7 +151,7 @@ router.get('/', async (req, res) => {
 		]
 	
 		const collectionsFiltered = collections
-									.filter(collection => collection.items.length >= 12)
+									.filter(collection => collection.items.length >= 6)
 									.map(collection => ({
 										...collection,
 										items: collection.items.slice(0, 18)
