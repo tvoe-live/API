@@ -1,12 +1,12 @@
 const mongoose = require('mongoose');
 
-const videoSchema = new mongoose.Schema({
+const videoSchema = {
 	_id: mongoose.Schema.Types.ObjectId,
 	src: String,
 	duration: Number,
-	//qualities: Array,
+	qualities: Array,
 	thumbnail: String
-})
+}
 
 const movieSchema = new mongoose.Schema({
 	name: String, // Название
@@ -43,13 +43,11 @@ const movieSchema = new mongoose.Schema({
 	},
 	trailer: videoSchema, // Трейлер
 	films: [videoSchema], // Фильмы
-	series: [ // Сезоны
-		[videoSchema] // Серии
-	],
+	series: [[Object]],
 	raisedUpAt: Date, // Дата поднятия в списке (для актуальности)
 	deletedAt: Date, // Дата удаления
 	publishedAt: Date, // Дата публикации
-	creatorUserId: mongoose.Schema.Types.ObjectId // ID создателя 
+	creatorUserId: mongoose.Schema.Types.ObjectId, // ID создателя 
 }, {
 	typeKey: "$type",
 	timestamps: true

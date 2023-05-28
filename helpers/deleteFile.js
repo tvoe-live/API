@@ -45,10 +45,6 @@ const deleteFileFromDisk = async (path, isPathFull) => {
  * Очистка папки для и ее удаление в S3
  */
 const deleteFolderFromS3 = async (Prefix) => {
-	// Временное решение!
-	// Удаление файлов с диска сервера
-	return await deleteFileFromDisk(Prefix);
-
 	if(Prefix.charAt(0) == "/") Prefix = Prefix.substr(1);
 
 	try {
@@ -72,10 +68,6 @@ const deleteFolderFromS3 = async (Prefix) => {
  * Удаление файла с S3
  */
 const deleteFileFromS3 = async (Key) => {
-	// Временное решение!
-	// Удаление файлов с диска сервера
-	return await deleteFileFromDisk(Key);
-
 	try {
 		const command = new DeleteObjectCommand({
 			Key,
