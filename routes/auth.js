@@ -148,7 +148,7 @@ router.post('/login', async (req, res) => {
 				sameSite: isLocalhost ? 'lax' : 'none',
 			});
 
-			return res.status(200).json();
+			return res.status(200).json({ token });
 		})
 		.catch((err) => {
 			return resError({ res, msg: err });
