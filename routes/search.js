@@ -13,7 +13,7 @@ const getSearchQuery = require('../middlewares/getSearchQuery');
 
 // Часто ищут (! Сейчас логика из карусели !)
 router.get('/oftenSeek', async (req, res) => {
-
+	const skip = +req.query.skip || 0
 	try {
 		const result = await Movie.aggregate([
 			{ $lookup: {
@@ -35,13 +35,13 @@ router.get('/oftenSeek', async (req, res) => {
 					poster: { src: true }
 				},
 				sort: { countPageViewed: -1, raisedUpAt: -1 },
-				limit: 20
+				limit: 30
 			}),
 			{ $project: { 
 				countPageViewed: false
 			} },
+			{ $skip: skip },
 		]);
-
 		return res.status(200).json({
 			totalSize: 30,
 			items: result
@@ -54,7 +54,7 @@ router.get('/oftenSeek', async (req, res) => {
 
 router.get('/', getSearchQuery, async (req, res) => {
 	const skip = +(req.query.skip ?? 0);
-	const query = req.searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	const query = req.searchQuery?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 	const RegExpQuery = new RegExp(query, 'i');
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
 

@@ -10,6 +10,7 @@ const movieOperations = require('../../helpers/movieOperations');
  */
 
 router.get('/', verify.token, async (req, res) => {
+	const skip = +req.query.skip || 0
 
 	try {
 		const result = await Movie.aggregate([
@@ -35,6 +36,7 @@ router.get('/', verify.token, async (req, res) => {
 				limit: 100
 			}),
 			{ $sort: { addedToFavoritesAt: -1 } },
+			{ $skip: skip },
 		]);
 
 		return res.status(200).json(result);

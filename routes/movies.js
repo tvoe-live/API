@@ -14,6 +14,7 @@ const movieOperations = require('../helpers/movieOperations');
 
 // Получение списка записей
 router.get('/', async (req, res) => {
+	const skip = +req.query.skip || 0
 
 	try {
 		Movie.aggregate([
@@ -30,7 +31,8 @@ router.get('/', async (req, res) => {
 				category: {
 					aliasInUrl: true
 				}
-			} }
+			} },
+			{ $skip: skip },
 		], (err, result) => {
 
 			return res.status(200).json( result );
