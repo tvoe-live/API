@@ -1,4 +1,4 @@
-const movieOperations = ({ addToMatch, addToProject, sort = { createdAt: -1 }, limit = 10000 }) => {
+const movieOperations = ({ addToMatch, addToProject, sort = { createdAt: -1 }, limit = 10000, skip = 0 }) => {
 
 	const match = { publishedAt: { $ne: null } };
 	const lookupFromCategories = {
@@ -100,6 +100,7 @@ const movieOperations = ({ addToMatch, addToProject, sort = { createdAt: -1 }, l
 			...project,
 			...addToProject
 		} },
+		{ $skip: skip },
 		{ $limit: limit },
 	];
 

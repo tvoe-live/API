@@ -14,38 +14,62 @@ const getSearchQuery = require('../middlewares/getSearchQuery');
 // Часто ищут (! Сейчас логика из карусели !)
 router.get('/oftenSeek', async (req, res) => {
 	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
+
+	const agregationListForTotalSize = [
+		{ $lookup: {
+			from: "moviepagelogs",
+			localField: "_id",
+			foreignField: "movieId",
+			pipeline: [
+				{ $match: {
+					updatedAt: {
+						$gte: new Date(new Date() - 5 * 60 * 60 * 24 * 1000)
+					}
+				} },
+			],
+			as: "countPageViewed"
+		} },
+		...movieOperations({
+			addToProject: {
+				countPageViewed: { $size: "$countPageViewed" },
+				poster: { src: true }
+			},
+			sort: { countPageViewed: -1, raisedUpAt: -1 },
+		}),
+	]
+
 	try {
 		const result = await Movie.aggregate([
-			{ $lookup: {
-				from: "moviepagelogs",
-				localField: "_id",
-				foreignField: "movieId",
-				pipeline: [
-					{ $match: {
-						updatedAt: {
-							$gte: new Date(new Date() - 5 * 60 * 60 * 24 * 1000)
-						}
-					} },
-				],
-				as: "countPageViewed"
-			} },
-			...movieOperations({
-				addToProject: {
-					countPageViewed: { $size: "$countPageViewed" },
-					poster: { src: true }
-				},
-				sort: { countPageViewed: -1, raisedUpAt: -1 },
-				limit: 30
-			}),
-			{ $project: { 
-				countPageViewed: false
-			} },
-			{ $skip: skip },
+			{
+				"$facet": {
+					"totalSize":[
+						...agregationListForTotalSize,
+						{ $group: { 
+							_id: null, 
+							count: { $sum: 1 }
+						} },
+						{ $project: { _id: false } },
+						{ $limit: 1 }
+					],
+					"items": [
+						...agregationListForTotalSize,
+						{ $project: { 
+							countPageViewed: false
+						} },
+						{ $skip: skip },
+						{ $limit: limit },
+					]
+				}
+			},
+			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+			{ $project:{
+				totalSize: { $cond: [ "$totalSize.count", "$totalSize.count", 0] },
+				items: "$items",
+			}}
 		]);
-		return res.status(200).json({
-			totalSize: 30,
-			items: result
-		});
+
+		return res.status(200).json(result[0]);
 
 	} catch(err) {
 		return resError({ res, msg: err });
@@ -57,6 +81,20 @@ router.get('/', getSearchQuery, async (req, res) => {
 	const query = req.searchQuery?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 	const RegExpQuery = new RegExp(query, 'i');
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
+
+	const aggregationForTotalSize = {
+		$or: [
+			{ name: RegExpQuery },
+			{ origName: RegExpQuery },
+			{ shortDesc: RegExpQuery },
+			{ fullDesc: RegExpQuery },
+			{ countries: RegExpQuery },
+			{ persons: { 
+				$elemMatch: { name: RegExpQuery }
+			} },
+		],
+		publishedAt: { $ne: null }
+	}
 
 	if(!req.searchQuery || !req.searchQuery.length) {
 		return resError({
@@ -79,19 +117,7 @@ router.get('/', getSearchQuery, async (req, res) => {
 			{ "$facet": {
 				// Всего записей
 				"totalSize": [
-					{ $match: { 
-						$or: [
-							{ name: RegExpQuery },
-							{ origName: RegExpQuery },
-							{ shortDesc: RegExpQuery },
-							{ fullDesc: RegExpQuery },
-							{ countries: RegExpQuery },
-							{ persons: { 
-								$elemMatch: { name: RegExpQuery }
-							} },
-						],
-						publishedAt: { $ne: null }
-					} },
+					{ $match: aggregationForTotalSize },
 					{ $group: { 
 						_id: null, 
 						count: { $sum: 1 }
@@ -102,29 +128,15 @@ router.get('/', getSearchQuery, async (req, res) => {
 				// Список
 				"items": [
 					...movieOperations({
-						addToMatch: {
-							$or: [
-								{ name: RegExpQuery },
-								{ origName: RegExpQuery },
-								{ shortDesc: RegExpQuery },
-								{ fullDesc: RegExpQuery },
-								{ countries: RegExpQuery },
-								{ persons: { 
-									$elemMatch: { name: RegExpQuery }
-								} },
-							],
-							publishedAt: { $ne: null }
-						},
+						addToMatch: aggregationForTotalSize,
 						addToProject: {
 							poster: { src: true }
 						},
-						limit: 100
+						skip,
+						limit,
 					}),
 					{ $sort : { _id : -1 } },
-					{ $skip: skip },
-					{ $limit: limit }
-				]
-				
+				]		
 			} },
 			{ $limit: 1 },
 			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
@@ -133,7 +145,6 @@ router.get('/', getSearchQuery, async (req, res) => {
 				items: "$items"
 			} },
 		]);
-
 		return res.status(200).json(result[0]);
 
 	} catch(err) {

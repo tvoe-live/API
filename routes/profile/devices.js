@@ -9,6 +9,7 @@ const resError = require('../../helpers/resError');
 
 router.get('/', verify.token, async (req, res) => {
 	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	const { sessions } = req.user;
 
@@ -17,7 +18,8 @@ router.get('/', verify.token, async (req, res) => {
 
 		return res.status(200).json({
 			userToken: req.user.token,
-			sessions: skip ? reverseSessions.slice(skip) : reverseSessions
+			totalSize: reverseSessions.length,
+			sessions: reverseSessions.slice(skip, skip+limit)
 		});
 
 	} catch(err) {

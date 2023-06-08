@@ -11,35 +11,60 @@ const movieOperations = require('../../helpers/movieOperations');
 
 router.get('/', verify.token, async (req, res) => {
 	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
 
+	const agregationListForTotalSize = [
+		{ $lookup: {
+			from: "moviefavorites",
+			localField: "_id",
+			foreignField: "movieId",
+			pipeline: [
+				{ $match: { 
+					userId: req.user._id,
+					isFavorite: true
+				} },
+				{ $sort: { updatedAt: -1 } }
+			],
+			as: "favorite"
+		} },
+		{ $unwind: "$favorite" },
+	]
+	
 	try {
-		const result = await Movie.aggregate([
-			{ $lookup: {
-				from: "moviefavorites",
-				localField: "_id",
-				foreignField: "movieId",
-				pipeline: [
-					{ $match: { 
-						userId: req.user._id,
-						isFavorite: true
-					} },
-					{ $sort: { updatedAt: -1 } }
-				],
-				as: "favorite"
-			} },
-			{ $unwind: "$favorite" },
-			...movieOperations({
-				addToProject: {
-					poster: { src: true },
-					addedToFavoritesAt: "$favorite.updatedAt"
+		Movie.aggregate([
+			{
+				"$facet": {
+					"totalSize":[
+						...agregationListForTotalSize,
+						{ $group: { 
+							_id: null, 
+							count: { $sum: 1 }
+						} },
+						{ $project: { _id: false } },
+						{ $limit: 1 }
+					],
+					"items": [
+						...agregationListForTotalSize,
+						...movieOperations({
+							addToProject: {
+							poster: { src: true },
+							addedToFavoritesAt: "$favorite.updatedAt"
+							},
+							skip,
+							limit
+						}),
+						{ $sort: { addedToFavoritesAt: -1 } },
+					]
 				},
-				limit: 100
-			}),
-			{ $sort: { addedToFavoritesAt: -1 } },
-			{ $skip: skip },
-		]);
-
-		return res.status(200).json(result);
+			},
+			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+			{ $project: {
+				totalSize: { $cond: [ "$totalSize.count", "$totalSize.count", 0] },
+				items: "$items"
+			} },
+		], (err, result)=>{
+			return res.status(200).json(result[0]);
+		});
 
 	} catch(err) {
 		return resError({ res, msg: err });

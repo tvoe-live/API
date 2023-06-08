@@ -12,30 +12,57 @@ const movieOperations = require('../helpers/movieOperations');
  * Фильмы и сериалы
  */
 
-// Получение списка записей
 router.get('/', async (req, res) => {
 	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
+
+	const agregationListForTotalSize = [
+		{ $match: { publishedAt: { $ne: null } } },
+		{ $lookup: 	
+			{
+				from: "categories",
+				localField: "categoryAlias",
+				foreignField: "alias",
+				as: "category"
+			} 
+		},
+		{ $unwind: "$category" },
+	]
 
 	try {
 		Movie.aggregate([
-			{ $match: { publishedAt: { $ne: null } } },
-			{ $lookup: {
-					from: "categories",
-					localField: "categoryAlias",
-					foreignField: "alias",
-					as: "category"
-			} },
-			{ $unwind: "$category" },
-			{ $project: {
-				alias: true,
-				category: {
-					aliasInUrl: true
+			{
+				"$facet":{
+					// Всего записей
+					"totalSize":[
+						...agregationListForTotalSize,
+						{ $group: { 
+							_id: null, 
+							count: { $sum: 1 }
+						} },
+						{ $project: { _id: false } },
+						{ $limit: 1 }
+					],
+					"items":[
+						...agregationListForTotalSize,
+						{ $project: {
+							alias: true,
+							category: {
+								aliasInUrl: true
+							}
+						} },
+						{ $skip: skip },
+						{ $limit: limit },
+					]
 				}
+			},
+			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+			{ $project: {
+				totalSize: { $cond: [ "$totalSize.count", "$totalSize.count", 0] },
+				items: "$items"
 			} },
-			{ $skip: skip },
 		], (err, result) => {
-
-			return res.status(200).json( result );
+			return res.status(200).json( result[0] );
 		});
 
 	} catch(err) {

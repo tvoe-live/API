@@ -10,6 +10,7 @@ const movieOperations = require('../helpers/movieOperations');
  */
 
 router.get('/', async (req, res) => {
+	const limit = +(req.query.limit >= 6 && req.query.limit <= 18 ? req.query.limit : 18);
 
 	try {
 		const result = await Movie.aggregate([
@@ -46,7 +47,7 @@ router.get('/', async (req, res) => {
 							countPageViewed: { $size: "$countPageViewed" },
 						},
 						sort: { countPageViewed: -1, raisedUpAt: -1, publishedAt: -1 },
-						limit: 24
+						limit: limit
 					}),
 					{ $project: {
 						countPageViewed: false
@@ -60,7 +61,7 @@ router.get('/', async (req, res) => {
 							poster: { src: true }
 						},
 						sort: { raisedUpAt: -1, createdAt: -1 },
-						limit: 24
+						limit: limit
 					}),
 					{ $project: {
 						genres: false,
@@ -154,9 +155,9 @@ router.get('/', async (req, res) => {
 									.filter(collection => collection.items.length >= 6)
 									.map(collection => ({
 										...collection,
-										items: collection.items.slice(0, 18)
+										items: collection.items.slice(0, limit)
 									}));
-
+									
 		return res.status(200).json(collectionsFiltered);
 		
 	} catch(err) {
