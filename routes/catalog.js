@@ -101,7 +101,7 @@ router.get('/', async (req, res) => {
 						sort: sortParams
 					}),
 					{ $skip: skip },
-					//{ $limit: limit }
+					{ $limit: limit }
 				]
 			} },
 			{ $limit: 1 },
