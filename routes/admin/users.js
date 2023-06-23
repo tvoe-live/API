@@ -8,6 +8,7 @@ const resError = require('../../helpers/resError');
 const PaymentLog = require('../../models/paymentLog');
 const resSuccess = require('../../helpers/resSuccess');
 const getSearchQuery = require('../../middlewares/getSearchQuery');
+const isValidObjectId = require('../../helpers/isValidObjectId')
 
 /*
  * Админ-панель > Пользователи
@@ -17,12 +18,12 @@ const getSearchQuery = require('../../middlewares/getSearchQuery');
 router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
-	
+
 	const searchMatch = req.RegExpQuery && {
 		$or: [
-			{ _id: req.RegExpQuery },
+		 ... ( isValidObjectId(req.searchQuery) ? [{ _id: mongoose.Types.ObjectId(req.searchQuery) }] : [] ),
 			{ email: req.RegExpQuery },
-			{ firstname: req.RegExpQuery }
+			{ firstname: req.RegExpQuery } 
 		]
 	};
 
@@ -190,7 +191,6 @@ router.patch('/profile', verify.token, verify.isAdmin, async (req, res) => {
 			}
 		}
 	
-
 		await User.updateOne(
 			{ _id: userId }, 
 			{

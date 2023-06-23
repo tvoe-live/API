@@ -41,9 +41,17 @@ router.get('/', verify.token, async (req, res) => {
 
 // Изменение профиля
 router.patch('/', verify.token, async (req, res) => {
-
+	
 	let { firstname } = req.body;
 
+	if (typeof(firstname)==='undefined'){
+		return resError({
+				res, 
+				alert: true,
+				msg: 'Поле firstname обязательное'
+			});
+	}
+	
 	firstname = firstname.toString();
 
 	if(firstname.length > 50) {

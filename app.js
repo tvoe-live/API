@@ -5,6 +5,10 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const expressUseragent = require('express-useragent');
+const yaml = require('js-yaml');
+const swaggerUi = require('swagger-ui-express')
+const verify = require('./middlewares/verify')
+
 const {
 	PORT,
 	TMP_DIR,
@@ -90,6 +94,14 @@ app.use('/admin/movieEditor', adminMovieEditor) // Админ-панель > Р�
 app.use('/admin/searchHistory', adminSearchHistory) // Админ-панель > История поиска
 app.use('/admin/moviesRatingHistory', adminMoviesRatingHistory) // Админ-панель > История рейтингов
 app.use('/admin/moviesViewingHistory', adminMoviesViewingHistory) // Админ-панель > История просмотров
+
+// Работа со сваггером
+const data = fs.readFileSync('swagger/doc.yml', 'utf8');
+const yamlData = yaml.load(data);
+const jsonData = JSON.stringify(yamlData);
+fs.writeFileSync('./swagger/doc.json', jsonData, 'utf8');
+const swaggerJson = require('./swagger/doc.json')
+app.use('/docs', verify.token, verify.isAdmin, swaggerUi.serve,  swaggerUi.setup(swaggerJson));
 
 app.use('*', notFound)
 

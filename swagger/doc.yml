@@ -1,0 +1,1470 @@
+openapi: 3.0.1
+info:
+  title: API https://tvoe-dev.ru/
+  version: v1
+servers:
+  - url: http://localhost:4000
+tags:
+  - name: API functions
+    description: API functions of our application
+  - name: Profile
+    description: Профиль
+  - name: Admin
+    description: Админ-панель
+paths:
+  /profile:
+    get:
+      summary: Получение профиля
+      tags: 
+        - Profile
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id: 
+                    type: string
+                    description: Profile id
+                  email: 
+                    type: string
+                    description: Email user(profile)
+                  avatar:
+                    type: string
+                    description: Path to img src profile user
+                  firstname:
+                    type: string
+                    description: Имя этого человека
+                  subscribe:
+                    type: object
+                    description: Инфа по подписке. Если подписки нет, в этом поле null
+                    properties:
+                      startAt:
+                        type: Date
+                        description: Дата начала подписки
+                      finishAt:
+                        type: Date
+                        description: Дата окончания подписки
+                      tariffId:
+                        type: string
+                        description: Id тарифа (mongoose.ObjectId)
+                  allowTrialTariff:
+                    type: boolean
+                    description: Позволен ли пробный тариф
+                  role:
+                    type: string
+                    description:  Admin, manager или если это обычный пользователь то это поле отсуствует.
+                example:
+                  _id: "4180807e904d20e5d4c1b6qw"
+                  email: "alex22@yandex.ru"
+                  avatar: null
+                  firstname: "Иван"
+                  allowTrialTariff: false
+                  role: "admin"
+                  subscribe:
+                    startAt: "2021-04-13T07:41:42.000Z"
+                    finishAt: "2021-04-13T07:41:42.000Z"
+                    tariffId: "63dbe1687f457bc81bc920cb"
+    patch:
+      summary: Обновления профиля
+      tags: 
+        - Profile
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type: 
+                    type: string
+                    description: Успешно или нет
+                  alert: 
+                    type: boolean
+                    description: Булевое значение
+                  msg:
+                    type: string
+                    description:  Сообщение "Имя пользователя обновлено"
+                example:
+                  type: "success"
+                  alert: true
+                  description: "Имя пользователя обновлено"
+    delete:
+      summary: Удаление профиля
+      tags: 
+        - Profile
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: object
+                    description: Инфа по срокам удаления. Восстановить акк можно только в течение одного месяца после удаления
+                    properties:
+                      start:
+                        type: Date
+                        description: Дата удаления
+                      finish:
+                        type: Date
+                        description: Дата удаления + 1 месяц
+                example:
+                  deleted:
+                    start: "2022-04-13T07:41:42.000Z"
+                    finish: "2021-05-13T07:41:42.000Z"
+  /profile/recover:
+    get:
+      summary: Восстановление профиля
+      tags:
+        - Profile
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: 'null'
+                    description: Обнуление поля в модели
+                example:
+                  deleted: null
+
+
+  /profile/avatar:
+    post:
+      summary: Загрузка аватарки
+      tags:
+        - Profile
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Исходник сам файл картинки
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    description: success
+                  alert:
+                    type: boolean
+                    description: true
+                  src:
+                    type: string
+                    description: путь к картинке
+                example:
+                  type: "success"
+                  alert: 'true'
+                  src: "/images/648f121558529eee66d83d63.jpg"
+                  msg: "Аватар обновлен"
+    delete:
+      summary: Удаление аватарки
+      tags: 
+        - Profile
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    description: Выводит надпись "success"
+                  src:
+                    type: 'null'
+                    description: Здесь происходит обнуление поля в таблице
+                  alert:
+                    type: boolean
+                    description: показывает true
+                  msg:
+                    type: string
+                    description: Выводит надпись "Аватар удален"
+                example:
+                  type: "success"
+                  src: null,
+                  alert: true,
+                  msg: "Аватар удален"
+
+
+
+  /profile/favorites:
+    get:
+      summary: Профиль > Избранное
+      tags:
+        - Profile
+      parameters:
+        - in: query
+          name: limit
+          schema:
+           type: number
+          description: Ограничение на максимальное количество элементов в теле ответа
+        - in: query
+          name: skip
+          schema:
+           type: number
+          description: Кол-во пропускаемых элементов из начала выборки
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalSize:
+                    type: number
+                    description: Общее количество сущностей в БД
+                  items:
+                    type: array
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: Название фильма
+                        ageLevel:
+                          type: string
+                          description: Возрастное ограничение
+                        dateReleased:
+                          type: Date
+                          description:  Дата релиза
+                        categoryAlias:
+                          type: string
+                          description:  Вид категориию. Может быть films, serials или collections
+                        poster:
+                          type: object
+                          properties:  
+                            src: 
+                              type: string
+                              description: Путь к файлу изображению
+                        rating:
+                          type: number
+                          description: Рейтинг от 0 до 10
+                        duration: 
+                          type: string
+                          description: Длительность фильма в секундах ( скорее всего но не уверен)
+                        url:
+                          type: string
+                          description: url к фильму? путь к фильму?
+                        addedToFavoritesAt:
+                          type: Date 
+                          description: Дата добавления фильма в раздел фаворитов
+              examples:
+                example:
+                  value: 
+                    totalSize: 2
+                    items:
+                      - name: "Америка: фильм"
+                        ageLevel: 18
+                        dateReleased: "2021-06-15"
+                        categoryAlias: "films"
+                        poster:
+                          src: "/images/641f4080944e8bd192d18318.jpg"
+                        rating: 7
+                        duration: 5892
+                        url: "/p/amerika-film"
+                        addedToFavoritesAt: "2023-06-07T14:56:03.730Z"
+                      - name: "Снять блокировку"
+                        ageLevel: 16
+                        dateReleased: "2023-02-17"
+                        categoryAlias: "films"
+                        poster:
+                          src: "/images/63fded0598e2af31cb68b46f.jpg"
+                        rating: 6
+                        duration: 7063.708333
+                        url: "/p/snyat-blokirovku"
+                        addedToFavoritesAt: "2023-06-07T14:56:00.297Z"
+
+  /profile/history:
+    get:
+      summary: Профиль > История просмотров
+      tags:
+        - Profile
+      parameters:
+        - in: query
+          name: limit
+          schema:
+           type: number
+          description: Ограничение на максимальное количество элементов в теле ответа
+        - in: query
+          name: skip
+          schema:
+           type: number
+          description: Кол-во пропускаемых элементов из начала выборки
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalSize:
+                    type: number
+                    description: Общее количество сущностей в БД
+                  items:
+                    type: array
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: Название фильма
+                        ageLevel:
+                          type: string
+                          description: Возрастное ограничение
+                        dateReleased:
+                          type: Date
+                          description:  Дата релиза
+                        categoryAlias:
+                          type: string
+                          description:  Вид категориию. Может быть films, serials или collections
+                        poster:
+                          type: object
+                          properties:  
+                            src: 
+                              type: string
+                              description: Путь к файлу изображению
+                        rating:
+                          type: number
+                          description: Рейтинг от 0 до 10
+                        duration: 
+                          type: string
+                          description: Длительность фильма в секундах ( скорее всего но не уверен)
+                        url:
+                          type: string
+                          description: url к фильму? путь к фильму?
+                        moviepagelogs:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              description: id итаблицы moviePageLogSchema (mongoose.Schema.Types.ObjectId)
+                            count:
+                              type: number
+                              description: количество просмотров фильма
+                            updatedAt:
+                              type: array
+                              items:
+                                type: Date
+                                description: Дата обновления ( какого именно?)
+                        lastLogUpdatedAt:
+                          type: array
+                          items:
+                            type: Date
+                            description: Дата последнего обновления
+              examples:
+                example:
+                  value: 
+                    totalSize: 2
+                    items:
+                      - name: "Америка: фильм"
+                        ageLevel: 18
+                        dateReleased: "2021-06-15"
+                        categoryAlias: "films"
+                        poster:
+                          src: "/images/641f4080944e8bd192d18318.jpg"
+                        rating: 7
+                        duration: 5892
+                        url: "/p/amerika-film"
+                        moviepagelogs: 
+                          _id: "64007d7d0a569a75e14fc2a1"
+                          count: 1
+                          updatedAt:
+                          - "2023-06-07T16:15:48.5030000Z"
+                        lastLogUpdatedAt:
+                        - "2023-06-07T16:15:48.503Z"
+                            
+                      - name: "Денежный выстрел: История Pornhub"
+                        ageLevel: 18
+                        dateReleased: "2023-02-17"
+                        categoryAlias: "films"
+                        poster:
+                          src: "/images/63fded0598e2af31cb68b46f.jpg"
+                        rating: 10
+                        duration: 7063.708333
+                        url: "/p/snyat-blokirovku"
+                        moviepagelogs: 
+                          _id: "6419a7540073f02ab65d4e36"
+                          count: 1
+                          updatedAt:
+                          - "2023-06-07T16:15:48.5030000Z"
+                        lastLogUpdatedAt:
+                        - "2023-06-07T16:15:48.503Z"
+  /profile/payment:
+    get:
+      summary: Профиль > Подписка
+      tags:
+        - Profile
+      parameters:
+        - in: query
+          name: limit
+          schema:
+           type: number
+          description: Ограничение на максимальное количество элементов в теле ответа
+        - in: query
+          name: cursorId
+          schema:
+           type: number
+          description: mongoose.ObjectId документа из таблицы paymentlogs. Если он передается, то вернутся документы у которых id меньше чем заданный ( но зачем это надо?)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentSubscribe:
+                    type: object
+                    properties:  
+                      startAt: 
+                        type: Date
+                        description: Дата начала текущей подписки
+                      finishAt: 
+                        type: Date
+                        description: Дата окончания текущей текущей подписки
+                      tariffId: 
+                        type: string
+                        description: tariffId (mongoose.Schema.Types.ObjectId)
+                  tariffs:
+                    type: array
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          description: Id тарифа
+                        name:
+                          type: string
+                          description: Название тарифа
+                        price:
+                          type: number
+                          description: Цена тарифа
+                        sort:
+                          type: number
+                          description: Сорт тарифа ( номер для сортировки )
+                        hidden:
+                          type: string
+                          description: Название фильма
+                          required: false
+                        discount: 
+                          type: number
+                          description: Cкидка
+                  totalSize:
+                    type: number
+                    description: Общее количество сущностей в БД
+                  items:
+                    type: array
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          description: Id оплаты
+                        type:
+                          type: string
+                          description: Тип оплаты
+                        startAt:
+                          type: Date
+                          description:  Дата оплаты
+                        finishAt:
+                          type: Date
+                          description:  Дата окончания срока действия оплаты
+                        tariff:
+                          type: object
+                          properties:  
+                            _id: 
+                              type: string
+                              description: id тарифа
+                            name: 
+                              type: string
+                              description: Название тарифа
+                            price: 
+                              type: number
+                              description: цена тарифа
+              example:
+                currentSubscribe:
+                  startAt: "2023-06-07T15:33:23.0680000Z"
+                  finishAt: "2023-12-04T15:33:23.0680000Z"
+                  tariffId: 63dbe1687f457bc81bc920cb
+                tariffs:
+                - _id: 63dbda927f457bc81bc920c4
+                  name: 14 дней
+                  price: 0
+                  sort: 1
+                  hidden: true
+                - _id: 63dbe11e7f457bc81bc920c9
+                  name: 1 месяц
+                  price: 199
+                  sort: 2
+                - _id: 63dbe1447f457bc81bc920ca
+                  name: 3 месяца
+                  price: 499
+                  discount: 17
+                  sort: 3
+                - _id: 63dbe1687f457bc81bc920cb
+                  name: 6 месяцев
+                  price: 899
+                  discount: 25
+                  sort: 4
+                totalSize: 1
+                items:
+                - _id: 6480a3432fc38dca80429f30
+                  type: issued-by-admin
+                  startAt: 2023-06-07T15:33:23.0680000Z
+                  finishAt: 2023-12-04T15:33:23.0680000Z
+                  tariff:
+                    _id: 63dbe1687f457bc81bc920cb
+                    name: 6 месяцев
+                    price: 899
+
+  /profile/devices:
+    get:
+      summary: Профиль > Мои устройства
+      tags:
+        - Profile
+      parameters:
+        - in: query
+          name: limit
+          schema:
+           type: number
+          description: Ограничение на максимальное количество элементов в теле ответа
+        - in: query
+          name: skip
+          schema:
+           type: number
+          description: Кол-во пропускаемых элементов из начала выборки
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userToken:
+                    type: string
+                    description: JWT Токен юзера
+                  totalSize:
+                    type: number
+                    description: Общее количество устройств, с которых был выполнен вход
+                  sessions:
+                    type: array
+                    description: Список сессий
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: object
+                      properties:
+                        token:
+                          type: string
+                          description: JWT Токен юзера
+                        ip:
+                          type: string
+                          description: ip адресс юзера
+                        os:
+                          type: string
+                          description: Операционная система устройства
+                        isBot:
+                          type: boolean
+                          description: Является ли юзер ботом
+                        isMobile:
+                          type: boolean
+                          description: Является ли дейвайс мобильным устройством
+                        isDesktop:
+                          type: boolean
+                          description: Является ли дейвайс десктопным устройством
+                        browser:
+                          type: string
+                          description: Название браузера
+                        version:
+                          type: string
+                          description: Версия браузера
+                        platform:
+                          type: string
+                          description: Платформа устройства ( ос)
+                        createdAt:
+                          type: Date
+                          description: Дата создания
+                        _id:
+                          type: string
+                          description:  id сессии (mongoose.Schema.Types.ObjectId)
+                example:
+                  userToken: "iyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY0ODA4MDdlOTA0ZDIwZTVkNGMxYjZkYiIsImlhdCI6MTY4NjE1Mzk2OSwiZXhwIjoxNzE3NzExNTY5fQ.vY6dB6oVVF05afwr9-aD0oHZkELKRKS5YiJwvQs4A3M"
+                  totalSize: 2
+                  sessions:
+                    - token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY0ODA4MDdlOTA0ZDIwZTVkNGMxYjZkYiIsImlhdCI6MTY4NjE1Mzk2OSwiZXhwIjoxNzE3NzExNTY5fQ.vY6dB6oVVF05afwr9-aD0oHZkELKRKS5YiJwvQs4A3M"
+                      ip: "::ffff:127.0.0.1"
+                      os: "Linux 64"
+                      isBot: false,
+                      isMobile: false,
+                      isDesktop: true,
+                      browser: "Chrome"
+                      version: "103.0.0.0"
+                      platform: "Linux"
+                      createdAt: "2023-06-07T16:06:09.306Z"
+                      _id: "6480aaf12fc38dca8042a3b5"
+                    - token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY0ODA4MDdlOTA0ZDIwZTVkNGMxYjZkYiIsImlhdCI6MTY4NjE1Mzk2OSwiZXhwIjoxNzE3NzExNTY5fQ.vY6dB6oVVF05afwr9-aD0oHZkELKRKS5YiJwvQs4A3M"
+                      ip: "::ffff:127.0.0.1"
+                      os: "Linux 64"
+                      isBot: false,
+                      isMobile: false,
+                      isDesktop: true,
+                      browser: "Firefox"
+                      version: "113.0"
+                      platform: "Linux"
+                      createdAt: "2023-06-07T16:06:09.306Z"
+                      _id: "6480aaf12fc38dca8042a3b5"
+
+
+  /admin/categories:
+    get:
+      summary: Получение категорий
+      tags: 
+        - Admin
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                uniqueItems: true
+                minItems: 2
+                items:
+                  type: object
+                  properties:
+                    _id:
+                      type: string
+                      description: id (mongoose.ObjectId) категории
+                    name:
+                      type: string
+                      description: Название категории
+                    alias:
+                      type: string
+                      description: Алиас категории
+                    aliasInUrl:
+                      type: string
+                      description: Алиас категории в url
+                    genres:
+                      type: array
+                      uniqueItems: true
+                      description: Список жанров
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            description: Название жанра
+                          alias:
+                            type: string
+                            description: Алиас жанра
+              examples:
+                example:
+                  value: 
+                    - _id: "63ab0d42f92598f4d7b7f7f2"
+                      name: "Фильмы"
+                      alias: "films"
+                      aliasInUrl: "films"
+                      genres:
+                        - name: "Аниме"
+                          alias: "anime"
+                        - name: "Биографии"
+                          alias: "biografii"
+                        - name: "Боевики"
+                          alias: "boeviki"
+                        - name: "Вестерны"
+                          alias: "vesterny" 
+                        - name: "Военные"
+                          alias: "voennye"
+                        - name: "Детективы"
+                          alias: "detektivy"
+                        - name: "Документальные"
+                          alias: "dokumentalnye"
+                        - name: "Драмы"
+                          alias: "dramy"
+                        - name: "Исторические"
+                          alias: "istoricheskie"
+                        - name: "Комедии"
+                          alias: "komedii"
+                        - name: "Короткометражки"
+                          alias: "korotkometrazhki"
+                        - name: "Криминал"
+                          alias: "kriminal"
+                        - name: "Мелодрамы"
+                          alias: "melodramy"
+                        - name: "Музыкальные"
+                          alias: "muzykalnye"
+                        - name: "Мультфильмы"
+                          alias: "multfilmy" 
+                        - name: "Мюзиклы"
+                          alias: "myuzikly" 
+                        - name: "Приключения"
+                          alias: "priklyucheniya"
+                        - name: "Семейные"
+                          alias: "semeynye"
+                        - name: "Спортивные"
+                          alias: "sportivnye"  
+                        - name: "Триллеры"
+                          alias: "trillery"  
+                        - name: "Ужасы"
+                          alias: "uzhasy"
+                        - name: "Фантастика"
+                          alias: "fantastika"
+                        - name: "Фэнтези"
+                          alias: "fentezi"
+
+                    - _id: "63ab0d4bf92598f4d7b7f7f4"
+                      name: "Сериалы"
+                      alias: "serials"
+                      aliasInUrl: "serialy"
+                      genres:
+                        - name: "Аниме"
+                          alias: "anime"
+                        - name: "Биографии"
+                          alias: "biografii"
+                        - name: "Боевики"
+                          alias: "boeviki"
+                        - name: "Вестерны"
+                          alias: "vesterny" 
+                        - name: "Военные"
+                          alias: "voennye"
+                        - name: "Детективы"
+                          alias: "detektivy"
+                        - name: "Документальные"
+                          alias: "dokumentalnye"
+                        - name: "Драмы"
+                          alias: "dramy"
+                        - name: "Исторические"
+                          alias: "istoricheskie"
+                        - name: "Комедии"
+                          alias: "komedii"
+                        - name: "Короткометражки"
+                          alias: "korotkometrazhki"
+                        - name: "Криминал"
+                          alias: "kriminal"
+                        - name: "Мелодрамы"
+                          alias: "melodramy"
+                        - name: "Музыкальные"
+                          alias: "muzykalnye"
+                        - name: "Мультфильмы"
+                          alias: "multfilmy" 
+                        - name: "Мюзиклы"
+                          alias: "myuzikly" 
+                        - name: "Приключения"
+                          alias: "priklyucheniya"
+                        - name: "Семейные"
+                          alias: "semeynye"
+                        - name: "Спортивные"
+                          alias: "sportivnye"  
+                        - name: "Триллеры"
+                          alias: "trillery"  
+                        - name: "Ужасы"
+                          alias: "uzhasy"
+                        - name: "Фантастика"
+                          alias: "fantastika"
+                        - name: "Фэнтези"
+                          alias: "fentezi" 
+
+  /admin/users:
+    get:
+      summary: Админ-панель > Пользователи
+      tags:
+        - Admin
+      parameters:
+        - in: query
+          name: limit
+          schema:
+           type: number
+          description: Ограничение на максимальное количество элементов в теле ответа
+        - in: query
+          name: skip
+          schema:
+           type: number
+          description: Кол-во пропускаемых элементов из начала выборки
+        - in: query
+          name: query
+          schema:
+           type: number
+          description: Для поиска документов (сущностей таблицы users), с которыми совпадают символы в имени и емейлу. Либо для полного совпадения по id (mongoose.ObjectId)  пользователя
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalSize: 
+                    type: number
+                    description: Общее количество сущностей в БД
+                  items:
+                    type: array
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: object
+                      properties:
+                        _id: 
+                          type: string
+                          description: Profile id
+                        role:
+                          type: string
+                          required: false
+                          description: Роль этого профиля. Admin, manager или если это обычный пользователь то это поле отсуствует. 
+                        email: 
+                          type: string
+                          description: Email user(profile)
+                        avatar:
+                          type: string
+                          description: Path to img src profile user
+                        firstname:
+                          type: string
+                          description: Имя этого человека
+                        subscribe:
+                          type: object
+                          description: Инфа по подписке. Если подписки нет, в этом поле null
+                          properties:
+                            startAt:
+                              type: Date
+                              description: Дата начала подписки
+                            finishAt:
+                              type: Date
+                              description: Дата окончания подписки
+                            tariffId:
+                              type: string
+                              description: Id тарифа (mongoose.ObjectId)
+                        createdAt:
+                          type: Date
+                          description: Дата создания
+                        updatedAt:
+                          type: Date
+                          description: Дата обновления
+                        lastVisitAt:
+                          type:  Date
+                          description: Дата последнего посещения
+
+              examples:
+                example:
+                  value: 
+                    totalSize: 2
+                    items:
+                      - _id: 6480807e904d20e5d4c1b6db
+                        email: 7on9911239@gmail.com
+                        avatar: null
+                        firstname: Петр12
+                        subscribe:
+                          startAt: '2023-06-07T15:33:23.068Z'
+                          finishAt: '2023-12-04T15:33:23.068Z'
+                          tariffId: 63dbe1687f457bc81bc920cb
+                        lastVisitAt: '2023-06-20T18:32:24.789Z'
+                        createdAt: '2023-06-07T13:05:02.626Z'
+                        updatedAt: '2023-06-18T14:42:03.013Z'
+                        role: admin
+                      - _id: 63c8c56b6396809788dfdc9a
+                        email: ejevika1412@yandex.ru
+                        avatar: "/images/63c8c56b6396809788dfdc99.jpg"
+                        firstname: Виктория
+                        lastVisitAt: '2023-01-19T05:43:12.968Z'
+                        createdAt: '2023-01-19T04:22:03.047Z'
+                        updatedAt: '2023-02-12T04:39:28.502Z'
+                        subscribe:
+                          startAt: '2023-02-12T04:39:28.501Z'
+                          finishAt: '2023-05-13T04:39:28.501Z'
+                          tariffId: 63dbe1447f457bc81bc920ca
+
+
+
+  /admin/users/profile:
+    get:
+      summary: Админ-панель > Получение пользователя
+      tags:
+        - Admin
+      parameters:
+        - in: query
+          name: id
+          schema:
+           type: string
+          description: id пользователя (mongoose.ObjectId)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: 
+                    type: object
+                    description: Общее количество сущностей в БД
+                    properties:
+                      _id: 
+                        type: string
+                        description: Profile id
+                      role:
+                        type: string
+                        required: false
+                        description: Роль этого профиля. Admin, manager или если это обычный пользователь то это поле отсуствует. 
+                      email: 
+                        type: string
+                        description: Email user(profile)
+                      avatar:
+                        type: string
+                        description: Path to img src profile user
+                      firstname:
+                        type: string
+                        description: Имя этого человека
+                      deleted:
+                        type: boolean
+                        description: Удален ли аккаунт. Если не удален, этого поля нет
+                        required: false
+                      subscribe:
+                        type: object
+                        description: Инфа по подписке. Если подписки нет, в этом поле null
+                        properties:
+                          startAt:
+                            type: Date
+                            description: Дата начала подписки
+                          finishAt:
+                            type: Date
+                            description: Дата окончания подписки
+                          tariffId:
+                            type: string
+                            description: Id тарифа (mongoose.ObjectId)
+                  tariffs:
+                    type: array
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: object
+                      properties:
+                        _id: 
+                          type: string
+                          description: Profile id
+                        name:
+                          type: string
+                          description: Название тарифа 
+                        price: 
+                          type: number
+                          description: Цена тарифа
+                        sort:
+                          type: string
+                          description: Сорт тарифа?
+                        hidden:
+                          type: boolean
+                          description: Скрыт ли тариф
+                          required: false
+
+              examples:
+                example:
+                  value: 
+                    user:
+                      email: ovodenko.ksenia@yandex.ru
+                      avatar:
+                      firstname: ксения
+                      subscribe:
+                        startAt: '2023-02-12T04:39:28.501Z'
+                        finishAt: '2023-05-13T04:39:28.501Z'
+                        tariffId: 63dbe1447f457bc81bc920ca
+                    tariffs:
+                    - _id: 63f7537f841f04f2348f8de5
+                      name: 7 дней
+                      price: 0
+                      sort: 0
+                    - _id: 63dbda927f457bc81bc920c4
+                      name: 14 дней
+                      price: 0
+                      sort: 1
+                      hidden: true
+                    - _id: 63dbe11e7f457bc81bc920c9
+                      name: 1 месяц
+                      price: 199
+                      sort: 2
+                    - _id: 63dbe1447f457bc81bc920ca
+                      name: 3 месяца
+                      price: 499
+                      discount: 17
+                      sort: 3
+                    - _id: 63dbe1687f457bc81bc920cb
+                      name: 6 месяцев
+                      price: 899
+                      discount: 25
+                      sort: 4
+    patch:
+      summary: Админ-панель > Обновления пользователя
+      tags:
+        - Admin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Id пользователя (mongoose.ObjectId)
+                role:
+                  type: string
+                  description: Admin, manager или если это обычный пользователь то это поле отсуствует.
+                tariffId:
+                  type: string
+                  description: Id тарифа (mongoose.ObjectId)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:  
+                    type: string
+                    description: "success"
+                  msg: 
+                    type: string
+                    description: "Профиль обновлен"
+                example:
+                  type: "success"
+                  msg: "Профиль обновлен"
+                      
+  /admin/users/movies:
+    get:
+      summary: Админ-панель > Получение списка фильмов и сериалов
+      tags:
+        - Admin
+      parameters:
+        - in: query
+          name: skip
+          schema:
+           type: string
+          description: id пользователя (mongoose.ObjectId)
+        - in: query
+          name: id
+          schema:
+           type: string
+          description: id пользователя (mongoose.ObjectId)
+        - in: query
+          name: limit
+          schema:
+           type: string
+          description: id пользователя (mongoose.ObjectId)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalSize:
+                    type: number
+                    description: Общее количество сущностей (фильмов и сериалов) в БД
+                  totalSizePublished:
+                    type: number
+                    description: Kоличество опубликованных фильмов и сериалов
+                  totalSizeUnpublished:
+                    type: number
+                    description: Kоличество неопубликованных фильмов и сериалов
+                  items:
+                    type: array
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          description:  Id фильма (mongoose.ObjectId)
+                        name:
+                          type: string
+                          description: Название фильма на русском?
+                        origName:
+                          type: string
+                          description: Оригинальное название фильма на английском?
+                        shortDesc:
+                          type: string
+                          description: Краткое описание  
+                        fullDesc:
+                          type: string
+                          description: Полное описание
+                        alias:
+                          type: string
+                          description: Сгенерированный ЧПУ
+                        ageLevel:
+                          type: string
+                          description: Возрастное ограничение
+                        dateReleased:
+                          type: string
+                          description: Дата выпуска
+                        countries:
+                          type: array
+                          description:  Cписок стран
+                          uniqueItems: true
+                          minItems: 0
+                          items:
+                            type: string
+                            description: Название страны
+                        categoryAlias:
+                          type: string
+                          description:  Вид категориию. Может быть films, serials
+                        genresAliases:
+                          type: array
+                          description:  Cписок жанров
+                          uniqueItems: true
+                          minItems: 0
+                          items:
+                            type: string
+                            description: Название жанра
+                        persons:
+                          type: array
+                          description:  Список актёров и преставителей съемочной группы
+                          uniqueItems: true
+                          minItems: 0
+                          items:
+                            type: object
+                            properties:  
+                              _id: 
+                                type: string
+                                description: mongoose.ObjectId
+                              name: 
+                                type: string
+                                description: Имя и фамилия человека
+                              type: 
+                                type: string
+                                description: director - режиссер, actor - актер, producer - продюсер, screenwriter - сценарист, operator - оператор
+                        series:
+                          type: array
+                          description:  Список серий. Приходят в во вложенном массиве
+                          uniqueItems: true
+                          minItems: 0
+                          items:
+                            type: array    
+                            description:  Список серий
+                            uniqueItems: true
+                            minItems: 0  
+                            items:
+                              type: object
+                              properties:
+                                _id:
+                                  type: string
+                                  description:  Id cерии (mongoose.ObjectId)
+                                src:
+                                  type: string
+                                  description: источник на файл ( путь к исходнику )
+                                duration:
+                                  type: number
+                                  description:  Продолжительность серии
+                                thumbnail:
+                                  type: string
+                                  description: миниатюра (кадр из видео)            
+                        films:
+                          type: array
+                          description: список фильмов
+                          uniqueItems: true
+                          minItems: 0
+                          items:
+                            type: object
+                            properties:  
+                              _id: 
+                                type: string
+                                description: Имя и фамилия человека
+                              src: 
+                                type: string
+                                description: источник на файл ( путь к исходнику )
+                              duration:
+                                type: number
+                                description: длительность фильма
+                              thumbnail:
+                                type: string
+                                description: миниатюра (кадр из видео)  
+                        createdAt:
+                          type: Date
+                          description: Дата создания
+                        updatedAt:
+                          type: Date
+                          description: Дата обновления
+                        poster:
+                          type: object
+                          properties:  
+                            id: 
+                              type: string
+                              description: mongoose.ObjectId
+                            src: 
+                              type: string
+                              description: Путь к файлу изображению постера
+                        cover:
+                          type: object
+                          properties:  
+                            id: 
+                              type: string
+                              description: mongoose.ObjectId
+                            src: 
+                              type: string
+                              description: Путь к файлу изображению обложки   
+                        raisedUpAt:
+                          type: Date
+                          description: Дата поднятия в списке (для актуальности)
+                        publishedAt:
+                          type: Date
+                          description: Дата публикации
+              examples:
+                example:
+                  value: 
+                    totalSize: 719
+                    totalSizePublished: 405
+                    totalSizeUnpublished: 314
+                    items:
+                      - _id: 63ff381e53758c7ea6bc6e30
+                        name: 'Битва при Нарвике: Первое поражение Гитлера'
+                        origName: Kampen om Narvik
+                        shortDesc: На фоне сражения во Второй мировой войне, известного как первое поражение Гитлера, норвежский солдат возвращается домой и узнает шокирующую правду о своей жене.
+                        fullDesc: На фоне сражения во Второй мировой войне, известного как первое поражение Гитлера, норвежский солдат возвращается домой и узнает шокирующую правду о своей жене.
+                        alias: bitva-pri-narvike-pervoe-porazhenie-gitlera
+                        ageLevel: 16
+                        dateReleased: '2022-12-15'
+                        countries:
+                        - Норвегия
+                        categoryAlias: films
+                        genresAliases:
+                        - dramy
+                        - voennye
+                        - istoricheskie    
+                        persons:
+                        - name: Эрик Шёлдбьерг
+                          type: director
+                          _id: 63ff381e53758c7ea6bc6e31
+                        - name: Билл Кэмпбелл
+                          type: actor
+                          _id: 63ff381e53758c7ea6bc6e32
+                        - name: Kristine Hartgen
+                          type: actor
+                          _id: 63ff381e53758c7ea6bc6e33
+                        - name: Хенрик Местад
+                          type: actor
+                          _id: 63ff381e53758c7ea6bc6e34
+                        - name: Стиг Хенрик Хофф
+                          type: actor
+                          _id: 63ff381e53758c7ea6bc6e35
+                        - name: Карл Мартин Эггесбё
+                          type: actor
+                          _id: 63ff381e53758c7ea6bc6e36
+                        - name: Кристоф Бах
+                          type: actor
+                          _id: 63ff381e53758c7ea6bc6e37
+                        - name: Магнус Дагдэйл
+                          type: actor
+                          _id: 63ff381e53758c7ea6bc6e38
+                        - name: Хольгер Хандтке
+                          type: actor
+                          _id: 63ff381e53758c7ea6bc6e39
+                        - name: Матильда Хольтедаль Кура
+                          type: actor
+                          _id: 63ff381e53758c7ea6bc6e3a
+                        - name: Эмиль Йонсен
+                          type: actor
+                          _id: 63ff381e53758c7ea6bc6e3b
+                        - name: Ааге Ааберге
+                          type: producer
+                          _id: 63ff381e53758c7ea6bc6e3c
+                        - name: Ливе Бонневье
+                          type: producer
+                          _id: 63ff381e53758c7ea6bc6e3d
+                        - name: Кьетиль Йенсберг
+                          type: producer
+                          _id: 63ff381e53758c7ea6bc6e3e
+                        - name: Ливе Бонневье
+                          type: screenwriter
+                          _id: 63ff381e53758c7ea6bc6e3f
+                        - name: Кристофер Грендал
+                          type: screenwriter
+                          _id: 63ff381e53758c7ea6bc6e40
+                        - name: Себастиан Торнгрен Вартин
+                          type: screenwriter
+                          _id: 63ff381e53758c7ea6bc6e41
+                        - name: Джон-Эрлинг Х. Фредриксен
+                          type: operator
+                          _id: 63ff381e53758c7ea6bc6e42
+                        series: []
+                        films:
+                        - _id: 640379c00a569a75e1507d6b
+                          src: "/videos/640379ae0a569a75e1507d29.mp4"
+                          duration: 6546.833333
+                          thumbnail: "/images/640379c00a569a75e1507d6c.jpg"
+                        createdAt: '2023-03-01T11:33:50.551Z'
+                        updatedAt: '2023-05-30T06:02:12.228Z'
+                        poster:
+                          _id: 640376060a569a75e1507a93
+                          src: "/images/640376060a569a75e1507a94.jpg"
+                        cover:
+                          _id: 640376080a569a75e1507aac
+                          src: "/images/640376080a569a75e1507aad.jpg"
+                        publishedAt: '2023-03-04T17:03:08.058Z'
+                        raisedUpAt: '2023-05-30T06:02:12.228Z'
+                       
+                      - _id: 63c550711c98adb3690e3b64
+                        name: Шальная пуля
+                        origName: Balle perdue
+                        shortDesc: Одаренного механика обвиняют в убийстве, которого он не совершал. Единственным
+                          доказательством его невиновности является пуля с места преступления, застрявшая
+                          в пропавшей машине.
+                        fullDesc: Одаренного механика обвиняют в убийстве, которого он не совершал. Единственным
+                          доказательством его невиновности является пуля с места преступления, застрявшая
+                          в пропавшей машине.
+                        alias: shalnaya-pulya
+                        ageLevel: 16
+                        dateReleased: '2020-06-19'
+                        countries:
+                        - Франция
+                        categoryAlias: serials
+                        genresAliases: []
+                        persons:
+                        - name: Гийом Пьерре
+                          type: director
+                          _id: 63c550711c98adb3690e3b65
+                        - name: Альбан Ленуар
+                          type: actor
+                          _id: 63c550711c98adb3690e3b66
+                        - name: Николя Дювошель
+                          type: actor
+                          _id: 63c550711c98adb3690e3b67
+                        - name: Рамзи Бедиа
+                          type: actor
+                          _id: 63c550711c98adb3690e3b68
+                        - name: Стефи Сельма
+                          type: actor
+                          _id: 63c550711c98adb3690e3b69
+                        - name: Род Парадо
+                          type: actor
+                          _id: 63c550711c98adb3690e3b6a
+                        - name: Себастьян Лаланн
+                          type: actor
+                          _id: 63c550711c98adb3690e3b6b
+                        - name: Arthur Aspaturian
+                          type: actor
+                          _id: 63c550711c98adb3690e3b6c
+                        - name: Патрик Медиони
+                          type: actor
+                          _id: 63c550711c98adb3690e3b6d
+                        - name: Александр Филип
+                          type: actor
+                          _id: 63c550711c98adb3690e3b6e
+                        - name: Стивен Скардиккьо
+                          type: actor
+                          _id: 63c550711c98adb3690e3b6f
+                        - name: Rémi Leautier
+                          type: producer
+                          _id: 63c550711c98adb3690e3b70
+                        - name: Жак-Анри Бронкар
+                          type: producer
+                          _id: 63c550711c98adb3690e3b71
+                        - name: Матье Ажерон
+                          type: producer
+                          _id: 63c550711c98adb3690e3b72
+                        - name: Гийом Пьерре
+                          type: screenwriter
+                          _id: 63c550711c98adb3690e3b73
+                        - name: Камел Гемра
+                          type: screenwriter
+                          _id: 63c550711c98adb3690e3b74
+                        - name: Альбан Ленуар
+                          type: screenwriter
+                          _id: 63c550711c98adb3690e3b75
+                        - name: Морган С. Далибер
+                          type: operator
+                          _id: 63c550711c98adb3690e3b76
+                        series:
+                          - - _id: 64732eecfa87aa4b70851c64
+                              duration: 155.738333
+                              src: "/videos/64732eecfa87aa4b70851c65"
+                              thumbnail: "/images/64732eecfa87aa4b70851c66.jpg"
+                        films: []
+                        createdAt: '2023-01-16T13:26:09.825Z'
+                        updatedAt: '2023-05-28T10:37:32.587Z'
+                        publishedAt: '2023-05-08T14:14:07.398Z'
+                        raisedUpAt: '2023-05-10T10:34:05.802Z'
+
+  /users/{id}:
+    get:
+      summary: rЭто моковый пример
+      tags:
+        - API functions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: simple parameter
+          schema:
+            type: string
+            example: '1'
+      description: parameter id just for test
+      responses:
+        '200':
+          description: OK
+          content:
+            document:
+              schema:
+                type: string
+                example: some text
+    post:
+      summary: returns simple answer from post
+      tags:
+        - API functions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Info'
+            example:
+              country: Russia
+              city: Spb
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: simple parameter
+          schema:
+            type: string
+            example: '1'
+      description: parameter id just for test
+      responses:
+        '204':
+          description: OK
+components:
+  schemas:
+    Info:
+      type: object
+      properties:
+        country:
+          type: string
+        city:
+          type: string
