@@ -106,6 +106,8 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 		movieId,
 		duration,
 		qualities,
+		audio,
+		subtitles,
 		seasonKey,
 		episodeKey
 	} = req.query
@@ -114,7 +116,9 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 		_id: getObjectId(),
 		duration: +duration,
 		src: `/videos/${getObjectId()}`,
-		qualities: qualities.split(','),
+		qualities: qualities ? qualities.split(',') : [],
+		audio: audio ? audio.split(',') : [],
+		subtitles: subtitles ? subtitles.split(',') : [],
 		thumbnail: `/images/${getObjectId()}.jpg`
 	}
 
