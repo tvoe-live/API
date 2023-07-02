@@ -5,6 +5,8 @@ const videoSchema = {
 	src: String,
 	duration: Number,
 	qualities: Array,
+	audio: Array,
+	subtitles: Array,
 	thumbnail: String
 }
 
