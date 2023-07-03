@@ -12,7 +12,7 @@ const videoSchema = {
 		qualities: Object,
 		audio: Object
 	},
-	ready: Boolean, // Завершена ли загрузка
+	status: String, // uploading - загрузка, removing - удаление, ready - готов
 	progress: { // Прогресс загрузки
 		total: Number, // Всего файлов нужно загрузить
 		done: Number // Сколько файлов загружено
