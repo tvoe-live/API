@@ -4,13 +4,13 @@ const videoSchema = {
 	_id: mongoose.Schema.Types.ObjectId,
 	src: String, // Путь к видео
 	duration: Number, // Продолжительность видео в секундах
-	qualities: Array, // Доступные качества видео
-	audio: Array, // Названия аудиодорожек
-	subtitles: Array, // Названия субтитров
+	qualities: [String], // Доступные качества видео
+	audio: [String], // Названия аудиодорожек
+	subtitles: [String], // Названия субтитров
 	thumbnail: String, // Путь к миниатюре
 	fragments: { // Количество TS-фрагментов
 		qualities: Object,
-		audio: Array
+		audio: [Number]
 	},
 	thumbnails: Number, // Количество склеек миниатюр
 	status: String, // uploading - загрузка, removing - удаление, ready - готов
