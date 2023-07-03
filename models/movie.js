@@ -2,12 +2,21 @@ const mongoose = require('mongoose');
 
 const videoSchema = {
 	_id: mongoose.Schema.Types.ObjectId,
-	src: String,
-	duration: Number,
-	qualities: Array,
-	audio: Array,
-	subtitles: Array,
-	thumbnail: String
+	src: String, // Путь к видео
+	duration: Number, // Продолжительность видео в секундах
+	qualities: Array, // Доступны качества видео
+	audio: Array, // Названия аудиодорожек
+	subtitles: Array, // Названия субтитров
+	thumbnail: String, // Путь к миниатюре
+	fragments: { // Количество TS-фрагментов
+		qualities: Object,
+		audio: Object
+	},
+	ready: Boolean, // Завершена ли загрузка
+	progress: { // Прогресс загрузки
+		total: Number, // Всего файлов нужно загрузить
+		done: Number // Сколько файлов загружено
+	}
 }
 
 const movieSchema = new mongoose.Schema({
