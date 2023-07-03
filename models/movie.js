@@ -15,8 +15,8 @@ const videoSchema = {
 	thumbnails: Number, // Количество склеек миниатюр
 	status: String, // uploading - загрузка, removing - удаление, ready - готов
 	progress: { // Прогресс загрузки
-		total: Number, // Всего файлов нужно загрузить
-		done: Number // Сколько файлов загружено
+		uploaded: Number, // Сколько файлов загружено
+		total: Number // Всего файлов нужно загрузить
 	}
 }
 
