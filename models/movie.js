@@ -10,7 +10,7 @@ const videoSchema = {
 	thumbnail: String, // Путь к миниатюре
 	fragments: { // Количество TS-фрагментов
 		qualities: Object,
-		audio: Object
+		audio: Array
 	},
 	status: String, // uploading - загрузка, removing - удаление, ready - готов
 	progress: { // Прогресс загрузки

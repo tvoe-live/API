@@ -108,6 +108,7 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 		qualities,
 		audio,
 		subtitles,
+		fragments,
 		seasonKey,
 		episodeKey
 	} = req.query
@@ -119,8 +120,10 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 		qualities: qualities ? qualities.split(',') : [],
 		audio: audio ? audio.split(',') : [],
 		subtitles: subtitles ? subtitles.split(',') : [],
-		thumbnail: `/images/${getObjectId()}.jpg`
+		thumbnail: `/images/${getObjectId()}.jpg`,
+		fragments
 	}
+	console.log(fragments);
 
 	let set;
 
