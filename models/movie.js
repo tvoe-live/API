@@ -4,7 +4,7 @@ const videoSchema = {
 	_id: mongoose.Schema.Types.ObjectId,
 	src: String, // Путь к видео
 	duration: Number, // Продолжительность видео в секундах
-	qualities: Array, // Доступны качества видео
+	qualities: Array, // Доступные качества видео
 	audio: Array, // Названия аудиодорожек
 	subtitles: Array, // Названия субтитров
 	thumbnail: String, // Путь к миниатюре
@@ -12,6 +12,7 @@ const videoSchema = {
 		qualities: Object,
 		audio: Array
 	},
+	thumbnails: Number, // Количество склеек миниатюр
 	status: String, // uploading - загрузка, removing - удаление, ready - готов
 	progress: { // Прогресс загрузки
 		total: Number, // Всего файлов нужно загрузить
