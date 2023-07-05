@@ -183,6 +183,7 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 					if(found) {
 						pathToOldVideoSrc = found.src;
 						pathToOldThumbnail = found.thumbnail;
+						return true;
 					}
 				});
 
