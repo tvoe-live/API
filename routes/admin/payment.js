@@ -6,6 +6,7 @@ const verify = require('../../middlewares/verify');
 const resError = require('../../helpers/resError');
 const PaymentLog = require('../../models/paymentLog');
 const getSearchQuery = require('../../middlewares/getSearchQuery');
+const isValidObjectId = require('../../helpers/isValidObjectId')
 
 /*
  * Админ-панель > История пополнений
@@ -18,7 +19,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 	
 	const searchMatch = req.RegExpQuery && {
 		$or: [
-			{ _id: req.RegExpQuery },
+			... ( isValidObjectId(req.searchQuery) ? [{ _id: mongoose.Types.ObjectId(req.searchQuery) }] : [] ),
 			{ email: req.RegExpQuery },
 			{ firstname: req.RegExpQuery }
 		]

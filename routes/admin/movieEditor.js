@@ -114,7 +114,7 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 		_id: getObjectId(),
 		duration: +duration,
 		src: `/videos/${getObjectId()}`,
-		qualities: qualities.split(','),
+		qualities: qualities?.split(','),
 		thumbnail: `/images/${getObjectId()}.jpg`
 	}
 
@@ -165,10 +165,10 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 				// Проверка на существование серии
 				movie[name].find(season => {
 					const found = season.find(series => series._id.toString() === _id);
-				
 					if(found) {
 						pathToOldVideoSrc = found.src;
 						pathToOldThumbnail = found.thumbnail;
+						return true
 					}
 				});
 

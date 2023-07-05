@@ -101,7 +101,7 @@ const yamlData = yaml.load(data);
 const jsonData = JSON.stringify(yamlData);
 fs.writeFileSync('./swagger/doc.json', jsonData, 'utf8');
 const swaggerJson = require('./swagger/doc.json')
-app.use('/docs', verify.token, verify.isAdmin, swaggerUi.serve,  swaggerUi.setup(swaggerJson));
+app.use('/admin/docs', verify.token, verify.isAdmin, swaggerUi.serve,  swaggerUi.setup(swaggerJson));
 
 app.use('*', notFound)
 

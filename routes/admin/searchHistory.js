@@ -5,6 +5,7 @@ const verify = require('../../middlewares/verify');
 const resError = require('../../helpers/resError');
 const SearchLog = require('../../models/searchLog');
 const getSearchQuery = require('../../middlewares/getSearchQuery');
+const isValidObjectId = require('../../helpers/isValidObjectId')
 
 /*
  * Админ-панель > История поиска
@@ -17,7 +18,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 	
 	const searchMatch = req.RegExpQuery && {
 		$or: [
-			{ _id: req.RegExpQuery },
+			... ( isValidObjectId(req.searchQuery) ? [{ _id: mongoose.Types.ObjectId(req.searchQuery) }] : [] ),
 			{ email: req.RegExpQuery },
 			{ firstname: req.RegExpQuery }
 		]
