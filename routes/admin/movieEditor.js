@@ -108,28 +108,24 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 		qualities,
 		audio,
 		subtitles,
-		fragments,
-		thumbnails,
+		files,
 		total,
 		seasonKey,
 		episodeKey
-	} = req.query
+	} = req.body
 
 	const videoParams = {
 		_id: getObjectId(),
-		duration,
 		src: `/videos/${getObjectId()}`,
-		qualities: qualities ? JSON.parse(qualities) : [],
-		audio: audio ? JSON.parse(audio) : [],
-		subtitles: subtitles ? JSON.parse(subtitles) : [],
 		thumbnail: `/images/${getObjectId()}.jpg`,
-		fragments: fragments ? JSON.parse(fragments) : { qualities: {}, audio: [] },
-		thumbnails,
+		duration,
+		qualities,
+		audio,
+		subtitles,
+		files,
 		status: 'uploading',
-		progress: {
-			uploaded: 0,
-			total
-		}
+		uploaded: 0,
+		total
 	}
 
 	let set;
