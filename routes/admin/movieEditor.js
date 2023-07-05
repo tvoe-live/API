@@ -31,7 +31,7 @@ const uploadMemoryStorage = multer({ storage: memoryStorage });
  * Создание медиа страницы, если ее не существует
  */
 const existMovie = async (req, res, next) => {
-	const { movieId } = req.query;
+	const { movieId } = req.body;
 
 	if(movieId) return next()
 
@@ -63,7 +63,7 @@ router.get('/s3data', verify.token, verify.isManager, async (req, res) => {
  */
 router.post('/image', verify.token, verify.isManager, existMovie, uploadMemoryStorage.single('file'), async (req, res) => {
 	const { buffer } = req.file;
-	const { name, movieId } = req.query;
+	const { name, movieId } = req.body;
 
 	const { fileId, fileSrc } = await uploadImageToS3({
 		res,
@@ -215,7 +215,7 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
  * Удаление изображений
  */
 router.delete('/image', verify.token, verify.isManager, async (req, res) => {
-	const { name, movieId } = req.query;
+	const { name, movieId } = req.body;
 
 	try {
 		// Удаление ссылки на фаил в БД
@@ -247,7 +247,7 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 		name,
 		movieId,
 		seasonKey,
-	} = req.query;
+	} = req.body;
 
 	let set;
 
