@@ -296,24 +296,26 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 		}
 
 		// Обновить статус видео
-		await Movie.findOneAndUpdate({ _id: movieId }, updateSet);
+		if(updateSet) await Movie.findOneAndUpdate({ _id: movieId }, updateSet);
 
 		// Удаление старых файлов
 		if(pathToOldVideoSrc) await deleteFolderFromS3(pathToOldVideoSrc);
 		if(pathToOldThumbnail) await deleteFileFromS3(pathToOldThumbnail);
 
 		// Удаление ссылки на фаил в БД
-		await Movie.updateOne({ _id: movieId }, deleteSet);
+		if(deleteSet) {
+			await Movie.updateOne({ _id: movieId }, deleteSet);
 
-		// Удаление пустых массивов
-		if(name == 'series') {
-			await Movie.updateOne(
-				{ _id: movieId }, 
-				{ $pull: {
-					series: { $in:[[]] }
-				} },
-				{ multi: true }
-			);
+			// Удаление пустых массивов
+			if(name == 'series') {
+				await Movie.updateOne(
+					{ _id: movieId }, 
+					{ $pull: {
+						series: { $in:[[]] }
+					} },
+					{ multi: true }
+				);
+			}
 		}
 
 		return resSuccess({
