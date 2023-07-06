@@ -112,37 +112,75 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 		total,
 		seasonKey,
 		episodeKey
-	} = req.body
-
-	const videoParams = {
-		_id: getObjectId(),
-		src: `/videos/${getObjectId()}`,
-		thumbnail: `/images/${getObjectId()}.jpg`,
-		duration,
-		qualities,
-		audio,
-		subtitles,
-		files,
-		status: 'uploading',
-		uploaded: 0,
-		total
-	}
+	} = req.body;
 
 	let set;
 
 	try {
-		switch(name) {
-			case 'trailer': 
-				set = { $set: { trailer: videoParams } }
-				break
-			case 'films': 
-				set = { $addToSet: { films: videoParams } }
-				break
-			case 'series': 
-				const movie = await Movie.findOne({ _id: movieId });
-				const previousSeason = movie.series[seasonKey - 1];
+		let movie = await Movie.findOne({ _id: movieId });
+		if(!movie) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Эта страница была удалена'
+			});
+		}
 
-				if(!movie.series || !movie.series.length) await Movie.updateOne({ _id: movieId }, { $set: { series: [] } })
+		const videoParams = {
+			_id: getObjectId(),
+			src: `/videos/${getObjectId()}`,
+			thumbnail: `/images/${getObjectId()}.jpg`,
+			duration,
+			qualities,
+			audio,
+			subtitles,
+			files,
+			status: 'uploading',
+			uploaded: 0,
+			total
+		};
+
+		switch(name) {
+			case 'trailer':
+				if(movie.trailer && movie.trailer.status) {
+					let msg;
+					switch(movie.trailer.status) {
+						case 'uploading':
+							msg = 'Кто-то уже загружает трейлер';
+							break;
+						case 'removing':
+							msg = 'Кто-то уже удаляет трейлер';
+							break;
+						case 'ready':
+							msg = 'Кто-то уже добавил трейлер';
+							break;
+						default: break;
+					}
+					return resError({ res, alert: true, msg });
+				}
+				set = { $set: { trailer: videoParams } };
+				break;
+			case 'films':
+				if(movie.films && movie.films[0]) {
+					let msg;
+					switch(movie[name][0].status) {
+						case 'uploading':
+							msg = 'Кто-то уже загружает фильм';
+							break;
+						case 'removing':
+							msg = 'Кто-то уже удаляет фильм';
+							break;
+						case 'ready':
+							msg = 'Кто-то уже добавил фильм';
+							break;
+						default: break;
+					}
+					return resError({ res, alert: true, msg });
+				}
+				set = { $addToSet: { films: videoParams } };
+				break;
+			case 'series':
+				const previousSeason = movie.series[seasonKey - 1];
 
 				if(typeof seasonKey === undefined || seasonKey < 0) {
 					return resError({
@@ -168,33 +206,79 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 					});
 				}
 
+				// Проверка на существование серии + если серия уплыла вверх/вниз, она все равно будет обновлена
+				const findSeasonAndEpisode = () => {
+					let seriesIndex;
+					const seasonIndex = movie[name].findIndex(season => {
+						seriesIndex = season.findIndex(series => series._id.toString() === _id);
+						return seriesIndex != -1;
+					});
+					return [seasonIndex, seriesIndex];
+				};
 
-				let pathToOldVideoSrc;
-				let pathToOldThumbnail;
+				// Добавить новую серию в конец
+				const pushSeries = () => {
+					set = { $push: { [`series.${seasonKey}`]: videoParams } };
+				};
 
-				// Проверка на существование серии
-				movie[name].find(season => {
-					const found = season.find(series => series._id.toString() === _id);
-				
-					if(found) {
-						pathToOldVideoSrc = found.src;
-						pathToOldThumbnail = found.thumbnail;
-						return true;
-					}
-				});
-
-				// Удаление старых файлов
-				if(pathToOldVideoSrc) await deleteFolderFromS3(pathToOldVideoSrc);
-				if(pathToOldThumbnail) await deleteFileFromS3(pathToOldThumbnail);
-
-				// Заменить старую серию, либо добавить новую в конец
-				if(pathToOldVideoSrc || pathToOldThumbnail) {
-					set = { $set: { [`series.${seasonKey}.${episodeKey}`]: videoParams } }
+				let [seasonIndex, seriesIndex] = findSeasonAndEpisode();
+				if(seasonIndex == -1 || seriesIndex == -1) {
+					pushSeries();
 				} else {
-					set = { $push: { [`series.${seasonKey}`]: videoParams } }
+					switch(movie[name][seasonIndex][seriesIndex].status) {
+						case 'uploading':
+							return resError({
+								res, 
+								alert: true,
+								msg: 'Кто-то уже загружает эту серию'
+							});
+						case 'removing':
+							return resError({
+								res, 
+								alert: true,
+								msg: 'Кто-то уже удаляет эту серию'
+							});
+						case 'ready':
+							const pathToOldVideoSrc = movie[name][seasonIndex][seriesIndex].src;
+							const pathToOldThumbnail = movie[name][seasonIndex][seriesIndex].thumbnail;
+
+							// Обновить статус видео
+							await Movie.updateOne(
+								{ _id: movieId },
+								{ $set: { [`series.${seasonIndex}.${seriesIndex}.status`]: 'removing' } }
+							);
+
+							// Удаление старых файлов
+							if(pathToOldVideoSrc) await deleteFolderFromS3(pathToOldVideoSrc);
+							if(pathToOldThumbnail) await deleteFileFromS3(pathToOldThumbnail);
+
+							// Снова найти информацию о фильме (его могли удалить или порядок серий мог поменяться)
+							movie = await Movie.findOne({ _id: movieId });
+							if(!movie) {
+								return resError({
+									res,
+									alert: true,
+									msg: 'Эта страница была удалена'
+								});
+							}
+
+							[seasonIndex, seriesIndex] = findSeasonAndEpisode();
+							if(seasonIndex == -1 || seriesIndex == -1) {
+								pushSeries();
+							} else {
+								// Заменить старую серию
+								set = { $set: { [`series.${seasonIndex}.${seriesIndex}`]: videoParams } };
+							}
+							break;
+						default: break;
+					}
 				}
 
-				break
+				// Добавить поля для серий, если их нет
+				if(!movie.series || !movie.series.length) {
+					await Movie.updateOne({ _id: movieId }, { $set: { series: [] } });
+				}
+				break;
 			default: break
 		}
 
@@ -205,7 +289,7 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 			res,
 			movieId,
 			...videoParams
-		})
+		});
 	} catch(err) {
 		return resError({ res, msg: err });
 	}
