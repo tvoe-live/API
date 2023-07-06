@@ -333,7 +333,6 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 		seasonKey,
 		interrupted
 	} = req.body;
-	console.log(interrupted);
 
 	let updateSet, deleteSet;
 
