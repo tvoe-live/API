@@ -45,6 +45,16 @@ const existMovie = async (req, res, next) => {
 	next()
 }
 
+// Проверка на существование серии и возвращение путя к ней
+const findSeasonAndEpisode = (movie) => {
+	let seriesIndex;
+	const seasonIndex = movie.series.findIndex(season => {
+		seriesIndex = season.findIndex(series => series._id.toString() === _id);
+		return seriesIndex != -1;
+	});
+	return [seasonIndex, seriesIndex];
+};
+
 /*
  * Получить данные для клиента S3 
  */
@@ -206,22 +216,12 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 					});
 				}
 
-				// Проверка на существование серии + если серия уплыла вверх/вниз, она все равно будет обновлена
-				const findSeasonAndEpisode = () => {
-					let seriesIndex;
-					const seasonIndex = movie[name].findIndex(season => {
-						seriesIndex = season.findIndex(series => series._id.toString() === _id);
-						return seriesIndex != -1;
-					});
-					return [seasonIndex, seriesIndex];
-				};
-
 				// Добавить новую серию в конец
 				const pushSeries = () => {
 					set = { $push: { [`series.${seasonKey}`]: videoParams } };
 				};
 
-				let [seasonIndex, seriesIndex] = findSeasonAndEpisode();
+				let [seasonIndex, seriesIndex] = findSeasonAndEpisode(movie);
 				if(seasonIndex == -1 || seriesIndex == -1) {
 					pushSeries();
 				} else {
@@ -262,7 +262,7 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 								});
 							}
 
-							[seasonIndex, seriesIndex] = findSeasonAndEpisode();
+							[seasonIndex, seriesIndex] = findSeasonAndEpisode(movie);
 							if(seasonIndex == -1 || seriesIndex == -1) {
 								pushSeries();
 							} else {
@@ -331,6 +331,7 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 		name,
 		movieId,
 		seasonKey,
+		interrupted
 	} = req.body;
 
 	const videoParams = {
@@ -341,6 +342,13 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 
 	try {
 		const movie = await Movie.findOne({ _id: movieId });
+		if(!movie) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Эта страница была удалена'
+			});
+		}
 
 		// Пути видео и миниатюры для удаления
 		let pathToOldVideoSrc;
@@ -348,32 +356,89 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 
 		switch(name) {
 			case 'trailer':
-				if (movie.trailer) {
-					updateSet = { $set: { trailer: videoParams } };
-					deleteSet = { $unset: { trailer: {} } };
+				if(movie.trailer) {
+					switch(movie.trailer.status) {
+						case 'removing':
+							return resError({
+								res, 
+								alert: true,
+								msg: 'Кто-то уже удаляет трейлер'
+							});
+						case 'uploading':
+							if (!interrupted) {
+								return resError({
+									res, 
+									alert: true,
+									msg: 'Кто-то уже загружает трейлер'
+								});
+							}
+						case 'ready':
+							updateSet = { $set: { trailer: videoParams } };
+							deleteSet = { $unset: { trailer: {} } };
 
-					pathToOldVideoSrc = movie[name].src;
-					pathToOldThumbnail = movie[name].thumbnail;
+							pathToOldVideoSrc = movie[name].src;
+							pathToOldThumbnail = movie[name].thumbnail;
+							break;
+						default: break;
+					}
 				}
 				break;
 			case 'films':
-				const filmIndex = movie[name].findIndex(film => film._id.toString() == _id);
+				const filmIndex = movie[name].findIndex(film => film._id.toString() === _id);
 				if(filmIndex != -1) {
-					updateSet = { $set: { [`films.${filmIndex}`]: videoParams } };
-					deleteSet = { $pull: { films: { _id } } };
-
-					pathToOldVideoSrc = movie[name][filmIndex].src;
-					pathToOldThumbnail = movie[name][filmIndex].thumbnail;
+					switch(movie[name][filmIndex].status) {
+						case 'removing':
+							return resError({
+								res, 
+								alert: true,
+								msg: 'Кто-то уже удаляет фильм'
+							});
+						case 'uploading':
+							if (!interrupted) {
+								return resError({
+									res, 
+									alert: true,
+									msg: 'Кто-то уже загружает фильм'
+								});
+							}
+						case 'ready':
+							updateSet = { $set: { [`films.${filmIndex}`]: videoParams } };
+							deleteSet = { $pull: { films: { _id } } };
+		
+							pathToOldVideoSrc = movie[name][filmIndex].src;
+							pathToOldThumbnail = movie[name][filmIndex].thumbnail;
+							break;
+						default: break;
+					}
 				}
 				break;
 			case 'series':
-				const seriesIndex = movie[name][seasonKey].findIndex(series => series._id.toString() === _id);
-				if(seriesIndex != -1) {
-					updateSet = { $set: { [`series.${seasonKey}.${seriesIndex}`]: videoParams } };
-					deleteSet = { $pull: { [`series.${seasonKey}`]: { _id } } };
+				const [seasonIndex, seriesIndex] = findSeasonAndEpisode(movie);
+				if(seasonIndex != -1 || seriesIndex != -1) {
+					switch(movie[name][seasonIndex][seriesIndex].status) {
+						case 'removing':
+							return resError({
+								res, 
+								alert: true,
+								msg: 'Кто-то уже удаляет эту серию'
+							});
+						case 'uploading':
+							if (!interrupted) {
+								return resError({
+									res, 
+									alert: true,
+									msg: 'Кто-то уже загружает эту серию'
+								});
+							}
+						case 'ready':
+							updateSet = { $set: { [`series.${seasonIndex}.${seriesIndex}`]: videoParams } };
+							deleteSet = { $pull: { [`series.${seasonIndex}`]: { _id } } };
 
-					pathToOldVideoSrc = movie[name][seasonKey][seriesIndex].src;
-					pathToOldThumbnail = movie[name][seasonKey][seriesIndex].thumbnail;
+							pathToOldVideoSrc = movie[name][seasonIndex][seriesIndex].src;
+							pathToOldThumbnail = movie[name][seasonIndex][seriesIndex].thumbnail;
+							break;
+						default: break;
+					}
 				}
 				break;
 			default: break;
