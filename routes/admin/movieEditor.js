@@ -601,7 +601,6 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
  */
 router.post('/unload', verify.token, verify.isManager, async (req, res) => {
 	const { movieId, uploadingProcesses } = req.body;
-	console.log(movieId, uploadingProcesses);
 
 	try {
 		const movie = await Movie.findOne({ _id: movieId });
