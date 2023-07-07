@@ -2,10 +2,20 @@ const mongoose = require('mongoose');
 
 const videoSchema = {
 	_id: mongoose.Schema.Types.ObjectId,
-	src: String,
-	duration: Number,
-	qualities: Array,
-	thumbnail: String
+	src: String, // Путь к видео
+	thumbnail: String, // Путь к миниатюре
+	duration: Number, // Продолжительность видео в секундах
+	qualities: [String], // Доступные качества видео
+	audio: [String], // Названия аудиодорожек
+	subtitles: [String], // Названия субтитров
+	files: { // Количество TS-фрагментов
+		qualities: Object, // Количество фрагментов видео по качествам
+		audio: [Number], // Количество фрагментов аудио по порядку
+		thumbnails: Number // Количество склеек миниатюр
+	},
+	status: String, // uploading - загрузка, removing - удаление, ready - готово
+	uploaded: Number, // Сколько файлов загружено
+	total: Number // Всего файлов нужно загрузить
 }
 
 const movieSchema = new mongoose.Schema({
