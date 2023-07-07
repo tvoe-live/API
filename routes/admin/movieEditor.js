@@ -395,7 +395,6 @@ router.post('/video/progress', verify.token, verify.isManager, async (req, res) 
 					if (seasonKey == -1 || episodeKey == -1) break;
 
 					const episode = movie[name][seasonKey][episodeKey];
-					console.log(episode);
 					if(episode.status == 'uploading' && episode.uploaded + 1 >= episode.total) {
 						secondSet = {
 							$set: { [`series.${seasonKey}.${episodeKey}.status`]: 'ready' },
