@@ -450,8 +450,7 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 	const { 
 		_id,
 		name,
-		movieId,
-		interrupted
+		movieId
 	} = req.body;
 
 	try {
@@ -488,13 +487,11 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 							msg: 'Трейлер уже удаляется'
 						});
 					case 'uploading':
-						if (!interrupted) {
-							return resError({
-								res, 
-								alert: true,
-								msg: 'Трейлер уже загружается'
-							});
-						}
+						return resError({
+							res, 
+							alert: true,
+							msg: 'Трейлер уже загружается'
+						});
 					case 'ready':
 						updateSet = { $set: { 'trailer.status': 'removing' } };
 						deleteSet = { $unset: { trailer: {} } };
@@ -517,13 +514,11 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 							msg: 'Фильм уже удаляется'
 						});
 					case 'uploading':
-						if (!interrupted) {
-							return resError({
-								res, 
-								alert: true,
-								msg: 'Фильм уже загружается'
-							});
-						}
+						return resError({
+							res, 
+							alert: true,
+							msg: 'Фильм уже загружается'
+						});
 					case 'ready':
 						updateSet = { $set: { [`films.${filmKey}.status`]: 'removing' } };
 						deleteSet = { $pull: { films: { _id: mongoose.Types.ObjectId(_id) } } };
@@ -546,13 +541,11 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 							msg: 'Эта серия уже удаляется'
 						});
 					case 'uploading':
-						if (!interrupted) {
-							return resError({
-								res, 
-								alert: true,
-								msg: 'Эта серия уже загружается'
-							});
-						}
+						return resError({
+							res, 
+							alert: true,
+							msg: 'Эта серия уже загружается'
+						});
 					case 'ready':
 						updateSet = { $set: { [`series.${seasonKey}.${episodeKey}.status`]: 'removing' } };
 						deleteSet = { $pull: { [`series.${seasonKey}`]: { _id: mongoose.Types.ObjectId(_id) } } };
