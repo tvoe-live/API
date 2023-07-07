@@ -255,6 +255,7 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 								msg: 'Эта серия уже загружается'
 							});
 						case 'ready':
+							// Пути видео и миниатюры для удаления
 							const pathToOldVideoSrc = movie[name][recheckedSeasonKey][recheckedEpisodeKey].src;
 							const pathToOldThumbnail = movie[name][recheckedSeasonKey][recheckedEpisodeKey].thumbnail;
 
@@ -593,6 +594,101 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 			alert: true,
 			msg: 'Успешно удалено'
 		});
+	} catch(err) {
+		return resError({ res, msg: err });
+	}
+});
+
+/*
+ * Удалить видео, которые не догрузились, если менеджер перезагрузил или закрыл страницу
+ */
+router.post('/unload', verify.token, verify.isManager, async (req, res) => {
+	const { movieId, uploadingData } = req.body;
+
+	try {
+		const movie = await Movie.findOne({ _id: movieId });
+		const removingPromises = [];
+
+		let updateSet, seriesFound = false;
+
+		for (const { _id, name } of uploadingData) {
+			let deleteSet;
+
+			// Пути видео и миниатюры для удаления
+			let pathToOldVideoSrc;
+			let pathToOldThumbnail;
+
+			switch(name) {
+				case 'trailer':
+					if(movie[name].status == 'uploading') {
+						if(!updateSet) updateSet = {};
+						if(!updateSet.$set) updateSet.$set = {};
+						updateSet.$set['trailer.status'] = 'removing';
+						deleteSet = { $unset: { trailer: {} } };
+
+						pathToOldVideoSrc = movie[name].src;
+						pathToOldThumbnail = movie[name].thumbnail;
+					}
+					break;
+				case 'films':
+					const filmKey = findFilm(movie, _id);
+					if(filmKey != -1 && movie[name].status == 'uploading') {
+						if(!updateSet) updateSet = {};
+						if(!updateSet.$set) updateSet.$set = {};
+						updateSet.$set[`films.${filmKey}.status`] = 'removing';
+						deleteSet = { $pull: { films: { _id: mongoose.Types.ObjectId(_id) } } };
+	
+						pathToOldVideoSrc = movie[name][filmKey].src;
+						pathToOldThumbnail = movie[name][filmKey].thumbnail;
+					}
+					break;
+				case 'series':
+					const [seasonKey, episodeKey] = findSeasonAndEpisode(movie, _id);
+					if(seasonKey != -1 && episodeKey != -1 && movie[name][seasonKey][episodeKey].status == 'uploading') {
+						if(!updateSet) updateSet = {};
+						if(!updateSet.$set) updateSet.$set = {};
+						updateSet.$set[`series.${seasonKey}.${episodeKey}.status`] = 'removing';
+						deleteSet = { $pull: { [`series.${seasonKey}`]: { _id: mongoose.Types.ObjectId(_id) } } };
+
+						pathToOldVideoSrc = movie[name][seasonKey][episodeKey].src;
+						pathToOldThumbnail = movie[name][seasonKey][episodeKey].thumbnail;
+					}
+					break;
+				default: break;
+			}
+			if(deleteSet) {
+				removingPromises.push(
+					new Promise(async resolve => {
+						// Удаление старых файлов
+						if(pathToOldVideoSrc) await deleteFolderFromS3(pathToOldVideoSrc);
+						if(pathToOldThumbnail) await deleteFileFromS3(pathToOldThumbnail);
+
+						// Удаление ссылки на фаил в БД
+						await Movie.updateOne({ _id: movieId }, deleteSet);
+						resolve();
+					})
+				);
+			}
+		}
+
+		// Обновить статус видео
+		if(updateSet) await Movie.updateOne({ _id: movieId }, updateSet);
+
+		// Удаление всех недогруженных фрагментов
+		if(removingPromises.length) await Promise.allSettled(removingPromises);
+
+		// Удаление пустых массивов
+		if(seriesFound) {
+			await Movie.updateOne(
+				{ _id: movieId }, 
+				{ $pull: {
+					series: { $in:[[]] }
+				} },
+				{ multi: true }
+			);
+		}
+
+		return res.status(200).json();
 	} catch(err) {
 		return resError({ res, msg: err });
 	}
