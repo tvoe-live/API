@@ -596,7 +596,7 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
  * Удалить видео, которые не догрузились, если менеджер перезагрузил или закрыл страницу
  */
 router.post('/unload', verify.token, verify.isManager, async (req, res) => {
-	const { movieId, uploadingData } = req.body;
+	const { movieId, uploadingProcesses } = req.body;
 
 	try {
 		const movie = await Movie.findOne({ _id: movieId });
@@ -604,7 +604,7 @@ router.post('/unload', verify.token, verify.isManager, async (req, res) => {
 
 		let updateSet, seriesFound = false;
 
-		for (const { _id, name } of uploadingData) {
+		for (const { _id, name } of uploadingProcesses) {
 			let deleteSet;
 
 			// Пути видео и миниатюры для удаления
