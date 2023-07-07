@@ -125,7 +125,8 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 		subtitles,
 		files,
 		total,
-		seasonKey
+		seasonKey,
+		episodeKey
 	} = req.body;
 
 	let set;
@@ -208,6 +209,14 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 					});
 				}
 
+				if(typeof episodeKey === undefined || episodeKey < 0) {
+					return resError({
+						res, 
+						alert: true,
+						msg: 'Указан неверный ключ серии'
+					});
+				}
+
 				if(seasonKey > 0 && !movie.series[seasonKey - 1]) {
 					return resError({
 						res, 
@@ -216,16 +225,23 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 					});
 				}
 
+				const needReload = () => resError({
+					res, 
+					alert: true,
+					msg: 'Необходимо перезагрузить страницу'
+				});
+
 				// Добавить новую серию в конец запрашиваемого сезона
 				const pushEpisode = () => {
 					set = { $push: { [`series.${seasonKey}`]: videoParams } };
 				};
 
-				let [recheckedSeasonKey, episodeKey] = findSeasonAndEpisode(movie, _id);
-				if(recheckedSeasonKey == -1 || episodeKey == -1) {
+				let [recheckedSeasonKey, recheckedEpisodeKey] = findSeasonAndEpisode(movie, _id);
+				if(recheckedSeasonKey == -1 || recheckedEpisodeKey == -1) {
+					if(episodeKey != movie[name][seasonKey].length) return needReload();
 					pushEpisode();
 				} else {
-					switch(movie[name][recheckedSeasonKey][episodeKey].status) {
+					switch(movie[name][recheckedSeasonKey][recheckedEpisodeKey].status) {
 						case 'removing':
 							return resError({
 								res, 
@@ -239,13 +255,13 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 								msg: 'Эта серия уже загружается'
 							});
 						case 'ready':
-							const pathToOldVideoSrc = movie[name][recheckedSeasonKey][episodeKey].src;
-							const pathToOldThumbnail = movie[name][recheckedSeasonKey][episodeKey].thumbnail;
+							const pathToOldVideoSrc = movie[name][recheckedSeasonKey][recheckedEpisodeKey].src;
+							const pathToOldThumbnail = movie[name][recheckedSeasonKey][recheckedEpisodeKey].thumbnail;
 
 							// Обновить статус видео
 							await Movie.updateOne(
 								{ _id: movieId },
-								{ $set: { [`series.${recheckedSeasonKey}.${episodeKey}.status`]: 'removing' } }
+								{ $set: { [`series.${recheckedSeasonKey}.${recheckedEpisodeKey}.status`]: 'removing' } }
 							);
 
 							// Удаление старых файлов
@@ -262,12 +278,13 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 								});
 							}
 
-							[recheckedSeasonKey, episodeKey] = findSeasonAndEpisode(movie, _id);
-							if(recheckedSeasonKey == -1 || episodeKey == -1) {
+							[recheckedSeasonKey, recheckedEpisodeKey] = findSeasonAndEpisode(movie, _id);
+							if(recheckedSeasonKey == -1 || recheckedEpisodeKey == -1) {
+								if(episodeKey != movie[name][seasonKey].length) return needReload();
 								pushSeries();
 							} else {
 								// Заменить старую серию
-								set = { $set: { [`series.${recheckedSeasonKey}.${episodeKey}`]: videoParams } };
+								set = { $set: { [`series.${recheckedSeasonKey}.${recheckedEpisodeKey}`]: videoParams } };
 							}
 							break;
 						default: break;
