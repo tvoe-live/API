@@ -346,7 +346,7 @@ router.post('/video/progress', verify.token, verify.isManager, async (req, res) 
 
 		if(firstSet) {
 			// Увеличить количество загруженных файлов на 1
-			movie = Movie.findOneAndUpdate({ _id: movieId }, firstSet);
+			movie = await Movie.findOneAndUpdate({ _id: movieId }, firstSet);
 
 			let secondSet;
 
@@ -354,7 +354,7 @@ router.post('/video/progress', verify.token, verify.isManager, async (req, res) 
 			switch(name) {
 				case 'trailer':
 					const trailer = movie[name];
-					if(trailer && trailer.status == 'uploading' && trailer.uploaded >= trailer.total) {
+					if(trailer && trailer.status == 'uploading' && trailer.uploaded + 1 >= trailer.total) {
 						secondSet = {
 							$set: { 'trailer.status': 'ready' },
 							$min: { 'trailer.uploaded': trailer.total }
@@ -366,7 +366,7 @@ router.post('/video/progress', verify.token, verify.isManager, async (req, res) 
 					if (filmKey == -1) break;
 
 					const film = movie[name][filmKey];
-					if(film.status == 'uploading' && film.uploaded >= trailer.total) {
+					if(film.status == 'uploading' && film.uploaded + 1 >= film.total) {
 						secondSet = {
 							$set: { [`films.${filmKey}.status`]: 'ready' },
 							$min: { [`films.${filmKey}.uploaded`]: film.total }
@@ -378,7 +378,8 @@ router.post('/video/progress', verify.token, verify.isManager, async (req, res) 
 					if (seasonKey == -1 || episodeKey == -1) break;
 
 					const episode = movie[name][seasonKey][episodeKey];
-					if(episode.status == 'uploading' && episode.uploaded >= episode.total) {
+					console.log(episode);
+					if(episode.status == 'uploading' && episode.uploaded + 1 >= episode.total) {
 						secondSet = {
 							$set: { [`series.${seasonKey}.${episodeKey}.status`]: 'ready' },
 							$min: { [`series.${seasonKey}.${episodeKey}.uploaded`]: episode.total }
@@ -508,7 +509,7 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 						}
 					case 'ready':
 						updateSet = { $set: { [`films.${filmKey}.status`]: 'removing' } };
-						deleteSet = { $pull: { films: { _id } } };
+						deleteSet = { $pull: { films: { _id: mongoose.Types.ObjectId(_id) } } };
 	
 						pathToOldVideoSrc = movie[name][filmKey].src;
 						pathToOldThumbnail = movie[name][filmKey].thumbnail;
@@ -537,7 +538,7 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 						}
 					case 'ready':
 						updateSet = { $set: { [`series.${seasonKey}.${episodeKey}.status`]: 'removing' } };
-						deleteSet = { $pull: { [`series.${seasonKey}`]: { _id } } };
+						deleteSet = { $pull: { [`series.${seasonKey}`]: { _id: mongoose.Types.ObjectId(_id) } } };
 
 						pathToOldVideoSrc = movie[name][seasonKey][episodeKey].src;
 						pathToOldThumbnail = movie[name][seasonKey][episodeKey].thumbnail;
