@@ -444,7 +444,7 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 				alert: true,
 				msg: 'Страница была удалена'
 			});
-		} else if(name != 'trailer' && name != movie.categoryAlias) {
+		} else if(name == 'series' && movie.categoryAlias != 'serials' || name == 'films' && movie.categoryAlias != 'films') {
 			return resError({
 				res,
 				alert: true,
