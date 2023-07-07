@@ -597,6 +597,7 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
  */
 router.post('/unload', verify.token, verify.isManager, async (req, res) => {
 	const { movieId, uploadingProcesses } = req.body;
+	console.log(movieId, uploadingProcesses);
 
 	try {
 		const movie = await Movie.findOne({ _id: movieId });
@@ -625,7 +626,7 @@ router.post('/unload', verify.token, verify.isManager, async (req, res) => {
 					break;
 				case 'films':
 					const filmKey = findFilm(movie, _id);
-					if(filmKey != -1 && movie[name].status == 'uploading') {
+					if(filmKey != -1 && movie[name][filmKey].status == 'uploading') {
 						if(!updateSet) updateSet = {};
 						if(!updateSet.$set) updateSet.$set = {};
 						updateSet.$set[`films.${filmKey}.status`] = 'removing';
