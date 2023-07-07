@@ -231,12 +231,18 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 					msg: 'Необходимо перезагрузить страницу'
 				});
 
+				let [recheckedSeasonKey, recheckedEpisodeKey] = findSeasonAndEpisode(movie, _id);
+
 				// Добавить новую серию в конец запрашиваемого сезона
 				const pushEpisode = () => {
 					set = { $push: { [`series.${seasonKey}`]: videoParams } };
 				};
 
-				let [recheckedSeasonKey, recheckedEpisodeKey] = findSeasonAndEpisode(movie, _id);
+				// Заменить старую серию
+				const replaceEpisode = () => {
+					set = { $set: { [`series.${recheckedSeasonKey}.${recheckedEpisodeKey}`]: videoParams } };
+				};
+
 				if(recheckedSeasonKey == -1 || recheckedEpisodeKey == -1) {
 					if(movie[name][seasonKey] && episodeKey != movie[name][seasonKey].length) {
 						return needReload();
@@ -288,11 +294,11 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 								}
 								pushSeries();
 							} else {
-								// Заменить старую серию
-								set = { $set: { [`series.${recheckedSeasonKey}.${recheckedEpisodeKey}`]: videoParams } };
+								replaceEpisode();
 							}
 							break;
-						default: break;
+						default:
+							replaceEpisode();
 					}
 				}
 
@@ -503,7 +509,8 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 						pathToOldVideoSrc = movie[name].src;
 						pathToOldThumbnail = movie[name].thumbnail;
 						break;
-					default: break;
+					default:
+						deleteSet = { $unset: { trailer: {} } };
 				}
 				break;
 			case 'films':
@@ -530,7 +537,8 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 						pathToOldVideoSrc = movie[name][filmKey].src;
 						pathToOldThumbnail = movie[name][filmKey].thumbnail;
 						break;
-					default: break;
+					default:
+						deleteSet = { $pull: { films: { _id: mongoose.Types.ObjectId(_id) } } };
 				}
 				break;
 			case 'series':
@@ -557,7 +565,8 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 						pathToOldVideoSrc = movie[name][seasonKey][episodeKey].src;
 						pathToOldThumbnail = movie[name][seasonKey][episodeKey].thumbnail;
 						break;
-					default: break;
+					default:
+						deleteSet = { $pull: { [`series.${seasonKey}`]: { _id: mongoose.Types.ObjectId(_id) } } };
 				}
 				break;
 			default: break;
