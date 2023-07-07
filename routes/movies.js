@@ -80,10 +80,12 @@ router.get('/movie', async (req, res) => {
 	const videoParams = {
 		_id: true,
 		src: true,
+		thumbnail: true,
 		duration: true,
 		qualities: true,
-		thumbnail: true,
-		thumbnails: true,
+		audio: true,
+		subtitles: true,
+		status: true
 	}
 
 	try {
