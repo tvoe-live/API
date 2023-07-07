@@ -138,7 +138,7 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 				alert: true,
 				msg: 'Страница была удалена'
 			});
-		} else if(name != 'trailer' && name != movie.categoryAlias) {
+		} else if(name == 'series' && movie.categoryAlias != 'serials' || name == 'films' && movie.categoryAlias != 'films') {
 			return resError({
 				res,
 				alert: true,
@@ -313,7 +313,7 @@ router.post('/video/progress', verify.token, verify.isManager, async (req, res) 
 				alert: true,
 				msg: 'Страница была удалена'
 			});
-		} else if(name != 'trailer' && name != movie.categoryAlias) {
+		} else if(name == 'series' && movie.categoryAlias != 'serials' || name == 'films' && movie.categoryAlias != 'films') {
 			return resError({
 				res,
 				alert: true,
