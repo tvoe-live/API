@@ -134,6 +134,12 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 				alert: true,
 				msg: 'Страница была удалена'
 			});
+		} else if(name != 'trailer' && name != movie.categoryAlias) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Жанр страницы был изменён'
+			});
 		}
 
 		const videoParams = {
@@ -343,6 +349,12 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 				res,
 				alert: true,
 				msg: 'Страница была удалена'
+			});
+		} else if(name != 'trailer' && name != movie.categoryAlias) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Жанр страницы был изменён'
 			});
 		}
 
