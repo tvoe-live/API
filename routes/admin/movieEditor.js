@@ -238,7 +238,9 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 
 				let [recheckedSeasonKey, recheckedEpisodeKey] = findSeasonAndEpisode(movie, _id);
 				if(recheckedSeasonKey == -1 || recheckedEpisodeKey == -1) {
-					if(episodeKey != movie[name][seasonKey].length) return needReload();
+					if(movie[name][seasonKey] && episodeKey != movie[name][seasonKey].length) {
+						return needReload();
+					}
 					pushEpisode();
 				} else {
 					switch(movie[name][recheckedSeasonKey][recheckedEpisodeKey].status) {
@@ -281,7 +283,9 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 
 							[recheckedSeasonKey, recheckedEpisodeKey] = findSeasonAndEpisode(movie, _id);
 							if(recheckedSeasonKey == -1 || recheckedEpisodeKey == -1) {
-								if(episodeKey != movie[name][seasonKey].length) return needReload();
+								if(movie[name][seasonKey] && episodeKey != movie[name][seasonKey].length) {
+									return needReload();
+								}
 								pushSeries();
 							} else {
 								// Заменить старую серию
