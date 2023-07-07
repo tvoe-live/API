@@ -645,6 +645,7 @@ router.post('/unload', verify.token, verify.isManager, async (req, res) => {
 
 						pathToOldVideoSrc = movie[name][seasonKey][episodeKey].src;
 						pathToOldThumbnail = movie[name][seasonKey][episodeKey].thumbnail;
+						seriesFound = true;
 					}
 					break;
 				default: break;
