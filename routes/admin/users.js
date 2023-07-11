@@ -175,7 +175,7 @@ router.patch('/profile', verify.token, verify.isAdmin, async (req, res) => {
 				}).save();
 
 				// Обновить время подписки пользователю и 
-				// запретить использовать беспользовать бесплатный тариф
+				// Запретить использовать бесплатный тариф
 				await User.updateOne(
 					{ _id: userId }, 
 					{ $set: {

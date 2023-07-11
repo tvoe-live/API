@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const User = require('../models/user');
 const Movie = require('../models/movie');
 const Tariff = require('../models/tariff');
+const { REFERRAL_PRECENT_BONUSE } = process.env;
 const verify = require('../middlewares/verify');
 const resError = require('../helpers/resError');
 const PaymentLog = require('../models/paymentLog');
@@ -220,6 +221,10 @@ router.post('/notification', async (req, res) => {
 		notification_type: notificationType
 	} = req.body;
 
+	if(!label || !sender || !amount || !codepro || !currency || !datetime || !sha1Hash || !operationId || !withdrawAmount || !notificationType) {
+		return resError({ res, msg: 'Недостаточно данных' });
+	}
+
 	const paymentLogId = mongoose.Types.ObjectId(label);
 	const paymentLog = await PaymentLog.findOne({ _id: paymentLogId });
 
@@ -240,6 +245,28 @@ router.post('/notification', async (req, res) => {
 
 	// Запретить тестовые и с ошибочным hash платежи
 	if(operationId === 'test-notification' || sha1Hash !== createdHash) return res.status(400).send('Ошбика проверки hash');
+
+
+	// Начислить рефереру долю с первой подписки пользователя
+	if(user.refererUserId) {
+		const countOfSuccessfulPaid = await PaymentLog.find({
+			type: 'paid',
+			status: 'success',
+			userId: paymentLog.userId
+		}).count();
+
+		// Проверить, не было ли ранее успешных оплат у пользователя
+		if(countOfSuccessfulPaid === 0) {
+			const addToBalance = amount * (REFERRAL_PRECENT_BONUSE / 100)
+
+			await User.updateOne(
+				{ _id: user.refererUserId }, 
+				{ $inc: { 
+					"referral.balance": addToBalance
+				} }
+			);
+		}
+	}
 
 	// Обновить платежный лог
 	await PaymentLog.updateOne(

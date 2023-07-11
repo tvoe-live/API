@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const User = require('../models/user');
 const AuthLog = require('../models/authLog');
 const verify = require('../middlewares/verify');
@@ -14,13 +15,15 @@ const { uploadImageToS3 } = require('../helpers/uploadImage');
  */
 
 // Скачивание аватарки 
-const downloadAvatar = async (default_avatar_id) => {
+const downloadAvatar = async (res, default_avatar_id) => {
 	try {
 		const { data } = await axios({
 			method: 'GET',
 			url: `https://avatars.yandex.net/get-yapic/${default_avatar_id}/islands-retina-50`,
 			responseType: 'arraybuffer',
 		})
+
+		if(!data) return null
 
 		// Конвертирование в JPEG и запись картинки на диск
 		const { fileSrc } = await uploadImageToS3({
@@ -48,7 +51,8 @@ const generateAccessToken = (userId) => {
 };
 
 router.post('/login', async (req, res) => {
-	const authorization = req.header('authorization');
+	const refererUserId = req.header('refererUserId')
+	const authorization = req.header('authorization')
 
 	try {
 		axios({
@@ -83,10 +87,15 @@ router.post('/login', async (req, res) => {
 			
 			// Если пользователя нет в БД, создаем нового
 			if(!user) {
-				const avatar = !is_avatar_empty ? await downloadAvatar(default_avatar_id) : null;
+				// Получение уникального ID от базы данных
+				const _id = new mongoose.Types.ObjectId();
+
+				// Скачать аватар с поставщика регистрации
+				const avatar = !is_avatar_empty ? await downloadAvatar(res, default_avatar_id) : null;
 
 				// "initial" обозначаются неизменные данные от поставщика регистрации
-				user = await new User({
+				const registrationUserData = {
+					_id,
 					initial_id: id,
 					initial_sex: sex,
 					initial_birthday: birthday,
@@ -104,7 +113,19 @@ router.post('/login', async (req, res) => {
 					firstname: first_name,
 					displayName: display_name,
 					lastVisitAt: Date.now()
-				}).save();
+				}
+
+				// Поиск пользователя в БД, который пригласил на регистрацию
+				const refererUser = await User.findOneAndUpdate(
+					{ _id: refererUserId },
+					{ $addToSet: {
+						'referral.userIds': _id
+					} },
+				);
+				// Привязать пользователя к рефереру
+				if(refererUser) registrationUserData.refererUserId = mongoose.Types.ObjectId(refererUserId)
+
+				user = await new User(registrationUserData).save();
 			}
 
 			// Генерируем токен
