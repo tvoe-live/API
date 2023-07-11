@@ -55,6 +55,7 @@ const payment = require('./routes/payment');
 const sitemap = require('./routes/sitemap');
 const profile = require('./routes/profile');
 const notFound = require('./routes/notFound');
+const referral = require('./routes/referral');
 const adminUsers = require('./routes/admin/users');
 const collections = require('./routes/collections');
 const adminMovies = require('./routes/admin/movies');
@@ -74,6 +75,7 @@ app.use('/search', search) // Поиск
 app.use('/payment', payment) // Тарифы, создание и обработка платежей
 app.use('/sitemap', sitemap) // Данные для sitemap.xml
 app.use('/catalog', catalog) // Фильмы / сериалы с фильтром
+app.use('/referral', referral) // Реферальная программа
 app.use('/collections', collections) // Подборки и жанры для главной страницы
 
 app.use('/profile', profile) // Профиль
