@@ -7,12 +7,22 @@ servers:
 tags:
   - name: Profile
     description: Профиль
+  - name: Admin
+    description: Административная панель
   - name: Catalog
     description: Каталог
   - name: Collections
     description: Коллекции
   - name: Sitemap
     description: Данные для sitemap.xml
+  - name: Payment
+    description: Тарифы, создание и обработка платежей
+  - name: Search
+    description: Поиск
+  - name: Auth
+    description: Авторизация / регистрация через Яндекс и разрушение сессии
+  - name: Movies
+    description: Фильмы и сериалы
 paths:
   /profile:
     get:
@@ -171,7 +181,10 @@ paths:
                     description: true
                   src:
                     type: string
-                    description: путь к картинке
+                    description: Путь к картинке
+                  msg: 
+                    type: string
+                    description: Информационное ообщение 
                 example:
                   type: "success"
                   alert: 'true'
@@ -266,7 +279,7 @@ paths:
                           description: Рейтинг от 0 до 10
                         duration: 
                           type: string
-                          description: Длительность фильма в секундах ( скорее всего но не уверен)
+                          description: Длительность фильма в секундах
                         url:
                           type: string
                           description: Url к фильму? путь к фильму?
@@ -356,7 +369,7 @@ paths:
                           description: Рейтинг от 0 до 10
                         duration: 
                           type: string
-                          description: Длительность фильма в секундах ( скорее всего но не уверен)
+                          description: Длительность фильма в секундах
                         url:
                           type: string
                           description: Путь к фильму
@@ -3083,7 +3096,7 @@ paths:
                             required: false
                           duration: 
                             type: string
-                            description: Длительность фильма в секундах ( скорее всего но не уверен)
+                            description: Длительность фильма в секундах 
                           url:
                             type: string
                             description: Url к фильму? путь к фильму?
@@ -3238,7 +3251,7 @@ paths:
                           required: false
                         duration: 
                           type: string
-                          description: Длительность фильма в секундах ( скорее всего но не уверен)
+                          description: Длительность фильма в секундах
                         url:
                           type: string
                           description: Url к фильму? путь к фильму?
@@ -3331,7 +3344,910 @@ paths:
             text/xml:
               schema: 
                 "$ref": "#/definitions/XmlSiteMapModel"
+
+  /payment/tariffs:
+    get:
+      summary: Тарифы, создание и обработка платежей
+      tags:
+        - Payment
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tariffs:
+                    type: array
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          description: Id тарифа
+                        name:
+                          type: string
+                          description: Название тарифа
+                        price:
+                          type: number
+                          description: Цена тарифа
+                        duration:
+                          type: number
+                          descripton: Длительность подписки в мили секундах
+                        discount: 
+                          type: number
+                          description: Cкидка
+                        sort:
+                          type: number
+                          description: Сорт тарифа ( номер для сортировки )
+                        allowSubscribe:
+                          type: boolean
+                          description: Позволена ли подписка
+                        finishOfSubscriptionIn:
+                          type: string
+                          description: Финиш подписки
+
+                  popularMovies:
+                    type: array
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: Название фильма
+                        poster:
+                          type: object
+                          properties:  
+                            src: 
+                              type: string
+                              description: Путь к файлу изображению
+                        rating:
+                          type: number
+                          description: Рейтинг от 0 до 10
+                example:
+                  value: 
+                    tariffs:
+                    - _id: 63f7537f841f04f2348f8de5
+                      name: 7 дней
+                      price: 0
+                      duration: 604800000
+                      sort: 0
+                      allowSubscribe: false
+                    - _id: 63dbe11e7f457bc81bc920c9
+                      name: 1 месяц
+                      price: 199
+                      duration: 2592000000
+                      sort: 2
+                      allowSubscribe: false
+                    - _id: 63dbe1687f457bc81bc920cb
+                      name: 6 месяцев
+                      price: 899
+                      duration: 15552000000
+                      discount: 25
+                      sort: 4
+                      allowSubscribe: false
+                      finishOfSubscriptionIn: '2023-12-04T15:33:23.068Z'
+                    popularMovies:
+                    - name: Белый шум
+                      poster:
+                        src: "/images/6405fe000a569a75e15129f4.jpg"
+                    - name: Армия воров
+                      poster:
+                        src: "/images/63ac7d7fb2c93ed2212181a8.jpg"
+                      rating: 10
+                    - name: Уэнделл и Уайлд
+                      poster:
+                        src: "/images/63ad6f76b2c93ed22121a059.jpg"
+
+  /payment/createPayment:
+    post:
+      summary: Загрузка платежа
+      tags:
+        - Payment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                successURL:  
+                  type: string
+                  description: Url адрес успешной страницы для оплаты подписки
+                selectedTariffId:
+                  type: string
+                  description: Id (mongoose.ObjectId) документа коллекции tariffs (выбранного тарифа)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  urlOfRedirectToPay:
+                    type: string
+                    description: URL успшеной страницы для оплаты подписки с установленными query параметрами с помощью свойства searchParams экземеляра класса URL
+                example:
+                  urlOfRedirectToPay: "https://dzen.ru/?yredirect=true&utm_referer=www.google.com&id=64a858371616a1286efe30c9"
             
+
+  /payment/notification:
+    post:
+      summary: Обработка уведомления от платежной системы о совершении платежа
+      tags:
+        - Payment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label:
+                  type: string
+                  description: Id(mongoose.ObjectId) записи платежа -  документа коллекции paymentLog. Этот же параметр - Метка платежа. Если метки у платежа нет, параметр содержит пустую строку.(документация онлайн кассы)
+                sender:
+                  type: number
+                  description: Для переводов из кошелька — номер счета отправителя. Для переводов с произвольной карты — параметр содержит пустую строку.
+                amount:
+                  type: number
+                  description:  Сумма операции.
+                codepro:
+                  type: boolean
+                  description: 1 из параметров для формирования hash. Признак того, что перевод защищен кодом протекции. В ЮMoney больше нельзя делать переводы с кодом протекции, поэтому параметр всегда имеет значение false.
+                currency:
+                  type: string
+                  description: Код валюты счета пользователя. Всегда 643 (рубль РФ согласно ISO 4217).
+                datetime:
+                  type: string
+                  description: Дата и время совершения перевода.
+                sha1_hash:
+                  type: string
+                  description: SHA-1 hash параметров уведомления
+                operation_id:
+                  type: string
+                  description: Идентификатор операции в истории счета получателя.
+                withdraw_amount:
+                  type: number
+                  description: Сумма, которая списана со счета отправителя.
+                notification_type:
+                  type: string
+                  description: Для переводов из кошелька — p2p-incoming. Для переводов с произвольной карты — card-incoming.
+      responses:
+        '200':
+          description: OK
+
+                  
+  /payment/success:
+    get:
+      summary: Показать пользователю страницу об успешном совершении платежа
+      tags:
+        - Payment
+      parameters:
+        - in: query
+          name: id
+          schema:
+            type: string
+          description: Id (mongoose.ObjectId) документа коллекции PaymentLog
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                    description:  Id(mongoose.ObjectId) записи платежа -  документа коллекции paymentLog
+                  type:
+                    type: string
+                    description:  Тип платежа - paid, trial или issued-by-admin
+                  finishAt:
+                    type: string
+                    description:  Дата окончания тарифа
+                example:
+                  _id: 63e864ae801189b4df7ea04d
+                  type: paid
+                  finishAt: '2023-03-14T04:02:45.100Z'
+
+
+  /search:
+    get:
+      summary: Поиск >  Поиск фильмов, сериалов и всего их персонала сьемочной группы
+      tags:
+        - Search
+      parameters:
+        - in: query
+          name: query
+          required: true
+          schema:
+           type: string
+          description: Для поиска документов (сущностей таблицы movies), с которыми совпадают символы в полях name(название фильма) или origName( оригинальное название фильма), shortDesc(краткое описание), fullDesk(полное описание), countries(страна), persons(Актёры и съемочная группа)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalSize:
+                    type: number
+                    description: Общее количество сущностей(фильмов) в БД удовлетворяющих переданному query параметру
+                  items:
+                    type: array
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: Название фильма
+                        ageLevel:
+                          type: string
+                          description: Возрастное ограничение
+                        dateReleased:
+                          type: Date
+                          description: Дата релиза
+                        categoryAlias:
+                          type: string
+                          description: Вид категориии. Может быть films, serials или collections
+                        poster:
+                          type: object
+                          properties:  
+                            src: 
+                              type: string
+                              description: Путь к файлу изображению
+                        rating:
+                          type: number
+                          description: Рейтинг от 0 до 10
+                        duration: 
+                          type: string
+                          description: Длительность фильма в секундах
+                        url:
+                          type: string
+                          description: Url к фильму? путь к фильму?
+   
+              examples:
+                example:
+                  description: Ответ в результате запроса с query параметром "Венгрия" (/search?query=Венгрия)
+                  value: 
+                    totalSize: 3
+                    items:
+                    - name: Ведьмак
+                      ageLevel: 18
+                      dateReleased: '2019-12-20'
+                      categoryAlias: serials
+                      poster:
+                        src: "/images/63e00a92ccaf134edd216858.jpg"
+                      rating: 7
+                      duration: 56502.375
+                      url: "/p/vedmak"
+                    - name: Король Англии
+                      ageLevel: 18
+                      dateReleased: '2019-09-02'
+                      categoryAlias: films
+                      poster:
+                        src: "/images/63c0fb1423c814afb609605a.jpg"
+                      rating: 8
+                      duration: 8429.083333
+                      url: "/p/korol-anglii"
+                    - name: Смертельная зона
+                      ageLevel: 18
+                      dateReleased: '2021-01-15'
+                      categoryAlias: films
+                      poster:
+                        src: "/images/63c130fe23c814afb6097501.jpg"
+                      duration: 6952.541667
+                      url: "/p/smertelnaya-zona"
+
+  /search/oftenSeek:
+    get:
+      summary: Поиск > Часто ищут (! Сейчас логика из карусели !)
+      tags:
+        - Search
+      parameters:
+        - in: query
+          name: limit
+          schema:
+           type: number
+          description: Ограничение на максимальное количество элементов в теле ответа
+        - in: query
+          name: skip
+          schema:
+           type: number
+          description: Количество пропускаемых элементов из начала выборки
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalSize:
+                    type: number
+                    description: Общее количество документов(фильмов) в БД в коллекции movies
+                  items:
+                    type: array
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: Название фильма
+                        ageLevel:
+                          type: string
+                          description: Возрастное ограничение
+                        dateReleased:
+                          type: Date
+                          description: Дата релиза
+                        categoryAlias:
+                          type: string
+                          description: Вид категориии. Может быть films, serials или collections
+                        poster:
+                          type: object
+                          properties:  
+                            src: 
+                              type: string
+                              description: Путь к файлу изображению
+                        rating:
+                          type: number
+                          description: Рейтинг от 0 до 10
+                        duration: 
+                          type: string
+                          description: Длительность фильма в секундах
+                        url:
+                          type: string
+                          description: Url к фильму? путь к фильму?
+   
+              examples:
+                example:
+                  description: Ответ в результате запроса с query параметром imit=3 (/search/oftenSeek?limit=3)
+                  value:    
+                    totalSize: 407
+                    items:
+                    - name: HLS
+                      categoryAlias: films
+                      duration: 139.328
+                      url: "/p/hls"
+                    - name: Белый шум
+                      ageLevel: 16
+                      dateReleased: '2022-08-31'
+                      categoryAlias: films
+                      poster:
+                        src: "/images/6405fe000a569a75e15129f4.jpg"
+                      duration: 8216.875
+                      url: "/p/belyy-shum"
+                    - name: Вундеркинды
+                      ageLevel: 6
+                      dateReleased: '2018-11-02'
+                      categoryAlias: serials
+                      poster:
+                        src: "/images/642f5e208e6fd86616fe08d5.jpg"
+                      duration: 18578.069334
+                      url: "/p/vunderkindy"    
+
+  /auth/logout:
+    post:
+      summary: Выход из сессии
+      tags:
+        - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: JWT token
+                  example: byJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY0ODA4ODZjMmZjMzhkY2E4MDQyOThkMCIsImlhdCI6MTY4ODc1NDAwMywiZXhwIjoxNzIwMzExNjAzfQ.sTY0dun0jUgAS96QXciWl7V-J7OeurvxmSAXjNp-AFQ
+                  required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    description: Cообщение "success"
+                example:
+                  type: success
+
+
+  /auth/login:
+    post:
+      summary: Авторизация через яндекс
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT token
+                example:
+                  token: eyJhbGciOiJIUzI1NiIsInR1cCI6IkpXVCJ9.eyJpZCI6IjY0ODA4ODZjMmZjMzhkY2E4MDQyOThkMCIsImlhdCI6MTY4ODc1NDAwMywiZXhwIjoxNzIwMzExNjAzfQ.sTY0dun0jUgAS96QXciWl7V-J7OeurvxmSAXjNp-AFQ
+
+  /movies:
+    get:
+      summary: Список фильмов и сериалов
+      tags:
+        - Movies
+      parameters:
+        - in: query
+          name: limit
+          schema:
+           type: number
+          description: Ограничение на максимальное количество элементов в теле ответа
+        - in: query
+          name: skip
+          schema:
+           type: number
+          description: Количество пропускаемых элементов из начала выборки
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalSize:
+                    type: number
+                    description: Общее количество сущностей(фильмов) в коллекции Movies
+                  items:
+                    type: array
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          description: Id фильма (mongoose.ObjectId)
+                        aliasInUrl:
+                          type: string
+                          description: Вид категории. Может быть films, serials
+                        alias:
+                          type: string
+                          description: Сгенерированный ЧПУ (человеко понятный url)
+                example:
+                  totalSize: 407
+                  items:
+                  - _id: 63ac7d6ab2c93ed221218186
+                    alias: armiya-vorov
+                    category:
+                      aliasInUrl: filmy
+                  - _id: 63ac8aa1b2c93ed2212186e7
+                    alias: uendell-i-uayld
+                    category:
+                      aliasInUrl: filmy
+                  - _id: 63acabd6b2c93ed221218e9e
+                    alias: aferist-iz-tinder
+                    category:
+                      aliasInUrl: filmy
+
+  /movies/movie:
+    get:
+      summary:  Получение одной записи
+      tags:
+        - Movies
+      parameters:
+        - in: query
+          name: _id
+          schema:
+           type: string
+          description: Id(mongoose.ObjectId) фильма (документа коллекции movie)
+        - in: query
+          name: alias
+          schema:
+           type: string
+          description: Сгенерированный ЧПУ (человеко понятный url)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                    description:  Id фильма (mongoose.ObjectId)
+                  name:
+                    type: string
+                    description: Название фильма на русском
+                  origName:
+                    type: string
+                    description: Оригинальное название фильма на английском
+                  shortDesc:
+                    type: string
+                    description: Краткое описание  
+                  fullDesc:
+                    type: string
+                    description: Полное описание
+                  ageLevel:
+                    type: string
+                    description: Возрастное ограничение
+                  dateReleased:
+                    type: string
+                    description: Дата выпуска
+                  countries:
+                    type: array
+                    description:  Cписок стран
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: string
+                      description: Название страны
+                  categoryAlias:
+                    type: string
+                    description:  Вид категориию. Может быть films, serials
+                  genreNames:
+                    type: array
+                    description:  Cписок жанров
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: string
+                      description: Название жанра
+                  persons:
+                    type: array
+                    description:  Список актёров и преставителей съемочной группы
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: object
+                      properties:  
+                        name: 
+                          type: string
+                          description: Имя и фамилия человека
+                        type: 
+                          type: string
+                          description: director - режиссер, actor - актер, producer - продюсер, screenwriter - сценарист, operator - оператор        
+                  sourses:
+                    type: object
+                    description: Параметры исходников видео. Объект для фильмов. Для сериалов здесь приходит массив из одного массива в котором объекты
+                    properties:  
+                      _id: 
+                        type: string
+                        description: Id фильма (mongoose.ObjectId)
+                      src: 
+                        type: string
+                        description: Источник на файл ( путь к исходнику )
+                      duration:
+                        type: number
+                        description: Длительность фильма
+                      thumbnail:
+                        type: string
+                        description: Миниатюра (кадр из видео)  
+                  poster:
+                    type: object
+                    properties:  
+                      src: 
+                        type: string
+                        description: Путь к файлу изображению постера
+                  cover:
+                    type: object
+                    properties:  
+                      src: 
+                        type: string
+                        description: Путь к файлу изображению обложки   
+                  logo:
+                    type: object
+                    properties:  
+                      src: 
+                        type: string
+                        description: Путь к файлу изображению логотипа 
+                  trailer:
+                    type: object
+                    properties:  
+                      id: 
+                        type: string
+                        description: Mongoose.ObjectId
+                      src: 
+                        type: string
+                        description: Путь к файлу изображению обложки 
+                      thumbnail: 
+                        type: string
+                        description: Миниатюра (кадр из видео)  
+                      duration:
+                        type: number
+                        description: Длительность
+                  rating:
+                    type: number
+                    description: Рейтинг от 0 до 10
+                  duration: 
+                    type: string
+                    description: Длительность фильма в секундах
+                  url:
+                    type: string
+                    description: Url к фильму? путь к фильму?
+
+                example:
+                  _id: 63ac8aa1b2c93ed2212186e7
+                  name: Уэнделл и Уайлд
+                  origName: Wendell & Wild
+                  shortDesc: Два коварных демона заключают сделку с девочкой-подростком, которая обожает
+                    панк-рок. Они хотят покинуть Подземный мир и воплотить свои мечты в Стране живых.
+                  fullDesc: Два коварных демона заключают сделку с девочкой-подростком, которая обожает
+                    панк-рок. Они хотят покинуть Подземный мир и воплотить свои мечты в Стране живых.
+                  ageLevel: 12
+                  dateReleased: '2022-09-11'
+                  countries:
+                  - США
+                  categoryAlias: films
+                  persons:
+                  - name: " Генри Селик"
+                    type: director
+                  - name: " Лирик Росс"
+                    type: actor
+                  - name: Кигэн-Майкл Ки
+                    type: actor
+                  - name: Джордан Пил
+                    type: actor
+                  - name: Анджела Бассетт
+                    type: actor
+                  - name: Джеймс Хун
+                    type: actor
+                  - name: Сэм Зелайа
+                    type: actor
+                  - name: Тамара Смарт
+                    type: actor
+                  - name: Сима Вирди
+                    type: actor
+                  - name: Рамона Янг
+                    type: screenwriter
+                  - name: Клэй МакЛеод Чэпман
+                    type: screenwriter
+                  - name: " Питер Сорг"
+                    type: operator
+                  poster:
+                    src: "/images/63ad6f76b2c93ed22121a059.jpg"
+                  cover:
+                    src: "/images/63ac8ae3b2c93ed22121871b.jpg"
+                  trailer:
+                    _id: 63ba2ad54b33357ef706971c
+                    src: "/videos/63ba2ad54b33357ef706971b.mp4"
+                    thumbnail: "/images/63ba2ad54b33357ef706971d.jpg"
+                  logo:
+                    src: "/images/641f1cc0944e8bd192d14219.png"
+                  duration: 6388.583333
+                  url: "/p/uendell-i-uayld"
+                  genreNames:
+                  - Фэнтези
+                  - Комедии
+                  - Приключения
+                  - Семейные
+                  - Мультфильмы
+                  sources:
+                    _id: 63ad700db2c93ed22121a0e4
+                    src: "/videos/63ad700ab2c93ed22121a0e3.mp4"
+                    duration: 6388.583333
+                    thumbnail: "/images/63ad700db2c93ed22121a0e5.jpg"
+
+  /movies/rating:
+    get:
+      summary: Получить рейтинг поставленный пользователем
+      tags:
+        - Movies
+      parameters:
+        - in: query
+          name: movieId
+          schema:
+           type: string
+          description: Id(mongoose.ObjectId) фильма (документа коллекции movie)
+          required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rating:
+                    type: number
+                    description:  Рейтинг который поставил пользователь фильму с переданным id
+                example:
+                  rating: 8
+
+    post:
+      summary: Отправка рейтинга
+      tags:
+        - Movies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                movieId:
+                  type: string
+                  description:  Id фильма (mongoose.ObjectId)
+                  required: true
+                rating:
+                  type: number
+                  description: Оценка фильма по шкале от 1 до 10
+                  required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description:  Значение true - сообщение об успехе 
+                  movieId:
+                    type: string
+                    description: Id фильма (mongoose.ObjectId)
+                  rating:
+                    type: number
+                    description: Рейтинг который поставил пользователь фильму с переданным id
+                example:
+                  success: true
+                  movieId: "63ac8aa1b2c93ed2212186e7"
+                  rating: 9
+
+  /movies/favorite:
+    get:
+      summary: Получение статуса на избранное
+      tags:
+        - Movies
+      parameters:
+        - in: query
+          name: movieId
+          schema:
+           type: string
+          description: Id(mongoose.ObjectId) фильма (документа коллекции movie)
+          required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  movieId:
+                    type: string
+                    description:  Id(mongoose.ObjectId) фильма (документа коллекции movie)
+                  isFavorite:
+                    type: boolean
+                    description: Добавлен ли данный фильм данным пользователем в избранное 
+                example:
+                  movieId: '63ac8aa1b2c93ed2212186e7' 
+                  isFavorite: true
+
+    post:
+      summary:  Добавление / удаление из избранного
+      tags:
+        - Movies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                movieId:
+                  type: string
+                  description:  Id фильма (mongoose.ObjectId) для добавления или удаления из изранного ( если значение в бд в коллекции userFavorite есть для заданного фильма и пользователя - оно меняется на противоположное, если значения в бд нет - фильм добавляется в избранное)
+                  required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description:  Значение true - сообщение об успехе 
+                  movieId:
+                    type: string
+                    description: Id фильма (mongoose.ObjectId)
+                  isFavorite:
+                    type: boolean
+                    description: Добавлен ли данный фильм данным пользователем в избранное
+                example:
+                  success: true
+                  movieId: "63ac8aa1b2c93ed2212186e7"
+                  isFavorite: true
+
+  /movies/logs:
+    get:
+      summary: Получение логов просмотра фильма / серий сериала
+      tags:
+        - Movies
+      parameters:
+        - in: query
+          name: movieId
+          schema:
+           type: string
+          description: Id(mongoose.ObjectId) фильма (документа коллекции movie)
+          required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                uniqueItems: true
+                description: Массив из одного объекта приходит в ответе
+                minItems: 0
+                items:
+                  type: object
+                  properties:
+                    videoId:
+                      type: string
+                      description:  Id(mongoose.ObjectId) фильма (документа коллекции movie)
+                    endTime:
+                      type: string
+                      description:  Время окончания просмотра фильма в секундах
+                    updatedAt:
+                      type: string
+                      description: Дата обновления
+                example:
+                  - endTime: 5222.535369
+                    videoId: 63be220123c814afb6091621
+                    updatedAt: '2023-07-11T11:06:47.141Z'
+
+  /movies/addLog:
+    post:
+      summary:  Добавление записи просмотра фильма / серий сериала в логи
+      tags:
+        - Movies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                movieId:
+                  type: string
+                  description:  Id фильма (mongoose.ObjectId)
+                  required: true
+                videoId:
+                  type: string
+                  description:  Id видео (mongoose.ObjectId)
+                  required: true
+                startTime:
+                  type: number
+                  description:   Время начала просмотра фильма в секундах
+                  required: false
+                endTime:
+                  type: number
+                  description: Время окончания просмотра фильма в секундах
+                  required: false
+      responses:
+        '200':
+          description: OK
+
+                  
+                                        
 definitions:
   XmlSiteMapModel:
     type: object
