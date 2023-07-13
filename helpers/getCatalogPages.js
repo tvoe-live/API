@@ -20,7 +20,8 @@ const getCatalogPages = async ({ categoryAlias, showGenreName }) => {
 		}),
 		{ $unwind: { path: "$genres" } },
 		{ $group: {
-				_id: { 
+				_id: {
+					rating: "$rating",
 					genreAlias: "$genres.alias",
 					categoryAlias: "$categoryAlias",
 					dateReleased: { $substr: [ "$dateReleased", 0, 4 ] },
@@ -33,11 +34,12 @@ const getCatalogPages = async ({ categoryAlias, showGenreName }) => {
 		{ $project: {
 			_id: false,
 			...projectGenreName,
+			rating: "$_id.rating",
 			genreAlias: "$_id.genreAlias",
 			dateReleased: "$_id.dateReleased",
 			categoryAlias: "$_id.categoryAlias",
 		} },
-		{ $sort: { 
+		{ $sort: {
 			genreAlias: 1,
 			dateReleased: 1,
 			categoryAlias: 1,
@@ -54,7 +56,7 @@ const getCatalogPages = async ({ categoryAlias, showGenreName }) => {
 
 	// Страницы с категорией, жанром и годом
 	const categoryAndGenresAndDates = resultPages
-					.filter(page => 
+					.filter(page =>
 						page.genreAlias !== "" && 
 						page.dateReleased !== "" &&
 						page.categoryAlias !== "");

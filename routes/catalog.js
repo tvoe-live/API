@@ -31,12 +31,14 @@ router.get('/pages', async (req, res) => {
 router.get('/', async (req, res) => {
 	const {
 		sort,
+		rating,
 		genreAlias,
 		dateReleased,
 		categoryAlias,
 	} = req.query;
 
-	let sortParams = { raisedUpAt: -1, createdAt: -1 };
+	let sortParams = { raisedUpAt: -1, createdAt: -1 }; // Параметры сортировки
+	let matchRating = rating ? { rating: { $gte: +rating } } : {}; // Поиск по рейтингу >=
 
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
@@ -80,6 +82,20 @@ router.get('/', async (req, res) => {
 			{ "$facet": {
 				// Всего записей
 				"totalSize": [
+					{ $lookup: {
+						from: "movieratings",
+						localField: "_id",
+						foreignField: "movieId",
+						pipeline: [
+							{ $match: matchRating },
+							{ $group: { 
+								_id: null,
+								avg: { $avg: "$rating" } 
+							} }
+						],
+						as: "rating"
+					} },
+					{ $unwind: { path: "$rating" } },
 					{ $match: { 
 						...page,
 						publishedAt: { $ne: null }
@@ -98,7 +114,8 @@ router.get('/', async (req, res) => {
 						addToProject: {
 							poster: { src: true }
 						},
-						sort: sortParams
+						sort: sortParams,
+						matchRating
 					}),
 					{ $skip: skip },
 					{ $limit: limit }
@@ -108,7 +125,6 @@ router.get('/', async (req, res) => {
 			{ $unwind: { path: "$genre", preserveNullAndEmptyArrays: true } },
 			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
 			{ $project: {
-				//genre: "$genre.genreInfo",
 				totalSize: { $cond: [ "$totalSize.count", "$totalSize.count", 0] },
 				items: "$items"
 			} },
