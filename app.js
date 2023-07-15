@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path')
 require('dotenv').config();
 const cors = require('cors');
 const express = require('express');
@@ -103,6 +104,7 @@ fs.writeFileSync('./swagger/doc.json', jsonData, 'utf8');
 const swaggerJson = require('./swagger/doc.json')
 app.use('/admin/docs', verify.token, verify.isAdmin, swaggerUi.serve,  swaggerUi.setup(swaggerJson));
 
+app.use( verify.token, verify.isAdmin, express.static(path.join(__dirname, 'swagger')))
 app.use('*', notFound)
 
 app.listen(PORT, () => console.log(`Server Started at ${PORT}`))
