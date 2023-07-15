@@ -42,7 +42,20 @@ const userSchema = new mongoose.Schema({
 		type: Boolean, // Воспользовался ли пробным бесплатным тарифом
 		default: true
 	},
-	referrerUserId: mongoose.Schema.Types.ObjectId, // От какого Id пользователя был приглашен
+
+	refererUserId: mongoose.Schema.Types.ObjectId, // От какого ID пользователя был приглашен по реферальной программе
+	referral: {
+		balance: { // Баланс в реферальной программе
+			type: Number,
+			default: 0
+		},
+		card: { // Данные карты для вывода баланса
+			number: String, // Номер карты
+			cardholder: String, // Владелец карты
+		},
+		userIds: [mongoose.Schema.Types.ObjectId], // ID приглашенных пользователей по реферальной программе
+	},
+	
 
 	role: String,
 	lastVisitAt: Date,
