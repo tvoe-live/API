@@ -7,6 +7,7 @@ const movieRating = require('../models/movieRating');
 const moviePageLog = require('../models/moviePageLog');
 const movieFavorite = require('../models/movieFavorite');
 const movieOperations = require('../helpers/movieOperations');
+const mongoose = require('mongoose');
 
 /*
  * Фильмы и сериалы
@@ -73,7 +74,7 @@ router.get('/', async (req, res) => {
 // Получение одной записи
 router.get('/movie', async (req, res) => {
 	const { _id, alias } = req.query;
-	const find = _id ? { _id } : { alias };
+	const find = _id ? { _id: mongoose.Types.ObjectId(_id) } : { alias };
 
 	if(!find) return resError({ res, msg: 'Ожидается Id или Alias' });
 

@@ -39,7 +39,7 @@ const movieSchema = new mongoose.Schema({
 		startAt: Date,
 		finishAt: Date
 	},
-	logo: { // Обложка
+	logo: { // Лого
 		_id: mongoose.Schema.Types.ObjectId,
 		src: String
 	},

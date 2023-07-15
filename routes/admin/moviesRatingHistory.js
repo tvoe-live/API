@@ -17,7 +17,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 	
 	const searchMatch = req.RegExpQuery && {
 		$or: [
-			{ _id: req.RegExpQuery },
+			... ( isValidObjectId(req.searchQuery) ? [{ _id: mongoose.Types.ObjectId(req.searchQuery) }] : [] ),
 			{ email: req.RegExpQuery },
 			{ firstname: req.RegExpQuery }
 		]
