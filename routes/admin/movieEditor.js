@@ -233,7 +233,7 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 
 				let [recheckedSeasonKey, recheckedEpisodeKey] = findSeasonAndEpisode(movie, _id);
 
-<<<<<<< HEAD
+
 				// Проверка на существование серии
 				movie[name].find(season => {
 					const found = season.find(series => series._id.toString() === _id);
@@ -243,12 +243,11 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 						return true
 					}
 				});
-=======
+
 				// Добавить новую серию в конец запрашиваемого сезона
 				const pushEpisode = () => {
 					set = { $push: { [`series.${seasonKey}`]: videoParams } };
 				};
->>>>>>> dev
 
 				// Заменить старую серию
 				const replaceEpisode = () => {
