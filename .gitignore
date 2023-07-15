@@ -3,3 +3,4 @@ ssl/
 /.vscode
 .DS_Store
 /.env
+/yarn.lock
