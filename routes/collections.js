@@ -157,8 +157,55 @@ router.get('/', async (req, res) => {
 										...collection,
 										items: collection.items.slice(0, limit)
 									}));
-									
-		return res.status(200).json(collectionsFiltered);
+
+
+		const lookupFromMovieRatings = {
+			from: "movieratings",
+			localField: "_id",
+			foreignField: "movieId",
+			pipeline: [
+				{ $group: { 
+					_id: null,
+					avg: { $avg: "$rating" } 
+				} }
+			],
+			as: "rating"
+		};
+	
+		const project = {
+			_id: false,
+			name: true,
+			badge: true,
+			ageLevel: true,
+			dateReleased: true,
+			shortDesc: true,
+			fullDesc: true,
+			countries: true,
+			genresAliases: true,
+			poster: true,
+			trailer: true,
+			logo: true,
+			rating: '$rating.avg',
+			categoryAlias: true,
+			url: { $concat: [ "/p/", "$alias" ] },
+		};
+
+		const match = { publishedAt: { $ne: null } };
+
+		const moviesWithRatingMore7 = await Movie.aggregate([
+			{ $match: { 
+				...match,
+			} },
+			{ $lookup: lookupFromMovieRatings },
+			{ $unwind: { path: "$rating", preserveNullAndEmptyArrays: false } },
+			{ $project:project },
+			{ $match: {
+					rating: {$gte:7}
+			} },
+		]);
+
+		const randomMovieIndex = Math.floor(Math.random() * result.length);									
+		return res.status(200).json({randomMovieWithRatingMore7:moviesWithRatingMore7[randomMovieIndex], collections:collectionsFiltered});
 		
 	} catch(err) {
 		return resError({ res, msg: err });
