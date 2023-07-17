@@ -12,9 +12,54 @@ const movieOperations = require('../helpers/movieOperations');
 router.get('/', async (req, res) => {
 	const limit = +(req.query.limit >= 6 && req.query.limit <= 18 ? req.query.limit : 18);
 
+	const lookupFromMovieRatings = {
+		from: "movieratings",
+		localField: "_id",
+		foreignField: "movieId",
+		pipeline: [
+			{ $group: { 
+				_id: null,
+				avg: { $avg: "$rating" } 
+			} }
+		],
+		as: "rating"
+	};
+
+	const project = {
+		_id: false,
+		name: true,
+		badge: true,
+		ageLevel: true,
+		dateReleased: true,
+		shortDesc: true,
+		fullDesc: true,
+		countries: true,
+		genresAliases: true,
+		poster: true,
+		trailer: true,
+		logo: true,
+		rating: '$rating.avg',
+		categoryAlias: true,
+		url: { $concat: [ "/p/", "$alias" ] },
+	};
+
 	try {
 		const result = await Movie.aggregate([
 			{ $facet: {
+
+				//Случайный фильм с рейтингом 7+
+				"moviesWithRatingMore7": [
+					{ $match: { 
+							publishedAt: { $ne: null },
+					} },
+					{ $lookup: lookupFromMovieRatings },
+					{ $unwind: { path: "$rating", preserveNullAndEmptyArrays: false } },
+					{ $project: project },
+					{ $match: {
+						rating: {$gte:7}
+					}},
+				],
+
 				// Карусель - самые популярные
 				"carousel": [
 					{ $lookup: {
@@ -142,7 +187,8 @@ router.get('/', async (req, res) => {
 						items: "$new"
 					}
 				],
-				genres: "$genres"
+				genres: "$genres",
+				moviesWithRatingMore7: "$moviesWithRatingMore7"
 			} },
 		]);
 
@@ -158,55 +204,11 @@ router.get('/', async (req, res) => {
 										items: collection.items.slice(0, limit)
 									}));
 
+		const moviesWithRatingMore7 = result[0]['moviesWithRatingMore7']
+		const randomMovieIndex = Math.floor(Math.random() * result.length);	
 
-		const lookupFromMovieRatings = {
-			from: "movieratings",
-			localField: "_id",
-			foreignField: "movieId",
-			pipeline: [
-				{ $group: { 
-					_id: null,
-					avg: { $avg: "$rating" } 
-				} }
-			],
-			as: "rating"
-		};
-	
-		const project = {
-			_id: false,
-			name: true,
-			badge: true,
-			ageLevel: true,
-			dateReleased: true,
-			shortDesc: true,
-			fullDesc: true,
-			countries: true,
-			genresAliases: true,
-			poster: true,
-			trailer: true,
-			logo: true,
-			rating: '$rating.avg',
-			categoryAlias: true,
-			url: { $concat: [ "/p/", "$alias" ] },
-		};
-
-		const match = { publishedAt: { $ne: null } };
-
-		const moviesWithRatingMore7 = await Movie.aggregate([
-			{ $match: { 
-				...match,
-			} },
-			{ $lookup: lookupFromMovieRatings },
-			{ $unwind: { path: "$rating", preserveNullAndEmptyArrays: false } },
-			{ $project:project },
-			{ $match: {
-					rating: {$gte:7}
-			} },
-		]);
-
-		const randomMovieIndex = Math.floor(Math.random() * result.length);									
 		return res.status(200).json({randomMovieWithRatingMore7:moviesWithRatingMore7[randomMovieIndex], collections:collectionsFiltered});
-		
+
 	} catch(err) {
 		return resError({ res, msg: err });
 	}
