@@ -66,7 +66,7 @@ router.get('/', async (req, res) => {
 					{ $project: projectWillSoon },
 				],
 
-				//Случайный фильм с рейтингом 7+
+				//Случайные фильмы с рейтингом 7+
 				"moviesWithRatingMore7": [
 					{ $match: { 
 							publishedAt: { $ne: null },
@@ -78,7 +78,7 @@ router.get('/', async (req, res) => {
 						rating: {$gte:7}
 					}},
 					{$sample: {
-						size:1
+						size:limit
 					}}
 				],
 
@@ -213,19 +213,20 @@ router.get('/', async (req, res) => {
 						type: "willPublishedSoon",
 						items: '$willPublishedSoon',
 						url:'/collections/willPublishedSoon'
+					},
+					{
+						name:"Cлучайныe фильмы с рейтингом 7+",
+						type: "randomMoviesWithRatingMore7",
+						items: '$moviesWithRatingMore7',
 					}
 				],
 				genres: "$genres",
-				moviesWithRatingMore7: "$moviesWithRatingMore7"
 			} },
 		]);
-
-		const moviesWithRatingMore7 = result[0]['moviesWithRatingMore7']
 	
 		collections = [
 			...result[0]['collections'],
 			...result[0]['genres'],
-			{ type:'randomMoviesWithRatingMore7', name:"Cлучайный фильм с рейтингом 7+", items:moviesWithRatingMore7, url:'/collections/moviesWithRatingMore7' },
 		]
 	
 		const collectionsFiltered = collections
