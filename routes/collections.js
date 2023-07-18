@@ -12,18 +12,47 @@ const movieOperations = require('../helpers/movieOperations');
 router.get('/', async (req, res) => {
 	const limit = +(req.query.limit >= 6 && req.query.limit <= 18 ? req.query.limit : 18);
 
-	const project = {
+	const lookupFromMovieRatings = {
+		from: "movieratings",
+		localField: "_id",
+		foreignField: "movieId",
+		pipeline: [
+			{ $group: { 
+				_id: null,
+				avg: { $avg: "$rating" } 
+			} }
+		],
+		as: "rating"
+	};
+
+	const projectWillSoon = {
 		_id: false,
 		name: true,
 		ageLevel: true,
 		shortDesc: true,
 		fullDesc: true,
+		willPublishedAt: true,
+		poster: true,
+		trailer: true,
+		logo: true,
+	}
+
+	const projectRatingMore7 = {
+		_id: false,
+		name: true,
+		badge: true,
+		ageLevel: true,
+		dateReleased: true,
+		shortDesc: true,
+		fullDesc: true,
+		countries: true,
 		genresAliases: true,
 		poster: true,
 		trailer: true,
 		logo: true,
+		rating: '$rating.avg',
 		categoryAlias: true,
-		willPublishedAt: true
+		url: { $concat: [ "/p/", "$alias" ] },
 	};
 
 	try {
@@ -34,7 +63,20 @@ router.get('/', async (req, res) => {
 					{ $match: { 
 						willPublishedAt: { $gte: new Date() },
 					} },
-					{ $project: project },
+					{ $project: projectWillSoon },
+				],
+
+				//Случайный фильм с рейтингом 7+
+				"moviesWithRatingMore7": [
+					{ $match: { 
+							publishedAt: { $ne: null },
+					} },
+					{ $lookup: lookupFromMovieRatings },
+					{ $unwind: { path: "$rating", preserveNullAndEmptyArrays: false } },
+					{ $project: projectRatingMore7 },
+					{ $match: {
+						rating: {$gte:7}
+					}},
 				],
 
 				// Карусель - самые популярные
@@ -165,7 +207,8 @@ router.get('/', async (req, res) => {
 					}
 				],
 				genres: "$genres",
-				willPublishedSoon:'$willPublishedSoon'
+				willPublishedSoon:'$willPublishedSoon',
+				moviesWithRatingMore7: "$moviesWithRatingMore7"
 			} },
 		]);
 
@@ -181,9 +224,13 @@ router.get('/', async (req, res) => {
 										items: collection.items.slice(0, limit)
 									}));
 									
-		const willPublishedSoon = result[0]['willPublishedSoon']
-		return res.status(200).json({willPublishedSoon, collections:collectionsFiltered});
-		
+		const willPublishedSoon = result[0]['willPublishedSoon']	
+
+		const moviesWithRatingMore7 = result[0]['moviesWithRatingMore7']
+		const randomMovieIndex = Math.floor(Math.random() * moviesWithRatingMore7.length);	
+
+		return res.status(200).json({willPublishedSoon, randomMovieWithRatingMore7:moviesWithRatingMore7[randomMovieIndex], collections:collectionsFiltered});
+
 	} catch(err) {
 		return resError({ res, msg: err });
 	}
