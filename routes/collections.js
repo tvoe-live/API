@@ -77,6 +77,9 @@ router.get('/', async (req, res) => {
 					{ $match: {
 						rating: {$gte:7}
 					}},
+					{$sample: {
+						size:1
+					}}
 				],
 
 				// Карусель - самые популярные
@@ -204,32 +207,35 @@ router.get('/', async (req, res) => {
 						name: "Новинки",
 						type: "new",
 						items: "$new"
+					},
+					{
+						name:"Cкоро на сервисе",
+						type: "willPublishedSoon",
+						items: '$willPublishedSoon',
+						url:'/collections/willPublishedSoon'
 					}
 				],
 				genres: "$genres",
-				willPublishedSoon:'$willPublishedSoon',
 				moviesWithRatingMore7: "$moviesWithRatingMore7"
 			} },
 		]);
 
+		const moviesWithRatingMore7 = result[0]['moviesWithRatingMore7']
+	
 		collections = [
 			...result[0]['collections'],
-			...result[0]['genres']
+			...result[0]['genres'],
+			{ type:'randomMoviesWithRatingMore7', name:"Cлучайный фильм с рейтингом 7+", items:moviesWithRatingMore7, url:'/collections/moviesWithRatingMore7' },
 		]
 	
 		const collectionsFiltered = collections
-									.filter(collection => collection.items.length >= 6)
+									.filter(collection => collection.items.length >= 6||collection.type==='randomMoviesWithRatingMore7' || collection.type==='willPublishedSoon')
 									.map(collection => ({
 										...collection,
 										items: collection.items.slice(0, limit)
 									}));
-									
-		const willPublishedSoon = result[0]['willPublishedSoon']	
 
-		const moviesWithRatingMore7 = result[0]['moviesWithRatingMore7']
-		const randomMovieIndex = Math.floor(Math.random() * moviesWithRatingMore7.length);	
-
-		return res.status(200).json({willPublishedSoon, randomMovieWithRatingMore7:moviesWithRatingMore7[randomMovieIndex], collections:collectionsFiltered});
+		return res.status(200).json(collectionsFiltered);
 
 	} catch(err) {
 		return resError({ res, msg: err });
