@@ -39,9 +39,6 @@ const movieSchema = new mongoose.Schema({
 		startAt: Date,
 		finishAt: Date
 	},
-	willPublished: {
-
-	},
 	logo: { // Лого
 		_id: mongoose.Schema.Types.ObjectId,
 		src: String
