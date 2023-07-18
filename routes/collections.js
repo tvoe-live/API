@@ -12,9 +12,31 @@ const movieOperations = require('../helpers/movieOperations');
 router.get('/', async (req, res) => {
 	const limit = +(req.query.limit >= 6 && req.query.limit <= 18 ? req.query.limit : 18);
 
+	const project = {
+		_id: false,
+		name: true,
+		ageLevel: true,
+		shortDesc: true,
+		fullDesc: true,
+		genresAliases: true,
+		poster: true,
+		trailer: true,
+		logo: true,
+		categoryAlias: true,
+		willPublishedAt: true
+	};
+
 	try {
 		const result = await Movie.aggregate([
 			{ $facet: {
+				
+				"willPublishedSoon": [
+					{ $match: { 
+						willPublishedAt: { $gte: new Date() },
+					} },
+					{ $project: project },
+				],
+
 				// Карусель - самые популярные
 				"carousel": [
 					{ $lookup: {
@@ -142,7 +164,8 @@ router.get('/', async (req, res) => {
 						items: "$new"
 					}
 				],
-				genres: "$genres"
+				genres: "$genres",
+				willPublishedSoon:'$willPublishedSoon'
 			} },
 		]);
 
@@ -158,7 +181,8 @@ router.get('/', async (req, res) => {
 										items: collection.items.slice(0, limit)
 									}));
 									
-		return res.status(200).json(collectionsFiltered);
+		const willPublishedSoon = result[0]['willPublishedSoon']
+		return res.status(200).json({willPublishedSoon, collections:collectionsFiltered});
 		
 	} catch(err) {
 		return resError({ res, msg: err });

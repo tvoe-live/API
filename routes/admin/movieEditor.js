@@ -15,6 +15,7 @@ const resError = require('../../helpers/resError');
 const resSuccess = require('../../helpers/resSuccess');
 const { uploadImageToS3 } = require('../../helpers/uploadImage');
 const { deleteFileFromS3, deleteFolderFromS3 } = require('../../helpers/deleteFile');
+const schedule = require('node-schedule')
 
 /*
  * Админ-панель > Редактор медиа страницы
@@ -328,6 +329,99 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 			res,
 			movieId,
 			...videoParams
+		});
+	} catch(err) {
+		return resError({ res, msg: err });
+	}
+});
+
+ /*
+ * Задать/изменить планируемую дату публикации
+ */
+router.post('/willPublish', verify.token, verify.isManager, existMovie, async (req, res) => {
+	const {
+		movieId,
+		willPublishedAt //YYYY-MM-DD HH:mm
+	} = req.body
+	
+	try {
+		let movie = await Movie.findOne({ _id: movieId });
+
+		if(!movie) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Страница была удалена'
+			});
+		} 
+
+		if(movie.publishedAt) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Страница уже была опубликована'
+			});
+		} 
+
+		if(!movie.name) {
+			return resError({
+				res, 
+				alert: true,
+				msg: 'Необходимо название'
+			});
+		}
+
+		if(!movie.alias) {
+			return resError({
+				res, 
+				alert: true,
+				msg: 'Необходим ЧПУ-адрес'
+			});
+		}
+
+		if(!movie.categoryAlias) {
+			return resError({
+				res, 
+				alert: true,
+				msg: 'Необходима категория'
+			});
+		}
+
+		if(!movie.genresAliases || !movie.genresAliases.length) {
+			return resError({
+				res, 
+				alert: true,
+				msg: 'Необходимы жанры'
+			});
+		}
+
+		if(new Date(willPublishedAt) < new Date() ) {
+			return resError({
+				res, 
+				alert: true,
+				msg: 'Нельзя задать планируемую дату публикации на уже прошедшую дату'
+			});
+		}
+
+		await Movie.updateOne({ _id: movieId }, {willPublishedAt});
+
+		schedule.scheduleJob(new Date(willPublishedAt), async function() {       
+
+			const set = {
+				publishedAt: new Date(),
+				willPublishedAt:null
+			};
+
+			await Movie.updateOne(
+				{ _id:movieId },
+				{ $set: set }
+			);
+		});
+
+		return resSuccess({
+			res,
+			movieId,
+			willPublishedAt
 		});
 	} catch(err) {
 		return resError({ res, msg: err });
