@@ -58,6 +58,9 @@ router.get('/', async (req, res) => {
 					{ $match: {
 						rating: {$gte:7}
 					}},
+					{$sample: {
+						size:1
+					}}
 				],
 
 				// Карусель - самые популярные
@@ -192,25 +195,21 @@ router.get('/', async (req, res) => {
 			} },
 		]);
 
+		const moviesWithRatingMore7 = result[0]['moviesWithRatingMore7']
+
 		collections = [
 			...result[0]['collections'],
-			...result[0]['genres']
+			...result[0]['genres'],
+			{type:'randomMoviesWithRatingMore7', name:"Cкоро на сервисе", items:moviesWithRatingMore7}
 		]
 	
 		const collectionsFiltered = collections
-									.filter(collection => collection.items.length >= 6)
+									.filter(collection => collection.items.length >= 6||collection.type==='randomMoviesWithRatingMore7')
 									.map(collection => ({
 										...collection,
 										items: collection.items.slice(0, limit)
 									}));
 
-		const moviesWithRatingMore7 = result[0]['moviesWithRatingMore7']
-		const randomMovieIndex = Math.floor(Math.random() * moviesWithRatingMore7.length);	
-
-		const randomFilm = moviesWithRatingMore7[randomMovieIndex]
-		randomFilm.type='randomMoviesWithRatingMore7'
-
-		collectionsFiltered.push(randomFilm)
 		return res.status(200).json(collectionsFiltered);
 
 	} catch(err) {
