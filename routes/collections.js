@@ -207,7 +207,10 @@ router.get('/', async (req, res) => {
 		const moviesWithRatingMore7 = result[0]['moviesWithRatingMore7']
 		const randomMovieIndex = Math.floor(Math.random() * moviesWithRatingMore7.length);	
 
-		return res.status(200).json({randomMovieWithRatingMore7:moviesWithRatingMore7[randomMovieIndex], collections:collectionsFiltered});
+		const randomFilm = moviesWithRatingMore7[randomMovieIndex]
+
+		collectionsFiltered.push({type:'randomMoviesWithRatingMore7', name:"Cкоро на сервисе",items: [randomFilm]})
+		return res.status(200).json(collectionsFiltered);
 
 	} catch(err) {
 		return resError({ res, msg: err });
