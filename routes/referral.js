@@ -30,10 +30,11 @@ router.get('/', verify.token, async (req, res) => {
 	});
 })
 
+
 /*
- * Получение списка приглашенных рефералов
+ * Список "Мои рефералы"
  */
-router.get('/invited-referrals', verify.token, async (req, res) => {
+router.get('/invitedReferrals', verify.token, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
 
@@ -151,10 +152,72 @@ router.get('/invited-referrals', verify.token, async (req, res) => {
 	}
 })
 
+
+/*
+ * Список "История выводов"
+ */
+router.get('/withdrawalOfMoney', verify.token, async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
+
+	try {
+		const result = await ReferralWithdrawalLog.aggregate([
+			{ "$facet": {
+				// Всего записей
+				"totalSize": [
+					{ $match: {
+						userId: req.user._id
+					} },
+					{ $group: { 
+						_id: null, 
+						count: { $sum: 1 }
+					} },
+					{ $project: { _id: false } },
+					{ $limit: 1 }
+				],
+				// Список
+				"items": [
+					{ $match: {
+						userId: req.user._id
+					} },
+					{ $project: {
+						_id: false,
+						amount: true,
+						card: {
+							number: { 
+								$concat : [
+									"**** **** **** ",
+									{ $substrBytes: [ "$card.number", 12, 16 ] }
+								]
+							}
+						},
+						status: true
+					} },
+					{ $sort: { _id: -1 } },
+					{ $skip: skip },
+					{ $limit: limit },
+				]
+				
+			} },
+			{ $limit: 1 },
+			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+			{ $project: {
+				totalSize: { $cond: [ "$totalSize.count", "$totalSize.count", 0] },
+				items: "$items"
+			} },
+		]);
+
+		return res.status(200).json(result[0]);
+	} catch(err) {
+		return resError({ res, msg: err });
+	}
+})
+
+
 /*
  * Изменить данные карты
  */
-router.patch('/change-card', verify.token, async (req, res) => {
+router.patch('/changeCard', verify.token, async (req, res) => {
 
 	let { number, cardholder } = req.body;
 
@@ -206,10 +269,11 @@ router.patch('/change-card', verify.token, async (req, res) => {
 	}
 })
 
+
 /*
  * Создание заявки на вывод c обнулением баланса
  */
-router.post('/withdraw-balance', verify.token, async (req, res) => {
+router.post('/withdrawBalance', verify.token, async (req, res) => {
 	const { card, balance } = req.user.referral
 
 	if(!card || card.number.length !== 16) {
@@ -232,6 +296,7 @@ router.post('/withdraw-balance', verify.token, async (req, res) => {
 		await new ReferralWithdrawalLog({
 			userId: req.user._id,
 			amount: +balance,
+			card: req.user.referral.card,
 			status: 'pending'
 		}).save();
 
