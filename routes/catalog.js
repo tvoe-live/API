@@ -123,7 +123,7 @@ router.get('/', async (req, res) => {
 
 		const result = await Movie.aggregate([
 			{ "$facet": {
-
+				// Всего записей
 				"totalSize": [
 					{ $match: { 
 							publishedAt: { $ne: null },
