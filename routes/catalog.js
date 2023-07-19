@@ -78,28 +78,61 @@ router.get('/', async (req, res) => {
 		// Привести в вид поиска по строке /dateReleased/
 		if(page.dateReleased) page.dateReleased = new RegExp(page.dateReleased);
 
+		const lookupFromCategories = {
+			from: "categories",
+			localField: "categoryAlias",
+			foreignField: "alias",
+			let: { genresAliases: "$genresAliases" },
+			pipeline: [
+				{ $project: {
+					_id: false,
+					genres: {
+						$map: {
+							"input": "$$genresAliases",
+							"as": "this",
+							"in": {
+								$first: {
+									$filter: {
+										input: "$genres",
+										as: "genres",
+										cond: { $eq: [ "$$genres.alias", "$$this" ] },
+									}
+								}
+							},
+						}
+	
+					}
+				} }
+			],
+			as: "category"
+		};
+
+		const lookupFromMovieRatings = {
+			from: "movieratings",
+			localField: "_id",
+			foreignField: "movieId",
+			pipeline: [
+				{ $match: matchRating },
+				{ $group: { 
+					_id: null,
+					avg: { $avg: "$rating" } 
+				} }
+			],
+			as: "rating"
+		};
+
 		const result = await Movie.aggregate([
 			{ "$facet": {
 				// Всего записей
 				"totalSize": [
-					{ $lookup: {
-						from: "movieratings",
-						localField: "_id",
-						foreignField: "movieId",
-						pipeline: [
-							{ $match: matchRating },
-							{ $group: { 
-								_id: null,
-								avg: { $avg: "$rating" } 
-							} }
-						],
-						as: "rating"
-					} },
-					{ $unwind: { path: "$rating" } },
 					{ $match: { 
-						...page,
-						publishedAt: { $ne: null }
+							publishedAt: { $ne: null },
+							...page
 					} },
+					{ $lookup: lookupFromCategories },
+					{ $unwind: "$category" },
+					{ $lookup: lookupFromMovieRatings },
+					{ $unwind: { path: "$rating", preserveNullAndEmptyArrays: !Object.keys(matchRating).length } },
 					{ $group: {
 						_id: null, 
 						count: { $sum: 1 }
