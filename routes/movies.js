@@ -82,6 +82,7 @@ router.get('/movie', async (req, res) => {
 		_id: true,
 		src: true,
 		thumbnail: true,
+		version: true,
 		duration: true,
 		qualities: true,
 		audio: true,

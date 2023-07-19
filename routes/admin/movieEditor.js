@@ -120,6 +120,7 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 		_id,
 		name,
 		movieId,
+		version,
 		duration,
 		qualities,
 		audio,
@@ -144,7 +145,7 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 			return resError({
 				res,
 				alert: true,
-				msg: 'Жанр страницы был изменён'
+				msg: 'Категория страницы была изменена'
 			});
 		}
 
@@ -152,6 +153,7 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 			_id: getObjectId(),
 			src: `/videos/${getObjectId()}`,
 			thumbnail: `/images/${getObjectId()}.jpg`,
+			version,
 			duration,
 			qualities,
 			audio,
@@ -335,7 +337,8 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 	}
 });
 
- /*
+
+/*
  * Задать/изменить планируемую дату публикации
  */
 router.post('/willPublish', verify.token, verify.isManager, existMovie, async (req, res) => {
@@ -343,7 +346,7 @@ router.post('/willPublish', verify.token, verify.isManager, existMovie, async (r
 		movieId,
 		willPublishedAt //YYYY-MM-DD HH:mm
 	} = req.body
-	
+
 	try {
 		let movie = await Movie.findOne({ _id: movieId });
 
@@ -450,7 +453,7 @@ router.post('/video/progress', verify.token, verify.isManager, async (req, res) 
 			return resError({
 				res,
 				alert: true,
-				msg: 'Жанр страницы был изменён'
+				msg: 'Категория страницы была изменена'
 			});
 		}
 
@@ -487,11 +490,34 @@ router.post('/video/progress', verify.token, verify.isManager, async (req, res) 
 			switch(name) {
 				case 'trailer':
 					const trailer = movie[name];
-					if(trailer && trailer.status == 'uploading' && trailer.uploaded + 1 >= trailer.total) {
+					if(!trailer || trailer.status != 'uploading') break;
+					if(trailer.uploaded + 1 >= trailer.total) {
 						secondSet = {
 							$set: { 'trailer.status': 'ready' },
 							$min: { 'trailer.uploaded': trailer.total }
 						};
+					} else {
+						setTimeout(async () => {
+							const recheckedMovie = await Movie.findOne({ _id: movieId });
+							if(!recheckedMovie) return;
+							
+							const recheckedTrailer = recheckedMovie[name];
+							if(!recheckedTrailer || recheckedTrailer.status != 'uploading') return;
+
+							// Процесс удаления видео
+							if(trailer.uploaded + 1 == recheckedTrailer.uploaded) {
+								await Movie.updateOne(
+									{ _id: movieId },
+									{ $set: { 'trailer.status': 'removing' } }
+								);
+								await deleteFolderFromS3(recheckedTrailer.src);
+								await deleteFileFromS3(recheckedTrailer.thumbnail);
+								await Movie.updateOne(
+									{ _id: movieId },
+									{ $unset: { trailer: {} } }
+								);
+							}
+						}, 300000);
 					}
 					break;
 				case 'films':
@@ -499,11 +525,37 @@ router.post('/video/progress', verify.token, verify.isManager, async (req, res) 
 					if (filmKey == -1) break;
 
 					const film = movie[name][filmKey];
-					if(film.status == 'uploading' && film.uploaded + 1 >= film.total) {
+					if(film.status != 'uploading') break;
+					if(film.uploaded + 1 >= film.total) {
 						secondSet = {
 							$set: { [`films.${filmKey}.status`]: 'ready' },
 							$min: { [`films.${filmKey}.uploaded`]: film.total }
 						};
+					} else {
+						setTimeout(async () => {
+							const recheckedMovie = await Movie.findOne({ _id: movieId });
+							if(!recheckedMovie) return;
+
+							const recheckedFilmKey = findFilm(recheckedMovie, _id);
+							if(recheckedFilmKey == -1) return;
+
+							const recheckedFilm = recheckedMovie[name][recheckedFilmKey];
+							if(recheckedFilm.status != 'uploading') return;
+
+							// Процесс удаления видео
+							if(film.uploaded + 1 == recheckedFilm.uploaded) {
+								await Movie.updateOne(
+									{ _id: movieId },
+									{ $set: { [`films.${recheckedFilmKey}.status`]: 'removing' } }
+								);
+								await deleteFolderFromS3(recheckedFilm.src);
+								await deleteFileFromS3(recheckedFilm.thumbnail);
+								await Movie.updateOne(
+									{ _id: movieId },
+									{ $pull: { films: { _id: mongoose.Types.ObjectId(_id) } } }
+								);
+							}
+						}, 300000);
 					}
 					break;
 				case 'series':
@@ -511,11 +563,44 @@ router.post('/video/progress', verify.token, verify.isManager, async (req, res) 
 					if (seasonKey == -1 || episodeKey == -1) break;
 
 					const episode = movie[name][seasonKey][episodeKey];
-					if(episode.status == 'uploading' && episode.uploaded + 1 >= episode.total) {
+					if(episode.status != 'uploading') break;
+					if(episode.uploaded + 1 >= episode.total) {
 						secondSet = {
 							$set: { [`series.${seasonKey}.${episodeKey}.status`]: 'ready' },
 							$min: { [`series.${seasonKey}.${episodeKey}.uploaded`]: episode.total }
 						};
+					} else {
+						setTimeout(async () => {
+							const recheckedMovie = await Movie.findOne({ _id: movieId });
+							if(!recheckedMovie) return;
+							
+							const [recheckedSeasonKey, recheckedEpisodeKey] = findSeasonAndEpisode(recheckedMovie, _id);
+							if(recheckedSeasonKey == -1 || recheckedEpisodeKey == -1) return;
+
+							const recheckedEpisode = recheckedMovie[name][recheckedSeasonKey][recheckedEpisodeKey];
+							if(recheckedEpisode.status != 'uploading') return;
+
+							// Процесс удаления видео
+							if(episode.uploaded + 1 == recheckedEpisode.uploaded) {
+								await Movie.updateOne(
+									{ _id: movieId },
+									{ $set: { [`series.${recheckedSeasonKey}.${recheckedEpisodeKey}.status`]: 'removing' } }
+								);
+								await deleteFolderFromS3(recheckedEpisode.src);
+								await deleteFileFromS3(recheckedEpisode.thumbnail);
+								await Movie.updateOne(
+									{ _id: movieId },
+									{ $pull: { [`series.${seasonKey}`]: { _id: mongoose.Types.ObjectId(_id) } } }
+								);
+								await Movie.updateOne(
+									{ _id: movieId }, 
+									{ $pull: {
+										series: { $in:[[]] }
+									} },
+									{ multi: true }
+								);
+							}
+						}, 300000);
 					}
 					break;
 				default: break;
@@ -580,7 +665,7 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 			return resError({
 				res,
 				alert: true,
-				msg: 'Жанр страницы был изменён'
+				msg: 'Категория страницы была изменена'
 			});
 		}
 
