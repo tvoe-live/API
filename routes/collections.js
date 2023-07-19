@@ -25,7 +25,19 @@ router.get('/', async (req, res) => {
 		as: "rating"
 	};
 
-	const project = {
+	const projectWillSoon = {
+		_id: false,
+		name: true,
+		ageLevel: true,
+		shortDesc: true,
+		fullDesc: true,
+		willPublishedAt: true,
+		poster: true,
+		trailer: true,
+		logo: true,
+	}
+
+	const projectRatingMore7 = {
 		_id: false,
 		name: true,
 		badge: true,
@@ -46,20 +58,27 @@ router.get('/', async (req, res) => {
 	try {
 		const result = await Movie.aggregate([
 			{ $facet: {
+				
+				"willPublishedSoon": [
+					{ $match: { 
+						willPublishedAt: { $gte: new Date() },
+					} },
+					{ $project: projectWillSoon },
+				],
 
-				//Случайный фильм с рейтингом 7+
+				//Случайные фильмы с рейтингом 7+
 				"moviesWithRatingMore7": [
 					{ $match: { 
 							publishedAt: { $ne: null },
 					} },
 					{ $lookup: lookupFromMovieRatings },
 					{ $unwind: { path: "$rating", preserveNullAndEmptyArrays: false } },
-					{ $project: project },
+					{ $project: projectRatingMore7 },
 					{ $match: {
 						rating: {$gte:7}
 					}},
 					{$sample: {
-						size:1
+						size:limit
 					}}
 				],
 
@@ -188,23 +207,30 @@ router.get('/', async (req, res) => {
 						name: "Новинки",
 						type: "new",
 						items: "$new"
+					},
+					{
+						name:"Cкоро на сервисе",
+						type: "willPublishedSoon",
+						items: '$willPublishedSoon',
+						url:'/collections/willPublishedSoon'
+					},
+					{
+						name:"Cлучайныe фильмы с рейтингом 7+",
+						type: "randomMoviesWithRatingMore7",
+						items: '$moviesWithRatingMore7',
 					}
 				],
 				genres: "$genres",
-				moviesWithRatingMore7: "$moviesWithRatingMore7"
 			} },
 		]);
-
-		const moviesWithRatingMore7 = result[0]['moviesWithRatingMore7']
-
+	
 		collections = [
 			...result[0]['collections'],
 			...result[0]['genres'],
-			{type:'randomMoviesWithRatingMore7', name:"Cкоро на сервисе", items:moviesWithRatingMore7}
 		]
 	
 		const collectionsFiltered = collections
-									.filter(collection => collection.items.length >= 6||collection.type==='randomMoviesWithRatingMore7')
+									.filter(collection => collection.items.length >= 6||collection.type==='randomMoviesWithRatingMore7' || collection.type==='willPublishedSoon')
 									.map(collection => ({
 										...collection,
 										items: collection.items.slice(0, limit)
