@@ -101,9 +101,24 @@ const getCatalogPages = async ({ categoryAlias, showGenreName }) => {
 										t.dateReleased === value.dateReleased
 									))
 								);
+
+	// Страницы с категорией и рейтингом
+	const categoryAndRating = categoryAndGenresAndDates
+								.map(page => ({
+									rating: page.rating,
+									categoryAlias: page.categoryAlias
+								}))
+								.filter((value, index, self) => // Фильтрация на уникальность
+									index === self.findIndex((t) => (
+										t.categoryAlias === value.categoryAlias && 
+										t.rating === value.rating && 
+										t.rating !== null
+									))
+								);
 	
 	const result = [
 		...categoryPages,
+		...categoryAndRating,
 		...categoryAndDates,
 		...categoryAndGenres,
 		...collectionAndGenres,
