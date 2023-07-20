@@ -201,7 +201,7 @@ router.post('/', verify.token, verify.isManager, async (req, res) => {
 				creatorUserId: req.user._id
 			});
 		}
-		console.log('перед return')
+
 		return resSuccess({
 			res,
 			...data,
@@ -210,7 +210,6 @@ router.post('/', verify.token, verify.isManager, async (req, res) => {
 			msg: 'Успешно сохранено'
 		})
 	} catch (error) {
-		console.log('попал в error:', error)
 		return res.json(error);
 	}
 });
