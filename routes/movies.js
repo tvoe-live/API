@@ -123,15 +123,6 @@ router.get('/movie', async (req, res) => {
 
 			const data = result[0];
 
-			if(data.badge && data.badge.finishAt && data.badge.finishAt < new Date()) {
-				await Movie.updateOne(
-					{ _id: data._id },
-					{ $set: { badge: {} } }
-				);
-
-				delete(data.badge);
-			}
-
 			switch(data.categoryAlias) {
 				case 'films': data.sources = data.films[0] || null; break;
 				case 'serials': data.sources = data.series || null; break;
