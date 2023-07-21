@@ -21,20 +21,24 @@ const getCatalogPages = async ({ categoryAlias, showGenreName }) => {
 		{ $unwind: { path: "$genres" } },
 		{ $group: {
 				_id: {
-					rating: "$rating",
 					genreAlias: "$genres.alias",
 					categoryAlias: "$categoryAlias",
 					dateReleased: { $substr: [ "$dateReleased", 0, 4 ] },
+				},
+				rating: { 
+					$addToSet: "$rating"
 				},
 				genreName: {
 					$addToSet: "$genres.name"
 				}
 		} },
+		{ $unwind: { path: "$rating", preserveNullAndEmptyArrays: true } },
 		{ $unwind: { path: "$genreName" } },
 		{ $project: {
 			_id: false,
 			...projectGenreName,
-			rating: "$_id.rating",
+			rating: "$rating",
+			//rating: { $round: [ "$rating", 0 ] },
 			genreAlias: "$_id.genreAlias",
 			dateReleased: "$_id.dateReleased",
 			categoryAlias: "$_id.categoryAlias",
@@ -57,6 +61,7 @@ const getCatalogPages = async ({ categoryAlias, showGenreName }) => {
 	// Страницы с категорией, жанром и годом
 	const categoryAndGenresAndDates = resultPages
 					.filter(page =>
+						page.rating !== null && 
 						page.genreAlias !== "" && 
 						page.dateReleased !== "" &&
 						page.categoryAlias !== "");
@@ -111,8 +116,9 @@ const getCatalogPages = async ({ categoryAlias, showGenreName }) => {
 								.filter((value, index, self) => // Фильтрация на уникальность
 									index === self.findIndex((t) => (
 										t.categoryAlias === value.categoryAlias && 
-										t.rating === value.rating && 
-										t.rating !== null
+										+t.rating === +value.rating && 
+										t.rating !== null &&
+										t.rating !== ""
 									))
 								);
 	

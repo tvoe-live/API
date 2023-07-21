@@ -30,6 +30,7 @@ const movieSchema = new mongoose.Schema({
 	duration: String, // Длительность
 	categoryAlias: String, // Категория
 	genresAliases: [String], // Жанры
+	rating: Number, // Рейтинг
 	persons: [{ // Актёры и съемочная группа
 		name: String, // Имя и фамилия
 		type: String // director - режиссер, actor - актер, producer - продюсер, screenwriter - сценарист, operator - оператор

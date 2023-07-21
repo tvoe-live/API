@@ -3,9 +3,9 @@ const router = express.Router();
 const Movie = require('../models/movie');
 const resError = require('../helpers/resError');
 const verify = require('../middlewares/verify');
-const movieRating = require('../models/movieRating');
-const moviePageLog = require('../models/moviePageLog');
-const movieFavorite = require('../models/movieFavorite');
+const MovieRating = require('../models/movieRating');
+const MoviePageLog = require('../models/moviePageLog');
+const MovieFavorite = require('../models/movieFavorite');
 const movieOperations = require('../helpers/movieOperations');
 const mongoose = require('mongoose');
 
@@ -98,6 +98,7 @@ router.get('/movie', async (req, res) => {
 				},
 				addToProject: {
 					_id: true,
+					rating: true,
 					origName: true,
 					fullDesc: true,
 					shortDesc: true,
@@ -147,8 +148,8 @@ router.get('/rating', verify.token, async (req, res) => {
 
 	const { movieId } = req.query;
 
-	const rating = await movieRating.findOne({ 
-		movieId: movieId,
+	const rating = await MovieRating.findOne({ 
+		movieId,
 		userId: req.user._id
 	}, { 
 		_id: false,
@@ -160,11 +161,12 @@ router.get('/rating', verify.token, async (req, res) => {
 
 // Отправка рейтинга
 router.post('/rating', verify.token, async (req, res) => {
-
-	const {
+	let {
 		movieId,
 		rating,
 	} = req.body;
+
+	movieId = mongoose.Types.ObjectId(movieId)
 
 	if(!movieId) {
 		return resError({
@@ -192,7 +194,7 @@ router.post('/rating', verify.token, async (req, res) => {
 			});
 		}
 
-		const userRating = await movieRating.findOneAndUpdate(
+		const userRating = await MovieRating.findOneAndUpdate(
 			{ 
 				movieId,
 				userId: req.user._id
@@ -204,7 +206,7 @@ router.post('/rating', verify.token, async (req, res) => {
 		);
 
 		if(!userRating && rating !== null) {
-			movieRating.create({ 
+			await MovieRating.create({ 
 				rating,
 				movieId,
 				userId: req.user._id,
@@ -216,6 +218,29 @@ router.post('/rating', verify.token, async (req, res) => {
 				msg: 'Необходимо оценить перед сбросом оценки'
 			});
 		}
+
+		// Получить все оценки фильма
+		const movieRatingLogs = await MovieRating.aggregate([
+			{ $match: {
+				movieId
+			} },
+			{ $group: { 
+				_id: null,
+				avg: { $avg: "$rating" } 
+			} },
+			{ $project: {
+				_id: false,
+				avg: true
+			} }
+		]);
+
+		const newMovieRating = movieRatingLogs[0].avg || 0
+
+		// Обновить среднюю оценку фильма
+		await Movie.updateOne(
+			{ _id: movieId },
+			{ $set: { rating: newMovieRating } }
+		);
 
 		return res.status(200).json({
 			success: true,
@@ -241,7 +266,7 @@ router.get('/favorite', verify.token, async (req, res) => {
 		});
 	}
 
-	const userFavorite = await movieFavorite.findOne(
+	const userFavorite = await MovieFavorite.findOne(
 		{ 
 			movieId,
 			userId: req.user._id
@@ -287,7 +312,7 @@ router.post('/favorite', verify.token, async (req, res) => {
 
 		let isFavorite;
 
-		const userFavorite = await movieFavorite.findOne(
+		const userFavorite = await MovieFavorite.findOne(
 			{ 
 				movieId,
 				userId: req.user._id
@@ -301,7 +326,7 @@ router.post('/favorite', verify.token, async (req, res) => {
 		if(userFavorite) {
 			isFavorite = !userFavorite.isFavorite;
 
-			await movieFavorite.updateOne(
+			await MovieFavorite.updateOne(
 				{ _id: userFavorite._id },
 				{ 
 					$set: { isFavorite },
@@ -312,7 +337,7 @@ router.post('/favorite', verify.token, async (req, res) => {
 		} else {
 			isFavorite = true;
 
-			await movieFavorite.create({
+			await MovieFavorite.create({
 				movieId,
 				isFavorite,
 				userId: req.user._id
@@ -343,7 +368,7 @@ router.get('/logs', verify.token, async (req, res) => {
 	}
 
 	try {
-		const logs = await moviePageLog.find({
+		const logs = await MoviePageLog.find({
 			movieId,
 			userId: req.user._id
 		}, { 
@@ -389,7 +414,7 @@ router.post('/addLog', verify.token, async (req, res) => {
 		});
 	}
 
-	const logExists = await moviePageLog.findOne({ 
+	const logExists = await MoviePageLog.findOne({ 
 		videoId, 
 		userId: req.user._id
 	}, { _id: true });
@@ -407,7 +432,7 @@ router.post('/addLog', verify.token, async (req, res) => {
 
 	try {
 		if(logExists) {
-			await moviePageLog.updateOne(
+			await MoviePageLog.updateOne(
 				{ 
 					videoId,
 					userId: req.user._id
@@ -422,7 +447,7 @@ router.post('/addLog', verify.token, async (req, res) => {
 				}
 			);
 		} else {
-			moviePageLog.create({
+			MoviePageLog.create({
 				device,
 				movieId,
 				referer,

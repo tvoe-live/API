@@ -3,8 +3,7 @@ const movieOperations = ({
 	addToProject,
 	sort = { createdAt: -1 },
 	limit = 10000,
-	skip = 0,
-	matchRating = {}
+	skip = 0
 }) => {
 
 	const match = { publishedAt: { $ne: null } };
@@ -36,26 +35,13 @@ const movieOperations = ({
 		],
 		as: "category"
 	};
-	const lookupFromMovieRatings = {
-		from: "movieratings",
-		localField: "_id",
-		foreignField: "movieId",
-		pipeline: [
-			{ $match: matchRating },
-			{ $group: { 
-				_id: null,
-				avg: { $avg: "$rating" } 
-			} }
-		],
-		as: "rating"
-	};
 	const project = {
 		_id: true,
 		name: true,
 		badge: true,
+		rating: true,
 		ageLevel: true,
 		dateReleased: true,
-		rating: "$rating.avg",
 		categoryAlias: true,
 		duration: {
 			$switch: {
@@ -100,9 +86,7 @@ const movieOperations = ({
 		} },
 		{ $lookup: lookupFromCategories },
 		{ $unwind: "$category" },
-		{ $lookup: lookupFromMovieRatings },
 		{ $sort: sort },
-		{ $unwind: { path: "$rating", preserveNullAndEmptyArrays: !Object.keys(matchRating).length } },
 		{ $addFields: { genres: "$category.genres" } },
 		{ $project: {
 			...project,

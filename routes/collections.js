@@ -12,19 +12,6 @@ const movieOperations = require('../helpers/movieOperations');
 router.get('/', async (req, res) => {
 	const limit = +(req.query.limit >= 6 && req.query.limit <= 18 ? req.query.limit : 18);
 
-	const lookupFromMovieRatings = {
-		from: "movieratings",
-		localField: "_id",
-		foreignField: "movieId",
-		pipeline: [
-			{ $group: { 
-				_id: null,
-				avg: { $avg: "$rating" } 
-			} }
-		],
-		as: "rating"
-	};
-
 	const projectWillSoon = {
 		_id: false,
 		name: true,
@@ -70,13 +57,10 @@ router.get('/', async (req, res) => {
 				"moviesWithRatingMore7": [
 					{ $match: { 
 							publishedAt: { $ne: null },
+							rating: { avg: { $gte: 7 } }
 					} },
-					{ $lookup: lookupFromMovieRatings },
 					{ $unwind: { path: "$rating", preserveNullAndEmptyArrays: false } },
 					{ $project: projectRatingMore7 },
-					{ $match: {
-						rating: {$gte:7}
-					}},
 					{$sample: {
 						size:limit
 					}}
