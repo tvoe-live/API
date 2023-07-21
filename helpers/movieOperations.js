@@ -50,7 +50,7 @@ const movieOperations = ({
 		as: "rating"
 	};
 	const project = {
-		_id: false,
+		_id: true,
 		name: true,
 		badge: true,
 		ageLevel: true,
