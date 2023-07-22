@@ -5,6 +5,7 @@ const Tariff = require('../models/tariff');
 const verify = require('../middlewares/verify');
 const resError = require('../helpers/resError');
 const resSuccess = require('../helpers/resSuccess');
+const formatDate = require('../helpers/formatDate');
 const { DOMAIN, REFERRAL_PRECENT_BONUSE } = process.env;
 const ReferralWithdrawalLog = require('../models/referralWithdrawalLog');
 
@@ -146,7 +147,23 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 			} },
 		]);
 
-		return res.status(200).json(result[0]);
+		const response = {}
+
+		result[0].items.forEach(referalItem=>{
+			const date = formatDate(referalItem.payment.createdAt)
+
+			if (date in response){
+				response[date].items.push(referalItem)
+				const bonuseAmountCurrentItem =  Number(referalItem.payment.bonuseAmount) || 0
+				response[date].totalBonus += bonuseAmountCurrentItem
+			} else {
+				response[date] = {}
+				response[date].items = [referalItem]
+				response[date].totalBonus = Number(referalItem.payment.bonuseAmount)||0
+			}
+		})
+		return res.status(200).json(response);
+
 	} catch(err) {
 		return resError({ res, msg: err });
 	}
