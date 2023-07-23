@@ -4,6 +4,8 @@ const Movie = require('../models/movie');
 const Category = require('../models/category');
 const resError = require('../helpers/resError');
 const movieOperations = require('../helpers/movieOperations');
+const verify = require('../middlewares/verify');
+const MoviePageLog = require('../models/moviePageLog');
 
 /*
  * Подборки и жанры для главной страницы
@@ -224,6 +226,121 @@ router.get('/', async (req, res) => {
 
 	} catch(err) {
 		return resError({ res, msg: err });
+	}
+});
+
+router.get('/continueWatching', verify.token, async (req, res) => {
+
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 25);
+
+	const titlesDuration =  10*60
+	
+	const lookup = {
+		from: "movies",
+		localField: "movieId",
+		foreignField: "_id",
+		pipeline: [
+			{ $project: {
+					name: true,
+					alias:true,
+					series:true,
+					categoryAlias:true,
+					films:{
+						duration:true
+					},
+					poster: {
+						src: true
+					},
+				},
+		 	},
+			{ $unwind: { path: "$films", preserveNullAndEmptyArrays: true }}
+		],
+		as: "movie"
+	};
+
+	const project = {
+		_id: true,
+		videoId: true,
+		movieId: true,
+		endTime: true,
+		updatedAt: true,
+		movie: {
+			name: '$movie.name',
+			alias: '$movie.alias',
+			series: '$movie.series',
+			categoryAlias: '$movie.categoryAlias',
+			duration:"$movie.films.duration",
+			poster: '$movie.poster',
+			series: {
+				"$cond": [
+					{ "$eq": ["$movie.categoryAlias", 'films'] },
+					"$$REMOVE",
+					'$movie.series',
+				]
+			}
+		},
+	}
+
+	try {
+		const logs = await MoviePageLog.aggregate([
+			{ $match: { 
+					userId: req.user._id
+			} },
+			{ $lookup: lookup },
+			{ $unwind: { path: "$movie" } },
+		  { $match: {
+					$or: [
+						{
+							'movie.categoryAlias':"serials"
+						},
+						{
+							$expr:
+								{
+									$gte: ["$movie.films.duration", { $sum:["$endTime", titlesDuration]} ] // Длительность фильма должна быть больше чем время окончания просмотра + титры ( если пользователь досмотрел фильм до конца, то он не будет отображаться в разделе продолжить просмотр)
+								}
+						}
+					]
+				},
+			},
+			{ $project: project},
+			{ $sort : { updatedAt: -1} },
+		]);
+		
+		const editLogs = logs
+			.map(log=>{
+				if ( log.movie.categoryAlias==='serials'){
+
+					outer: for (let i=0; i<log.movie.series.length; i++){
+						const season = log.movie.series[i]
+
+						for (let j=0; j<season.length; j++){
+							const episode = season[j]
+							if (String(episode._id) === String(log.videoId)){
+
+								log.movie.season = i+1
+								log.movie.episode = j+1
+								log.movie.duration = episode.duration
+
+							  break outer; 
+							}
+						}
+					}
+					delete log.movie.series
+					return log
+
+				} else {
+					return log
+				}})
+			.filter(log=>log.movie.categoryAlias==='films' || log.movie.duration > log.endTime + titlesDuration) // Длительность серии должна быть больше чем время окончания просмотра + титры. Фильмы по этому условию были отфильтрованы на этапе обращения к БД
+
+		return res.status(200).json({
+			totalSize: editLogs.length, 
+			items: editLogs.slice(skip, skip+limit) 
+		});
+
+	} catch(e){
+		return res.json(e);
 	}
 });
 
