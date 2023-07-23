@@ -9,6 +9,7 @@ const PaymentLog = require('../../models/paymentLog');
 const resSuccess = require('../../helpers/resSuccess');
 const getSearchQuery = require('../../middlewares/getSearchQuery');
 const isValidObjectId = require('../../helpers/isValidObjectId')
+const schedule = require('node-schedule')
 
 /*
  * Админ-панель > Пользователи
@@ -188,6 +189,13 @@ router.patch('/profile', verify.token, verify.isAdmin, async (req, res) => {
 						allowTrialTariff: false
 					} }
 				);
+
+				schedule.scheduleJob(finishAt, async function() {    
+					await User.updateOne(
+						{ _id: userId }, 
+						{ $set: { subscribe: null } }
+					);
+				});
 			}
 		}
 	
