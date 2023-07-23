@@ -57,46 +57,7 @@ router.get('/tariffs', async (req, res) => {
 			});
 		}
 
-		const popularMoviesResult = await Movie.aggregate([
-			{ $lookup: {
-				from: "moviepagelogs",
-				localField: "_id",
-				foreignField: "movieId",
-				pipeline: [
-					{ $match: {
-						updatedAt: {
-							$gte: new Date(new Date() - 30 * 60 * 60 * 24 * 1000)
-						}
-					} },
-				],
-				as: "countPageViewed"
-			} },
-			...movieOperations({
-				addToMatch: {
-					poster: { $ne: null }
-				},
-				addToProject: {
-					countPageViewed: { $size: "$countPageViewed" },
-					poster: { src: true },
-				},
-				sort: { countPageViewed: -1 },
-				limit: 35
-			}),
-			{ $project: {
-				ageLevel: false,
-				dateReleased: false,
-				categoryAlias: false,
-				duration: false,
-				genreNames: false,
-				url: false,
-				countPageViewed: false
-			} }
-		]);
-
-		return res.status(200).json({
-			tariffs: tariffsResult,
-			popularMovies: popularMoviesResult
-		});
+		return res.status(200).json(tariffsResult);
 
 	} catch(err) {
 		return resError({ res, msg: err });
