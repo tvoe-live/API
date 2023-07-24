@@ -43,6 +43,8 @@ const movieOperations = ({
 		ageLevel: true,
 		dateReleased: true,
 		categoryAlias: true,
+		shortDesc:true,
+		trailer:true,
 		duration: {
 			$switch: {
 				branches: [
