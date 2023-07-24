@@ -153,16 +153,34 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 			const date = formatDate(referalItem.payment.createdAt)
 
 			if (date in response){
-				response[date].items.push(referalItem)
+				response[date].payments.push(referalItem)
 				const bonuseAmountCurrentItem =  Number(referalItem.payment.bonuseAmount) || 0
 				response[date].totalBonus += bonuseAmountCurrentItem
 			} else {
 				response[date] = {}
-				response[date].items = [referalItem]
+				response[date].payments = [referalItem]
 				response[date].totalBonus = Number(referalItem.payment.bonuseAmount)||0
 			}
 		})
-		return res.status(200).json(response);
+
+		console.log('Object.keys(response):', Object.keys(response))
+
+		const editResponse = Object.keys(response)
+			.map(date=>({
+			...response[date],
+			date
+			}))
+			
+		editResponse.sort((a,b)=>{
+			return new Date(b.date) - new Date(a.date)
+		})
+
+		console.log('length:', editResponse.length)
+
+		console.log('editResponse:', editResponse)
+		return res.status(200).json({totalSize:result[0].totalSize, items:editResponse});
+		// return res.status(200).json(result[0]);
+
 
 	} catch(err) {
 		return resError({ res, msg: err });
