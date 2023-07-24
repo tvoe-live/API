@@ -268,77 +268,98 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 		movie: {
 			name: '$movie.name',
 			alias: '$movie.alias',
-			series: '$movie.series',
 			categoryAlias: '$movie.categoryAlias',
-			duration:"$movie.films.duration",
+			filmDuration:"$movie.films.duration",
 			poster: '$movie.poster',
-			series: {
-				"$cond": [
-					{ "$eq": ["$movie.categoryAlias", 'films'] },
-					"$$REMOVE",
-					'$movie.series',
-				]
-			}
 		},
-	}
+		seriaInfo: {
+			$function:
+			{
+				body: function(seasons, videoId) {
+					if (!seasons.length) return null
 
-	try {
-		const logs = await MoviePageLog.aggregate([
-			{ $match: { 
-					userId: req.user._id
-			} },
-			{ $lookup: lookup },
-			{ $unwind: { path: "$movie" } },
-		  { $match: {
-					$or: [
-						{
-							'movie.categoryAlias':"serials"
-						},
-						{
-							$expr:
-								{
-									$gte: ["$movie.films.duration", { $sum:["$endTime", titlesDuration]} ] // Длительность фильма должна быть больше чем время окончания просмотра + титры ( если пользователь досмотрел фильм до конца, то он не будет отображаться в разделе продолжить просмотр)
-								}
-						}
-					]
-				},
-			},
-			{ $project: project},
-			{ $sort : { updatedAt: -1} },
-		]);
-		
-		const editLogs = logs
-			.map(log=>{
-				if ( log.movie.categoryAlias==='serials'){
-
-					outer: for (let i=0; i<log.movie.series.length; i++){
-						const season = log.movie.series[i]
+					for (let i=0; i<seasons.length; i++){
+						const season = seasons[i]
 
 						for (let j=0; j<season.length; j++){
 							const episode = season[j]
-							if (String(episode._id) === String(log.videoId)){
-
-								log.movie.season = i+1
-								log.movie.episode = j+1
-								log.movie.duration = episode.duration
-
-							  break outer; 
+							if (String(episode._id) === String(videoId)){
+								return {
+									season: i+1,
+									episode: j+1,
+									seriaDuration: episode.duration
+								}
 							}
 						}
 					}
-					delete log.movie.series
-					return log
+				 },
+				 args: [ "$movie.series",  "$videoId"],
+				 lang: "js"
+			 }
+		},	
+	}
 
-				} else {
-					return log
-				}})
-			.filter(log=>log.movie.categoryAlias==='films' || log.movie.duration > log.endTime + titlesDuration) // Длительность серии должна быть больше чем время окончания просмотра + титры. Фильмы по этому условию были отфильтрованы на этапе обращения к БД
+	const match = {
+		$or: [
+			{
+				$expr: {
+					$gte: ["$seriaInfo.seriaDuration", { $sum:["$endTime", titlesDuration]} ] // Длительность СЕРИИ должна быть больше чем время окончания просмотра + титры ( если пользователь досмотрел серию до конца, то он не будет отображаться в разделе продолжить просмотр)
+				}
+			},
+			{
+				$expr:{
+					$gte: ["$movie.filmDuration", { $sum:["$endTime", titlesDuration]} ] // Длительность ФИЛЬМА должна быть больше чем время окончания просмотра + титры ( если пользователь досмотрел фильм до конца, то он не будет отображаться в разделе продолжить просмотр)
+				}
+			}
+		]
+	}
 
-		return res.status(200).json({
-			totalSize: editLogs.length, 
-			items: editLogs.slice(skip, skip+limit) 
-		});
+	try {
 
+		const logs = await MoviePageLog.aggregate([
+
+			{
+				"$facet": {
+					//Всего записей
+					"totalSize": [
+						{ $match: { 
+							userId: req.user._id
+						} },
+						{ $lookup: lookup },
+						{ $unwind: { path: "$movie" } },
+						{ $project: project},
+						{ $match: match	},
+						{ $group: { 
+							_id: null, 
+							count: { $sum: 1 }
+						} },
+						{ $project: { _id: false } },
+						{ $limit: 1 }
+					],
+					// Список
+					"items":[
+						{ $match: { 
+							userId: req.user._id
+						} },
+						{ $lookup: lookup },
+						{ $unwind: { path: "$movie" } },
+						{ $project: project},
+						{ $match: match	},
+						{ $sort : { updatedAt: -1} },
+						{ $skip: skip },
+						{ $limit: limit },
+					]
+				}
+			},
+			{ $limit: 1 },
+			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+			{ $project: {
+				totalSize: { $cond: [ "$totalSize.count", "$totalSize.count", 0] },
+				items: "$items"
+			} },
+		]);
+		
+		return res.status(200).json(logs[0])
 	} catch(e){
 		return res.json(e);
 	}
