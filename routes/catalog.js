@@ -135,7 +135,7 @@ router.get('/', async (req, res) => {
 						addToMatch: page,
 						addToProject: {
 							poster: { src: true },
-							genresAliases:true,
+							genreNames: "$genres.name",
 							... ( categoryAlias==='serials' ? { series: true } : [] ),
 						},
 						sort: sortParams
