@@ -36,7 +36,7 @@ router.get('/', async (req, res) => {
 		dateReleased,
 		categoryAlias,
 	} = req.query;
-  
+
 	let sortParams = { raisedUpAt: -1, createdAt: -1 }; // Параметры сортировки
 
 	const skip = +req.query.skip || 0
