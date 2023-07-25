@@ -5,7 +5,7 @@ const movieOperations = ({
 	limit = 10000,
 	skip = 0
 }) => {
-	console.log('addToProject inner:', addToProject)
+
 	const match = { publishedAt: { $ne: null } };
 	const lookupFromCategories = {
 		from: "categories",
