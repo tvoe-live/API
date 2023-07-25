@@ -36,7 +36,7 @@ router.get('/', async (req, res) => {
 		dateReleased,
 		categoryAlias,
 	} = req.query;
-
+	console.log("categoryAlias==='serials':", categoryAlias==='serials')
 	let sortParams = { raisedUpAt: -1, createdAt: -1 }; // Параметры сортировки
 
 	const skip = +req.query.skip || 0
@@ -134,7 +134,9 @@ router.get('/', async (req, res) => {
 					...movieOperations({
 						addToMatch: page,
 						addToProject: {
-							poster: { src: true }
+							poster: { src: true },
+							genresAliases:true,
+							... ( categoryAlias==='serials' ? { series: true } : [] ),
 						},
 						sort: sortParams
 					}),
