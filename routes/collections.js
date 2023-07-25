@@ -4,6 +4,7 @@ const Movie = require('../models/movie');
 const Category = require('../models/category');
 const resError = require('../helpers/resError');
 const movieOperations = require('../helpers/movieOperations');
+const MoviePageLog = require('../models/moviePageLog');
 
 /*
  * Подборки и жанры для главной страницы
@@ -224,6 +225,72 @@ router.get('/', async (req, res) => {
 
 	} catch(err) {
 		return resError({ res, msg: err });
+	}
+});
+
+// Получение коллекции топ-10
+router.get('/top10', async (req, res) => {
+
+	const today = new Date()
+	const year = today.getFullYear()
+	const month = today.getMonth()
+	const day = today.getDate()
+	const dateWeekAgo = new Date(year, month, day - 7)
+
+	console.log('dateWeekAgo:', dateWeekAgo) // 31 March 2019
+	console.log('before try')
+
+	try {
+		const result = await MoviePageLog.aggregate([
+			{ $match: {
+					updatedAt: {
+						$gte: dateWeekAgo
+					}
+			}},
+			{ $group: { 
+				_id: '$videoId',
+				count: { $sum: 1 },
+				movieId: {
+					$addToSet: "$movieId"
+				},
+				userId: {
+					$addToSet: "$userId"
+				}
+			} },
+	
+			{$unwind:'$movieId'},
+			{$unwind:'$userId'},
+
+			// {$match: {
+			// 	'$movieId':{
+
+			// 	}
+			// }}
+			// { $limit: 10 },
+
+			{ $lookup: {
+					from: "movies",
+					localField: "movieId",
+					foreignField: "_id",
+					pipeline: [
+						{ $project: {
+							_id: false,
+							name: true
+						} },
+						{ $limit: 1 }
+			],
+				as: "movie"
+		} },
+		{ $unwind: { path: "$movie" } },
+
+
+		])
+		console.log('result:', result)
+		console.log('result.length:', result.length)
+		return res.status(200).json(result);
+
+	} catch(e){
+		console.log('error in top10 catch:', e)
 	}
 });
 
