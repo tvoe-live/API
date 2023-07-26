@@ -259,6 +259,24 @@ paths:
                         name:
                           type: string
                           description: Название фильма
+                        shortDesc:
+                          type: string
+                          description: Краткое описание 
+                        trailer:
+                          type: object
+                          properties:  
+                            id: 
+                              type: string
+                              description: Mongoose.ObjectId
+                            src: 
+                              type: string
+                              description: Путь к файлу изображению обложки 
+                            thumbnail: 
+                              type: string
+                              description: Миниатюра (кадр из видео)  
+                            duration:
+                              type: number
+                              description: Длительность
                         ageLevel:
                           type: string
                           description: Возрастное ограничение
@@ -292,6 +310,11 @@ paths:
                     totalSize: 2
                     items:
                       - name: "Америка: фильм"
+                        shortDesc: "Вооруженный пилами Джордж Вашингтон объединяется с обожающим пиво друганом Сэмом Адамсом, чтобы приструнить британцев в ироничной комедии о Войне за независимость США."
+                        trailer:
+                          _id: 641bf64b0073f02ab65dde80
+                          src: "/videos/641bf64b0073f02ab65dde7f.mp4"
+                          thumbnail: "/images/641bf64b0073f02ab65dde81.jpg"
                         ageLevel: 18
                         dateReleased: "2021-06-15"
                         categoryAlias: "films"
@@ -302,6 +325,11 @@ paths:
                         url: "/p/amerika-film"
                         addedToFavoritesAt: "2023-06-07T14:56:03.730Z"
                       - name: "Снять блокировку"
+                        shortDesc: "Жизнь женщины резко меняется из-за опасного незнакомца, который находит ее телефон и начинает отслеживать каждый шаг."
+                        trailer:
+                          _id: 63fded1598e2af31cb68b499
+                          src: "/videos/63fded1598e2af31cb68b498.mp4"
+                          thumbnail: "/images/63fded1598e2af31cb68b49a.jpg"
                         ageLevel: 16
                         dateReleased: "2023-02-17"
                         categoryAlias: "films"
@@ -349,6 +377,24 @@ paths:
                         name:
                           type: string
                           description: Название фильма
+                        shortDesc:
+                          type: string
+                          description: Краткое описание 
+                        trailer:
+                          type: object
+                          properties:  
+                            id: 
+                              type: string
+                              description: Mongoose.ObjectId
+                            src: 
+                              type: string
+                              description: Путь к файлу изображению обложки 
+                            thumbnail: 
+                              type: string
+                              description: Миниатюра (кадр из видео)  
+                            duration:
+                              type: number
+                              description: Длительность
                         ageLevel:
                           type: string
                           description: Возрастное ограничение
@@ -398,6 +444,11 @@ paths:
                     totalSize: 2
                     items:
                       - name: "Америка: фильм"
+                        shortDesc: "Вооруженный пилами Джордж Вашингтон объединяется с обожающим пиво друганом Сэмом Адамсом, чтобы приструнить британцев в ироничной комедии о Войне за независимость США."
+                        trailer:
+                          _id: 641bf64b0073f02ab65dde80
+                          src: "/videos/641bf64b0073f02ab65dde7f.mp4"
+                          thumbnail: "/images/641bf64b0073f02ab65dde81.jpg"
                         ageLevel: 18
                         dateReleased: "2021-06-15"
                         categoryAlias: "films"
@@ -415,6 +466,11 @@ paths:
                         - "2023-06-07T16:15:48.503Z"
                             
                       - name: "Денежный выстрел: История Pornhub"
+                        shortDesc: "Проникните глубже в историю самой известной платформы для взрослых Pornhub и недавний скандал вокруг неё. Детская порнография, сексуальное насилие, половая эксплуатация, торговля людьми — это лишь небольшой перечень того, что было найдено на страницах всем известного сайта"
+                        trailer:
+                          _id: 6419a8a30073f02ab65d4f07
+                          src: "/videos/6419a8a30073f02ab65d4f06.mp4"
+                          thumbnail: "/images/6419a8a30073f02ab65d4f08.jpg"
                         ageLevel: 18
                         dateReleased: "2023-02-17"
                         categoryAlias: "films"
@@ -3071,6 +3127,9 @@ paths:
                           name:
                             type: string
                             description: Название фильма
+                          shortDesc:
+                            type: string
+                            description: Краткое описание 
                           ageLevel:
                             type: string
                             description: Возрастное ограничение
@@ -3083,6 +3142,28 @@ paths:
                             type: string
                             description: Вид категориию. Может быть films, serials или collections
                             required: false
+                          trailer:
+                            type: object
+                            properties:  
+                              id: 
+                                type: string
+                                description: Mongoose.ObjectId
+                              src: 
+                                type: string
+                                description: Путь к файлу изображению обложки 
+                              thumbnail: 
+                                type: string
+                                description: Миниатюра (кадр из видео)  
+                              duration:
+                                type: number
+                                description: Длительность
+                                poster:
+                                  type: object
+                                  required: false
+                                  properties:  
+                                    src: 
+                                      type: string
+                                      description: Путь к файлу изображению
                           poster:
                             type: object
                             required: false
@@ -3127,13 +3208,19 @@ paths:
                     - type: carousel
                       items:
                       - name: Армия воров 3
+                        shortDesc: В этом приквеле «Армии мертвецов» загадочная женщина нанимает банковского служащего Дитера, чтобы тот помог взломать три легендарных сейфа в разных частях Европы.
                         ageLevel: 16
                         dateReleased: '2021-10-28'
                         categoryAlias: films
                         duration: 0
                         url: "/p/armiya-vorov"
                         genreName: Боевики
+                        trailer:
+                          _id: 642f44d68e6fd86616fdfcbe
+                          src: "/videos/642f44d68e6fd86616fdfcbb.mp4"
+                          thumbnail: "/images/642f44d68e6fd86616fdfcbd.jpg"
                       - name: 'Битва при Нарвике: Первое поражение Гитлера'
+                        shortDesc: На фоне сражения во Второй мировой войне, известного как первое поражение Гитлера, норвежский солдат возвращается домой и узнает шокирующую правду о своей жене
                         ageLevel: 16
                         dateReleased: '2022-12-15'
                         categoryAlias: films
@@ -3143,46 +3230,73 @@ paths:
                         duration: 6546.833333
                         url: "/p/bitva-pri-narvike-pervoe-porazhenie-gitlera"
                         genreName: Драмы
+                        trailer:
+                          _id: 642f44d68e6fd86616fdfcbe
+                          src: "/videos/642f44d68e6fd86616fdfcbb.mp4"
+                          thumbnail: "/images/642f44d68e6fd86616fdfcbd.jpg"
                     - name: Новинки
                       type: new
                       items:
                       - name: Выстрел в сердце
                         poster:
                           src: "/images/641f44d1944e8bd192d18c57.jpg"
+                        shortDesc: На фоне сражения во Второй мировой войне, известного как первое поражение Гитлера, норвежский солдат возвращается домой и узнает шокирующую правду о своей жене
                         rating: 7
                         duration: 1163.416667
                         url: "/p/vystrel-v-serdce"
+                        trailer:
+                          _id: 642f44d68e6fd86616fdfcbe
+                          src: "/videos/642f44d68e6fd86616fdfcbb.mp4"
+                          thumbnail: "/images/642f44d68e6fd86616fdfcbd.jpg"
                       - name: Вундеркинды
                         poster:
                           src: "/images/642f5e208e6fd86616fe08d5.jpg"
                         duration: 18578.069334
                         url: "/p/vunderkindy"
+                        trailer:
+                          _id: 642f44d68e6fd86616fdfcbe
+                          src: "/videos/642f44d68e6fd86616fdfcbb.mp4"
+                          thumbnail: "/images/642f44d68e6fd86616fdfcbd.jpg"
                     - name: Триллеры
                       items:
                       - name: Затерянная в метели
+                        shortDesc: Маленькая девочка пропадает во время парада в Малаге, и молодая журналистка решает во что бы то ни стало помочь родителям найти дочь
                         poster:
                           src: "/images/641e0dd00073f02ab65e7213.jpg"
                         duration: 0
                         url: "/p/zateryannaya-v-meteli"
+                        trailer:
+                          _id: 642f44d68e6fd86616fdfcbe
+                          src: "/videos/642f44d68e6fd86616fdfcbb.mp4"
+                          thumbnail: "/images/642f44d68e6fd86616fdfcbd.jpg"
                       - name: Ты
                         poster:
                           src: "/images/641c0ac60073f02ab65de349.jpg"
                         rating: 10
                         duration: 115970.58333200001
                         url: "/p/ty"
+                        trailer:
+                          _id: 642f44d68e6fd86616fdfcbe
+                          src: "/videos/642f44d68e6fd86616fdfcbb.mp4"
+                          thumbnail: "/images/642f44d68e6fd86616fdfcbd.jpg"
                     - name: Мюзиклы
                       items:
                       - name: Ну разве не романтично?
+                        shortDesc: Архитектор, которая не верит в романтику, ударяется головой и обнаруживает, что ее непримечательная жизнь превратилась в яркую, полную клише романтическую комедию
                         poster:
                           src: "/images/642f44cf8e6fd86616fdfc87.jpg"
                         duration: 5334.144
                         url: "/p/nu-razve-ne-romantichno"
+                        trailer:
+                          _id: 642f44d68e6fd86616fdfcbe
+                          src: "/videos/642f44d68e6fd86616fdfcbb.mp4"
+                          thumbnail: "/images/642f44d68e6fd86616fdfcbd.jpg"
                       - name: тик-так… БУМ!
+                        shortDesc: На пороге тридцатилетия многообещающий театральный композитор пытается разобраться с любовью и дружбой и жаждет создать нечто великое, пока еще есть время
                         poster:
                           src: "/images/63bd03db23c814afb608cbab.jpg"
                         duration: 7296.416667
-                        url: "/p/tik-tak-bum"
-  
+                        url: "/p/tik-tak-bum"  
   /collections/top10:
     get:
       summary: Получение топ10 фильмов и сериалов по просмотрам за последнюю неделю
@@ -3334,8 +3448,10 @@ paths:
                           _id: 642b55cec987c824403dc4ac
                           src: "/images/642b55cec987c824403dc4ad.jpg"
                       viewsAmount: 1
-
-
+                        trailer:
+                          _id: 63bd03e223c814afb608cbd7
+                          src: "/videos/63bd03e223c814afb608cbd6.mp4"
+                          thumbnail: "/images/63bd03e223c814afb608cbd8.jpg"
   /catalog:
     get:
       summary: Подборки и жанры для главной страницы
@@ -3392,13 +3508,39 @@ paths:
                         categoryAlias:
                           type: string
                           description: Вид категориию. Может быть films, serials или collections
-                        poster:
+                        shortDesc:
+                          type: string
+                          description: Краткое описание 
+                        genresNames:
+                          type: array
+                          description:  Cписок жанров на русском
+                          uniqueItems: true
+                          minItems: 0
+                          items:
+                            type: string
+                            description: Название жанра
+                        trailer:
                           type: object
-                          required: false
                           properties:  
+                            id: 
+                              type: string
+                              description: Mongoose.ObjectId
                             src: 
                               type: string
-                              description: Путь к файлу изображению
+                              description: Путь к файлу изображению обложки 
+                            thumbnail: 
+                              type: string
+                              description: Миниатюра (кадр из видео)  
+                            duration:
+                              type: number
+                              description: Длительность
+                              poster:
+                                type: object
+                                required: false
+                                properties:  
+                                  src: 
+                                    type: string
+                                    description: Путь к файлу изображению
                         rating:
                           type: number
                           description: Рейтинг от 0 до 10
@@ -3408,7 +3550,32 @@ paths:
                           description: Длительность фильма в секундах
                         url:
                           type: string
-                          description: Url к фильму? путь к фильму?
+                          description: Url к фильму
+                        series:
+                          type: array
+                          description:  Массивы первого уровня - сезоны, в каждом из которых вложенные подмассивы -список серий. Это поле есть в ответе только если query параметр categoryAlias = serials
+                          uniqueItems: true
+                          minItems: 0
+                          items:
+                            type: array    
+                            description:  Список серий
+                            uniqueItems: true
+                            minItems: 0  
+                            items:
+                              type: object
+                              properties:
+                                _id:
+                                  type: string
+                                  description:  Id cерии (mongoose.ObjectId)
+                                src:
+                                  type: string
+                                  description: Источник на файл ( путь к исходнику )
+                                duration:
+                                  type: number
+                                  description: Продолжительность серии
+                                thumbnail:
+                                  type: string
+                                  description: Миниатюра (кадр из видео)  
                 example:
                   value: 
                     totalSize: 3597
@@ -3417,9 +3584,20 @@ paths:
                         ageLevel: 16
                         dateReleased: '2021-10-28'
                         categoryAlias: films
+                        shortDesc: В этом приквеле «Армии мертвецов» загадочная женщина нанимает банковского служащего Дитера, чтобы тот помог взломать три легендарных сейфа в разных частях Европы.
+                        genresNames:
+                          - Драмы
+                          - Военные
+                          - Исторические
                         duration: 0
                         url: "/p/armiya-vorov"
+                        series:
+                          - - _id: 64732eecfa87aa4b70851c64
+                              duration: 155.738333
+                              src: "/videos/64732eecfa87aa4b70851c65"
+                              thumbnail: "/images/64732eecfa87aa4b70851c66.jpg"
                       - name: 'Битва при Нарвике: Первое поражение Гитлера'
+                        shortDesc: Притворяясь богатым и успешным бриллиантовым магнатом, он обольщал женщин в интернете, а потом выманивал у них миллионы долларов. Теперь его жертвы обдумывают план мести.
                         ageLevel: 16
                         dateReleased: '2022-12-15'
                         categoryAlias: films
@@ -3428,6 +3606,18 @@ paths:
                         rating: 6
                         duration: 6546.833333
                         url: "/p/bitva-pri-narvike-pervoe-porazhenie-gitlera"
+                        trailer:
+                          _id: 63ba2ad54b33357ef706971c
+                          src: "/videos/63ba2ad54b33357ef706971b.mp4"
+                          thumbnail: "/images/63ba2ad54b33357ef706971d.jpg"
+                        genresNames:
+                        - Боевики
+                        - Криминал
+                        series:
+                        - - _id: 64732eecfa87aa4b70851c64
+                            duration: 155.738333
+                            src: "/videos/64732eecfa87aa4b70851c65"
+                            thumbnail: "/images/64732eecfa87aa4b70851c66.jpg"
   /catalog/pages:
     get:
       summary: Страницы для рендеринга при сборке
@@ -3743,6 +3933,31 @@ paths:
                         name:
                           type: string
                           description: Название фильма
+                        shortDesc:
+                          type: string
+                          description: Краткое описание
+                        trailer:
+                          type: object
+                          properties:  
+                            id: 
+                              type: string
+                              description: Mongoose.ObjectId
+                            src: 
+                              type: string
+                              description: Путь к файлу изображению обложки 
+                            thumbnail: 
+                              type: string
+                              description: Миниатюра (кадр из видео)  
+                            duration:
+                              type: number
+                              description: Длительность
+                              poster:
+                                type: object
+                                required: false
+                                properties:  
+                                  src: 
+                                    type: string
+                                    description: Путь к файлу изображению
                         ageLevel:
                           type: string
                           description: Возрастное ограничение
@@ -3775,6 +3990,7 @@ paths:
                     totalSize: 3
                     items:
                     - name: Ведьмак
+                      shortDesc: "Более чем за тысячу лет до появления Геральта из Ривии семь изгоев мира эльфов объединяют свои силы против всемогущей империи."
                       ageLevel: 18
                       dateReleased: '2019-12-20'
                       categoryAlias: serials
@@ -3783,7 +3999,12 @@ paths:
                       rating: 7
                       duration: 56502.375
                       url: "/p/vedmak"
+                      trailer:
+                        _id: 63b4af65f5af3c4f9dca53a6
+                        src: "/videos/63b4af65f5af3c4f9dca53a5.mp4"
+                        thumbnail: "/images/63b4af65f5af3c4f9dca53a7.jpg"
                     - name: Король Англии
+                      shortDesc: Англия, начало XV века, разгар Столетней войны. Принц Уэльский Хел ведёт распутный образ жизни со своим приятелем
                       ageLevel: 18
                       dateReleased: '2019-09-02'
                       categoryAlias: films
@@ -3792,7 +4013,12 @@ paths:
                       rating: 8
                       duration: 8429.083333
                       url: "/p/korol-anglii"
+                      trailer:
+                        _id: 63b4af65f5af3c4f9dca53a6
+                        src: "/videos/63b4af65f5af3c4f9dca53a5.mp4"
+                        thumbnail: "/images/63b4af65f5af3c4f9dca53a7.jpg"
                     - name: Смертельная зона
+                      shortDesc: «Смертельная зона» — американский научно-фантастический фильм, режиссёра Микаэля Хофстрёма. Фильм вышел на Netflix 15 января 2021
                       ageLevel: 18
                       dateReleased: '2021-01-15'
                       categoryAlias: films
@@ -3800,6 +4026,10 @@ paths:
                         src: "/images/63c130fe23c814afb6097501.jpg"
                       duration: 6952.541667
                       url: "/p/smertelnaya-zona"
+                      trailer:
+                        _id: 63b4af65f5af3c4f9dca53a6
+                        src: "/videos/63b4af65f5af3c4f9dca53a5.mp4"
+                        thumbnail: "/images/63b4af65f5af3c4f9dca53a7.jpg"
 
   /search/oftenSeek:
     get:
@@ -3838,6 +4068,9 @@ paths:
                         name:
                           type: string
                           description: Название фильма
+                        shortDesc:
+                          type: string
+                          description: Краткое описание
                         ageLevel:
                           type: string
                           description: Возрастное ограничение
@@ -3853,6 +4086,28 @@ paths:
                             src: 
                               type: string
                               description: Путь к файлу изображению
+                        trailer:
+                          type: object
+                          properties:  
+                            id: 
+                              type: string
+                              description: Mongoose.ObjectId
+                            src: 
+                              type: string
+                              description: Путь к файлу изображению обложки 
+                            thumbnail: 
+                              type: string
+                              description: Миниатюра (кадр из видео)  
+                            duration:
+                              type: number
+                              description: Длительность
+                              poster:
+                                type: object
+                                required: false
+                                properties:  
+                                  src: 
+                                    type: string
+                                    description: Путь к файлу изображению
                         rating:
                           type: number
                           description: Рейтинг от 0 до 10
@@ -3870,10 +4125,16 @@ paths:
                     totalSize: 407
                     items:
                     - name: HLS
+                      shortDesc: "протокол для потоковой передачи медиа данных через интернет"
                       categoryAlias: films
                       duration: 139.328
                       url: "/p/hls"
+                      trailer:
+                        _id: 642f4a4b8e6fd86616fe01a1
+                        src: "/videos/642f4a4b8e6fd86616fe019e.mp4"
+                        thumbnail: "/images/642f4a4b8e6fd86616fe01a0.jpg" 
                     - name: Белый шум
+                      shortDesc: "Белый шум описывает историю семьи Глэдни, на долю которой, кроме внутренних назревающих проблем"
                       ageLevel: 16
                       dateReleased: '2022-08-31'
                       categoryAlias: films
@@ -3881,14 +4142,23 @@ paths:
                         src: "/images/6405fe000a569a75e15129f4.jpg"
                       duration: 8216.875
                       url: "/p/belyy-shum"
+                      trailer:
+                        _id: 642f4a4b8e6fd86616fe01a1
+                        src: "/videos/642f4a4b8e6fd86616fe019e.mp4"
+                        thumbnail: "/images/642f4a4b8e6fd86616fe01a0.jpg" 
                     - name: Вундеркинды
+                      shortDesc: "От микробов и эмоций до социальных сетей и многого другого — это наука о нашем мире, объясняемая в необычно доходчивой форме."
                       ageLevel: 6
                       dateReleased: '2018-11-02'
                       categoryAlias: serials
                       poster:
                         src: "/images/642f5e208e6fd86616fe08d5.jpg"
                       duration: 18578.069334
-                      url: "/p/vunderkindy"    
+                      url: "/p/vunderkindy"  
+                      trailer:
+                        _id: 642f4a4b8e6fd86616fe01a1
+                        src: "/videos/642f4a4b8e6fd86616fe019e.mp4"
+                        thumbnail: "/images/642f4a4b8e6fd86616fe01a0.jpg"  
 
   /auth/logout:
     post:
