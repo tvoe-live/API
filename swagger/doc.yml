@@ -3297,6 +3297,11 @@ paths:
                           src: "/images/63bd03db23c814afb608cbab.jpg"
                         duration: 7296.416667
                         url: "/p/tik-tak-bum"  
+                        trailer:
+                          _id: 63bd03e223c814afb608cbd7
+                          src: "/videos/63bd03e223c814afb608cbd6.mp4"
+                          thumbnail: "/images/63bd03e223c814afb608cbd8.jpg"
+                          
   /collections/top10:
     get:
       summary: Получение топ10 фильмов и сериалов по просмотрам за последнюю неделю
