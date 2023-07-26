@@ -228,7 +228,7 @@ router.get('/', async (req, res) => {
 	}
 });
 
-// Получение коллекции топ-10
+// Получение коллекции топ-10 просмотров за неделю
 router.get('/top10', async (req, res) => {
 
 	const today = new Date()
@@ -236,9 +236,6 @@ router.get('/top10', async (req, res) => {
 	const month = today.getMonth()
 	const day = today.getDate()
 	const dateWeekAgo = new Date(year, month, day - 7)
-
-	console.log('dateWeekAgo:', dateWeekAgo) // 31 March 2019
-	console.log('before try')
 
 	try {
 		const result = await MoviePageLog.aggregate([
@@ -253,44 +250,43 @@ router.get('/top10', async (req, res) => {
 				movieId: {
 					$addToSet: "$movieId"
 				},
-				userId: {
-					$addToSet: "$userId"
-				}
 			} },
-	
-			{$unwind:'$movieId'},
-			{$unwind:'$userId'},
-
-			// {$match: {
-			// 	'$movieId':{
-
-			// 	}
-			// }}
-			// { $limit: 10 },
-
+			{ $sort: {count:-1}},
+			{ $group: {
+				_id: '$movieId',         
+				videoId:  { $first: '$_id' },          
+				count: { $first: '$count' },
+			}},
+			{ $sort: {count:-1}},
 			{ $lookup: {
 					from: "movies",
-					localField: "movieId",
+					localField: "_id",
 					foreignField: "_id",
 					pipeline: [
 						{ $project: {
-							_id: false,
-							name: true
+							_id: true,
+							name: true,
+							alias:true,
+							shortDesc:true,
+							poster: true,
 						} },
 						{ $limit: 1 }
-			],
-				as: "movie"
-		} },
-		{ $unwind: { path: "$movie" } },
-
-
+					],
+					as: "movie"
+			}},
+			{ $unwind: { path: "$movie" } },
+			{ $limit: 10 },
+			{ $project: {
+				_id: false,
+				viewsAmount:'$count',
+				movie:true
+			}}
 		])
-		console.log('result:', result)
-		console.log('result.length:', result.length)
+
 		return res.status(200).json(result);
 
-	} catch(e){
-		console.log('error in top10 catch:', e)
+	} catch(err) {
+		return resError({ res, msg: err });
 	}
 });
 
