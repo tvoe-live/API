@@ -104,6 +104,7 @@ router.get('/movie', async (req, res) => {
 					shortDesc: true,
 					countries: true,
 					categoryAlias: true,
+					genresAliases: true,
 					logo: { src: true },
 					cover: { src: true },
 					poster: { src: true },
@@ -130,9 +131,52 @@ router.get('/movie', async (req, res) => {
 				default: break;
 			}
 
+			const similarItems = await Movie.find(
+				{
+					publishedAt: {$ne:null},
+					genresAliases: {
+						$in: data.genresAliases
+					},
+					_id: {$ne:data._id},
+					categoryAlias: data.categoryAlias
+				},
+				{
+					_id: 1,
+					name:1,
+					alias:1,
+					genresAliases: 1,
+					poster: 1,
+				}
+			)
+
+			const editSimilarItems = similarItems.map(movie=>{
+				let matchGenresAmount = 0
+
+				data.genresAliases.forEach(genre=>{
+					if (movie.genresAliases.includes(genre)){
+						matchGenresAmount++
+					}
+				})
+							
+				return {
+					_id: movie._id,
+					name: movie.name,
+					alias: movie.alias,
+					genresAliases: movie.genresAliases,
+					poster: movie.poster,
+					matchGenresAmount
+				}
+			})
+
+			editSimilarItems.sort((a,b)=>{
+				return b.matchGenresAmount - a.matchGenresAmount
+			})
+
+			data.similarItems = editSimilarItems.slice(0, 20)
+
 			delete(data.films);
 			delete(data.series);
-			
+
 			return res.status(200).json(data);
 
 		});
@@ -140,7 +184,6 @@ router.get('/movie', async (req, res) => {
 	} catch(err) {
 		return resError({ res, msg: err });
 	}
-
 });
 
 // Получить рейтинг поставленный пользователем
