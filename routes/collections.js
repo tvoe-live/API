@@ -44,6 +44,12 @@ router.get('/', async (req, res) => {
 		url: { $concat: [ "/p/", "$alias" ] },
 	};
 
+	const today = new Date()
+	const year = today.getFullYear()
+	const month = today.getMonth()
+	const day = today.getDate()
+	const dateWeekAgo = new Date(year, month, day - 7)
+
 	try {
 		const result = await Movie.aggregate([
 			{ $facet: {
@@ -68,6 +74,58 @@ router.get('/', async (req, res) => {
 					}}
 				],
 
+				//Топ 10 фильмов по просмотрам за неделю
+				"top10": [
+					{ $project: {
+						_id: true,
+						name: true,
+						alias:true,
+						shortDesc:true,
+						poster: true,
+					} },
+					{ $lookup: {
+						from: "moviepagelogs",
+						localField: "_id",
+						foreignField: "movieId",
+						pipeline: [
+							{ $project: {
+								_id: true,
+								userId: true,
+								movieId:true,
+								videoId:true,
+								updatedAt:true,
+								endTime:true
+							} },
+						],
+						as: "moviepagelog"
+					}},
+					{ $unwind: '$moviepagelog'},
+					{ $match: {
+						'moviepagelog.updatedAt': {
+						$gte: dateWeekAgo
+					}}},
+					{ $group: { 
+						_id: '$moviepagelog.videoId',
+						count: { $sum: 1 },
+						movieId: { $first: "$moviepagelog.movieId" },
+						shortDesc: { $first: "$shortDesc" },
+						name: { $first: "$name" },
+						poster: { $first: "$poster" },
+						alias: { $first: "$alias" },
+					} },
+					{ $sort: {count:-1}},
+					{ $group: {
+						_id: '$movieId',         
+						videoId:  { $first: '$_id' },          
+						count: { $first: '$count' },
+						shortDesc: { $first: '$shortDesc' },
+						name: { $first: '$name' },
+						alias: { $first: '$alias' },
+						count: { $first: '$count' },
+					}},
+					{ $sort: {count:-1}},
+					{ $limit: 10 },
+				],
 				// Карусель - самые популярные
 				"carousel": [
 					{ $lookup: {
@@ -204,6 +262,11 @@ router.get('/', async (req, res) => {
 						name:"Cлучайныe фильмы с рейтингом 7+",
 						type: "randomMoviesWithRatingMore7",
 						items: '$moviesWithRatingMore7',
+					},
+					{
+						name:"Топ 10 фильмов по просмотрам за неделю",
+						type: "top10",
+						items: '$top10',
 					}
 				],
 				genres: "$genres",
@@ -232,7 +295,7 @@ router.get('/', async (req, res) => {
 router.get('/continueWatching', verify.token, async (req, res) => {
 
 	const skip = +req.query.skip || 0
-	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 25);
+	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20);
 
 	const titlesDuration =  10*60
 	

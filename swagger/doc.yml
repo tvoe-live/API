@@ -3301,6 +3301,7 @@ paths:
                           _id: 63bd03e223c814afb608cbd7
                           src: "/videos/63bd03e223c814afb608cbd6.mp4"
                           thumbnail: "/images/63bd03e223c814afb608cbd8.jpg"
+                   
   /catalog:
     get:
       summary: Подборки и жанры для главной страницы
