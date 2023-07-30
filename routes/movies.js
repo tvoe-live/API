@@ -144,19 +144,40 @@ router.get('/movie', async (req, res) => {
 								}
 							},
 						},
-						{$project: {
+						...movieOperations({
+							addToProject: {
+								_id: true,
+								rating: true,
+								shortDesc: true,
+								categoryAlias: true,
+								genresAliases: true,
+								logo: { src: true },
+								poster: { src: true },
+								genreNames: "$genres.name",
+							},
+						}),
+						{ $project: {
 							_id: true,
 							name:true,
 							genresAliases: true,
+							rating: true,
 							poster:true,
 							alias:true,
+							categoryAlias:true,
+							genreNames:true,
+							duration:true,
 							genresMatchAmount: {
 								$size:[
 									{	$setIntersection: ['$genresAliases', '$$selectedMovieGenresAliases']}
 							]}
 						}}, 
 						{	$sort: { genresMatchAmount: -1	} },
-						{ $limit: 20 }
+						{ $limit: 20 },
+						{ $project: {
+								genresAliases:false,
+								genresMatchAmount:false,
+								categoryAlias:false
+						}},
 					],
 					as: "similarItems"
 				}
