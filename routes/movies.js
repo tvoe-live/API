@@ -91,8 +91,8 @@ router.get('/movie', async (req, res) => {
 	}
 
 	try {
-		Movie.aggregate(
-			movieOperations({
+		Movie.aggregate([
+			...movieOperations({
 				addToMatch: {
 					...find
 				},
@@ -118,7 +118,50 @@ router.get('/movie', async (req, res) => {
 					series: videoParams
 				},
 				limit: 1
-			}), 
+			}),
+			{
+				$lookup: {
+					from: "movies",
+					let: {
+						selectedMovieGenresAliases: "$genresAliases",			
+						selectedMovieId: "$_id",
+						selectedMovieCategoryAlias: "$categoryAlias"
+					},
+					pipeline: [
+						{ $match: {
+								publishedAt: {$ne:null},
+								$expr: {
+									$and:[
+										{$ne: ["$_id", "$$selectedMovieId"]},
+										{$eq: ['$categoryAlias', '$$selectedMovieCategoryAlias']},
+										{$gte: [ 
+											{ $size:[
+												{	$setIntersection: ['$genresAliases', '$$selectedMovieGenresAliases']}
+											]},
+											1
+										]}
+									]
+								}
+							},
+						},
+						{$project: {
+							_id: true,
+							name:true,
+							genresAliases: true,
+							poster:true,
+							alias:true,
+							genresMatchAmount: {
+								$size:[
+									{	$setIntersection: ['$genresAliases', '$$selectedMovieGenresAliases']}
+							]}
+						}}, 
+						{	$sort: { genresMatchAmount: -1	} },
+						{ $limit: 20 }
+					],
+					as: "similarItems"
+				}
+			} 
+		],
 		async (err, result) => {
 			if(err) return resError({ res, msg: err });
 			if(!result[0]) return resError({ res, msg: 'Не найдено' });
@@ -130,49 +173,6 @@ router.get('/movie', async (req, res) => {
 				case 'serials': data.sources = data.series || null; break;
 				default: break;
 			}
-
-			const similarItems = await Movie.find(
-				{
-					publishedAt: {$ne:null},
-					genresAliases: {
-						$in: data.genresAliases
-					},
-					_id: {$ne:data._id},
-					categoryAlias: data.categoryAlias
-				},
-				{
-					_id: 1,
-					name:1,
-					alias:1,
-					genresAliases: 1,
-					poster: 1,
-				}
-			)
-
-			const editSimilarItems = similarItems.map(movie=>{
-				let matchGenresAmount = 0
-
-				data.genresAliases.forEach(genre=>{
-					if (movie.genresAliases.includes(genre)){
-						matchGenresAmount++
-					}
-				})
-							
-				return {
-					_id: movie._id,
-					name: movie.name,
-					alias: movie.alias,
-					genresAliases: movie.genresAliases,
-					poster: movie.poster,
-					matchGenresAmount
-				}
-			})
-
-			editSimilarItems.sort((a,b)=>{
-				return b.matchGenresAmount - a.matchGenresAmount
-			})
-
-			data.similarItems = editSimilarItems.slice(0, 20)
 
 			delete(data.films);
 			delete(data.series);
