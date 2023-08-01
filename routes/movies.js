@@ -91,8 +91,8 @@ router.get('/movie', async (req, res) => {
 	}
 
 	try {
-		Movie.aggregate(
-			movieOperations({
+		Movie.aggregate([
+			...movieOperations({
 				addToMatch: {
 					...find
 				},
@@ -104,6 +104,7 @@ router.get('/movie', async (req, res) => {
 					shortDesc: true,
 					countries: true,
 					categoryAlias: true,
+					genresAliases: true,
 					logo: { src: true },
 					cover: { src: true },
 					poster: { src: true },
@@ -117,7 +118,49 @@ router.get('/movie', async (req, res) => {
 					series: videoParams
 				},
 				limit: 1
-			}), 
+			}),
+			{
+				$lookup: {
+					from: "movieratings",
+					localField: "_id",
+					foreignField: "movieId",
+					pipeline: [
+						{
+							$project: {
+								movieId:true,
+								userId: true,
+								rating: true,
+								updatedAt: true,
+								review: true,
+							}
+						},
+						{
+							$lookup: {
+								from: "users",
+								localField: "userId",
+								foreignField: "_id",
+								pipeline: [
+									{
+										$project: {
+											firstname:true,
+											lastname: true,
+											displayName: true,
+											avatar: true,
+									}
+									}
+								],
+								as: "user",
+							},
+						},
+						{	$project: {
+								userId: false,
+						}},
+						{ $unwind: "$user" },
+					],
+					as: "movieratings"
+				}
+			},
+		],
 		async (err, result) => {
 			if(err) return resError({ res, msg: err });
 			if(!result[0]) return resError({ res, msg: 'Не найдено' });
@@ -132,7 +175,7 @@ router.get('/movie', async (req, res) => {
 
 			delete(data.films);
 			delete(data.series);
-			
+		 
 			return res.status(200).json(data);
 
 		});
@@ -153,17 +196,19 @@ router.get('/rating', verify.token, async (req, res) => {
 		userId: req.user._id
 	}, { 
 		_id: false,
-		rating: true 
+		rating: true,
+		review: true 
 	});
 
 	return res.status(200).json( rating );
 });
 
-// Отправка рейтинга
+// Отправка рейтинга и комментария
 router.post('/rating', verify.token, async (req, res) => {
 	let {
 		movieId,
 		rating,
+		review
 	} = req.body;
 
 	movieId = mongoose.Types.ObjectId(movieId)
@@ -200,7 +245,10 @@ router.post('/rating', verify.token, async (req, res) => {
 				userId: req.user._id
 			},
 			{ 
-				$set: { rating },
+				$set: {
+					rating,
+					...(review && {review:review})
+				},
 				$inc: { '__v': 1 }
 			}
 		);
@@ -208,6 +256,7 @@ router.post('/rating', verify.token, async (req, res) => {
 		if(!userRating && rating !== null) {
 			await MovieRating.create({ 
 				rating,
+				review,
 				movieId,
 				userId: req.user._id,
 			});
@@ -245,7 +294,8 @@ router.post('/rating', verify.token, async (req, res) => {
 		return res.status(200).json({
 			success: true,
 			movieId,
-			rating
+			rating,
+			review
 		});
 	} catch(err) {
 		return resError({ res, msg: err });
