@@ -39,7 +39,7 @@ router.get('/', async (req, res) => {
 		poster: true,
 		trailer: true,
 		logo: true,
-		rating: '$rating.avg',
+		rating:true,
 		categoryAlias: true,
 		url: { $concat: [ "/p/", "$alias" ] },
 	};
@@ -65,7 +65,7 @@ router.get('/', async (req, res) => {
 				"moviesWithRatingMore7": [
 					{ $match: { 
 							publishedAt: { $ne: null },
-							rating: { avg: { $gte: 7 } }
+							rating: {  $gte: 7  }
 					} },
 					{ $unwind: { path: "$rating", preserveNullAndEmptyArrays: false } },
 					{ $project: projectRatingMore7 },
