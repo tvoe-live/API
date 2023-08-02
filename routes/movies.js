@@ -91,8 +91,8 @@ router.get('/movie', async (req, res) => {
 	}
 
 	try {
-		Movie.aggregate(
-			movieOperations({
+		Movie.aggregate([
+			...movieOperations({
 				addToMatch: {
 					...find
 				},
@@ -104,6 +104,7 @@ router.get('/movie', async (req, res) => {
 					shortDesc: true,
 					countries: true,
 					categoryAlias: true,
+					genresAliases: true,
 					logo: { src: true },
 					cover: { src: true },
 					poster: { src: true },
@@ -117,7 +118,71 @@ router.get('/movie', async (req, res) => {
 					series: videoParams
 				},
 				limit: 1
-			}), 
+			}),
+			{
+				$lookup: {
+					from: "movies",
+					let: {
+						selectedMovieGenresAliases: "$genresAliases",			
+						selectedMovieId: "$_id",
+						selectedMovieCategoryAlias: "$categoryAlias"
+					},
+					pipeline: [
+						{ $match: {
+								publishedAt: {$ne:null},
+								$expr: {
+									$and:[
+										{$ne: ["$_id", "$$selectedMovieId"]},
+										{$eq: ['$categoryAlias', '$$selectedMovieCategoryAlias']},
+										{$gte: [ 
+											{ $size:[
+												{	$setIntersection: ['$genresAliases', '$$selectedMovieGenresAliases']}
+											]},
+											1
+										]}
+									]
+								}
+							},
+						},
+						...movieOperations({
+							addToProject: {
+								_id: true,
+								rating: true,
+								shortDesc: true,
+								categoryAlias: true,
+								genresAliases: true,
+								logo: { src: true },
+								poster: { src: true },
+								genreNames: "$genres.name",
+							},
+						}),
+						{ $project: {
+							_id: true,
+							name:true,
+							genresAliases: true,
+							rating: true,
+							poster:true,
+							alias:true,
+							categoryAlias:true,
+							genreNames:true,
+							duration:true,
+							genresMatchAmount: {
+								$size:[
+									{	$setIntersection: ['$genresAliases', '$$selectedMovieGenresAliases']}
+							]}
+						}}, 
+						{	$sort: { genresMatchAmount: -1	} },
+						{ $limit: 20 },
+						{ $project: {
+								genresAliases:false,
+								genresMatchAmount:false,
+								categoryAlias:false
+						}},
+					],
+					as: "similarItems"
+				}
+			} 
+		],
 		async (err, result) => {
 			if(err) return resError({ res, msg: err });
 			if(!result[0]) return resError({ res, msg: 'Не найдено' });
@@ -132,7 +197,7 @@ router.get('/movie', async (req, res) => {
 
 			delete(data.films);
 			delete(data.series);
-			
+
 			return res.status(200).json(data);
 
 		});
@@ -140,7 +205,6 @@ router.get('/movie', async (req, res) => {
 	} catch(err) {
 		return resError({ res, msg: err });
 	}
-
 });
 
 // Получить рейтинг поставленный пользователем
