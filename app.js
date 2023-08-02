@@ -70,6 +70,7 @@ const profileDevices = require('./routes/profile/devices');
 const profileHistory = require('./routes/profile/history');
 const adminMovieEditor= require('./routes/admin/movieEditor');
 const profileFavorites = require('./routes/profile/favorites');
+const profileBookmarks = require('./routes/profile/bookmarks');
 const adminSearchHistory = require('./routes/admin/searchHistory');
 const adminMoviesRatingHistory = require('./routes/admin/moviesRatingHistory');
 const adminMoviesViewingHistory = require('./routes/admin/moviesViewingHistory');
@@ -88,6 +89,7 @@ app.use('/profile/payment', profilePayment) // Профиль > Подписка
 app.use('/profile/devices', profileDevices) // Профиль > Мои устройства
 app.use('/profile/history', profileHistory) // Профиль > История просмотров
 app.use('/profile/favorites', profileFavorites) // Профиль > Избранное
+app.use('/profile/bookmarks', profileBookmarks) // Профиль > Закладки
 
 app.use('/admin', admin) // Админ-панель
 app.use('/admin/users', adminUsers) // Админ-панель > Пользователи
