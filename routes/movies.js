@@ -159,6 +159,7 @@ router.get('/movie', async (req, res) => {
 								userId: false,
 						}},
 						{ $unwind: "$user" },
+						{ $limit: 20}
 					],
 					as: "movieratings"
 				}
@@ -281,7 +282,7 @@ router.post('/rating', verify.token, async (req, res) => {
 		return resError({
 			res, 
 			alert: true,
-			msg: 'Ожидается ID фильма'
+			msg: 'Ожидается ID'
 		});
 	}
 
@@ -291,7 +292,7 @@ router.post('/rating', verify.token, async (req, res) => {
 		return resError({
 			res, 
 			alert: true,
-			msg: 'Ожидается rating или review'
+			msg: 'Ожидается rating и/или review'
 		});
 	}
 
@@ -381,7 +382,7 @@ router.delete('/rating', verify.token, async (req, res) => {
 		return resError({
 			res, 
 			alert: true,
-			msg: 'Ожидается movieId'
+			msg: 'Ожидается Id'
 		});
 	}
 
