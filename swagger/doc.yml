@@ -4871,7 +4871,7 @@ paths:
 
   /movies/rating:
     get:
-      summary: Получить рейтинг поставленный пользователем
+      summary: Получить рейтинг и комментарий поставленный пользователем
       tags:
         - Movies
       parameters:
@@ -4892,11 +4892,15 @@ paths:
                   rating:
                     type: number
                     description:  Рейтинг который поставил пользователь фильму с переданным id
+                  review:
+                    type: string
+                    description: Комментарий (отзыв) пользователя к фильму/cериалу
                 example:
                   rating: 8
+                  review: Классный фильм
 
     post:
-      summary: Отправка рейтинга
+      summary: Отправка рейтинга(оценки) и отзыва(комментария)
       tags:
         - Movies
       requestBody:
@@ -4912,7 +4916,10 @@ paths:
                 rating:
                   type: number
                   description: Оценка фильма по шкале от 1 до 10
-                  required: true
+                review:
+                    type: string
+                    description: Комментарий (отзыв) пользователя к фильму/cериалу
+                
       responses:
         '200':
           description: OK
@@ -4934,6 +4941,48 @@ paths:
                   success: true
                   movieId: "63ac8aa1b2c93ed2212186e7"
                   rating: 9
+                  review: Классный фильм
+    delete:
+      summary: Удаления рейтинга и отзыва
+      tags:
+        - Movies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                movieId:
+                  type: string
+                  description:  Id фильма (mongoose.ObjectId)
+                  required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    description: Надпись "success"
+                  alert:
+                    type: boolean
+                    description: Значение true
+                  _id:
+                    type: string
+                    description: Id удаленного фильма или сериала (mongoose.ObjectId) 
+                  msg:
+                    type: string
+                    description: Надпись "Успешно удалено"
+                example:
+                  type: "success"
+                  alert: true
+                  id: "63ac7d6ab2c93ed221218186"
+                  msg: "Успешно удалено"
+
+
 
   /movies/favorite:
     get:
