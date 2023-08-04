@@ -7,6 +7,8 @@ const MovieRating = require('../models/movieRating');
 const MoviePageLog = require('../models/moviePageLog');
 const MovieFavorite = require('../models/movieFavorite');
 const movieOperations = require('../helpers/movieOperations');
+const resSuccess = require('../helpers/resSuccess');
+
 const mongoose = require('mongoose');
 
 /*
@@ -186,7 +188,7 @@ router.get('/movie', async (req, res) => {
 
 });
 
-// Получить рейтинг поставленный пользователем
+// Получить рейтинг и комментарий поставленный пользователем
 router.get('/rating', verify.token, async (req, res) => {
 
 	const { movieId } = req.query;
@@ -211,16 +213,25 @@ router.post('/rating', verify.token, async (req, res) => {
 		review
 	} = req.body;
 
-	movieId = mongoose.Types.ObjectId(movieId)
-
 	if(!movieId) {
 		return resError({
 			res, 
 			alert: true,
-			msg: 'Ожидается ID'
+			msg: 'Ожидается ID фильма'
 		});
 	}
-	if((rating !== null && (rating < 1 || rating > 10)) || typeof rating === 'string' || rating === 0) {
+
+	movieId = mongoose.Types.ObjectId(movieId)
+	
+	if(typeof(rating)==='undefined' && typeof(rating)==='review') {
+		return resError({
+			res, 
+			alert: true,
+			msg: 'Ожидается rating или review'
+		});
+	}
+
+	if(rating === null || (rating < 1 || rating > 10) || typeof rating === 'string' || rating === 0) {
 		return resError({
 			res, 
 			alert: true,
@@ -247,26 +258,20 @@ router.post('/rating', verify.token, async (req, res) => {
 			{ 
 				$set: {
 					rating,
-					...(review && {review:review})
+					review
 				},
 				$inc: { '__v': 1 }
 			}
 		);
 
-		if(!userRating && rating !== null) {
+		if(!userRating && !!rating) {
 			await MovieRating.create({ 
 				rating,
 				review,
 				movieId,
 				userId: req.user._id,
 			});
-		} else if(!userRating) {
-			return resError({
-				res, 
-				alert: true,
-				msg: 'Необходимо оценить перед сбросом оценки'
-			});
-		}
+		} 
 
 		// Получить все оценки фильма
 		const movieRatingLogs = await MovieRating.aggregate([
@@ -283,7 +288,7 @@ router.post('/rating', verify.token, async (req, res) => {
 			} }
 		]);
 
-		const newMovieRating = movieRatingLogs[0].avg || 0
+		const newMovieRating = movieRatingLogs[0].avg
 
 		// Обновить среднюю оценку фильма
 		await Movie.updateOne(
@@ -297,6 +302,64 @@ router.post('/rating', verify.token, async (req, res) => {
 			rating,
 			review
 		});
+	} catch(err) {
+		return resError({ res, msg: err });
+	}
+});
+
+// Удаление рейтинга и комментария
+router.delete('/rating', verify.token, async (req, res) => {
+	let {
+		movieId,
+	} = req.body;
+
+	if(!movieId) {
+		return resError({
+			res, 
+			alert: true,
+			msg: 'Ожидается movieId'
+		});
+	}
+
+	movieId = mongoose.Types.ObjectId(movieId)
+
+	try {
+		// Удаление записи из БД
+		await MovieRating.deleteOne({ 
+			movieId,
+			userId: req.user._id
+		});
+		
+		// Получить все оценки фильма
+		const movieRatingLogs = await MovieRating.aggregate([
+			{ $match: {
+				movieId
+			} },
+			{ $group: { 
+				_id: null,
+				avg: { $avg: "$rating" } 
+			} },
+			{ $project: {
+				_id: false,
+				avg: true
+			} }
+		]);
+		
+		const newMovieRating = movieRatingLogs[0]?.avg || null
+
+		// Обновить среднюю оценку фильма
+		await Movie.updateOne(
+			{ _id: movieId },
+			{ $set: { rating: newMovieRating } }
+		);
+
+		return resSuccess({
+			res,
+			movieId,
+			alert: true,
+			msg: 'Успешно удалено'
+		})
+
 	} catch(err) {
 		return resError({ res, msg: err });
 	}
