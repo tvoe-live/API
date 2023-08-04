@@ -270,6 +270,31 @@ router.patch('/changeCard', verify.token, async (req, res) => {
 	}
 })
 
+/*
+ * Удалить данные карты
+ */
+router.delete('/deleteCard', verify.token, async (req, res) => {
+
+	try {
+		await User.updateOne(
+			{ _id: req.user._id }, 
+			{ $set: { 
+				"referral.card": {
+					number:null,
+					cardholder:null
+				}
+			} }
+		)
+
+		return resSuccess({
+			res,
+			alert: true,
+			msg: 'Данные карты удалены'
+		})
+	} catch(err) {
+		return resError({ res, msg: err });
+	}
+})
 
 /*
  * Создание заявки на вывод c обнулением баланса
