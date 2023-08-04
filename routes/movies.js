@@ -389,11 +389,21 @@ router.delete('/rating', verify.token, async (req, res) => {
 	movieId = mongoose.Types.ObjectId(movieId)
 
 	try {
-		// Удаление записи из БД
-		await MovieRating.deleteOne({ 
-			movieId,
-			userId: req.user._id
-		});
+
+		// Обнуление записи из БД
+		 await MovieRating.findOneAndUpdate(
+			{ 
+				movieId,
+				userId: req.user._id
+			},
+			{ 
+				$set: {
+					rating:null,
+					review:null
+				},
+				$inc: { '__v': 1 }
+			}
+		);
 		
 		// Получить все оценки фильма
 		const movieRatingLogs = await MovieRating.aggregate([
