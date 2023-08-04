@@ -300,6 +300,124 @@ paths:
                           description: Длительность фильма в секундах
                         url:
                           type: string
+                          description: Url к фильму
+                        addedToBookmarkAt:
+                          type: Date 
+                          description: Дата добавления фильма/cериала в закладки
+              examples:
+                example:
+                  value: 
+                    totalSize: 2
+                    items:
+                      - name: "Америка: фильм"
+                        shortDesc: "Вооруженный пилами Джордж Вашингтон объединяется с обожающим пиво друганом Сэмом Адамсом, чтобы приструнить британцев в ироничной комедии о Войне за независимость США."
+                        trailer:
+                          _id: 641bf64b0073f02ab65dde80
+                          src: "/videos/641bf64b0073f02ab65dde7f.mp4"
+                          thumbnail: "/images/641bf64b0073f02ab65dde81.jpg"
+                        ageLevel: 18
+                        dateReleased: "2021-06-15"
+                        categoryAlias: "films"
+                        poster:
+                          src: "/images/641f4080944e8bd192d18318.jpg"
+                        rating: 7
+                        duration: 5892
+                        url: "/p/amerika-film"
+                        addedToBookmarkAt: "2023-06-07T14:56:03.730Z"
+                      - name: "Снять блокировку"
+                        shortDesc: "Жизнь женщины резко меняется из-за опасного незнакомца, который находит ее телефон и начинает отслеживать каждый шаг."
+                        trailer:
+                          _id: 63fded1598e2af31cb68b499
+                          src: "/videos/63fded1598e2af31cb68b498.mp4"
+                          thumbnail: "/images/63fded1598e2af31cb68b49a.jpg"
+                        ageLevel: 16
+                        dateReleased: "2023-02-17"
+                        categoryAlias: "films"
+                        poster:
+                          src: "/images/63fded0598e2af31cb68b46f.jpg"
+                        rating: 6
+                        duration: 7063.708333
+                        url: "/p/snyat-blokirovku"
+                        addedToBookmarkAt: "2023-06-07T14:56:00.297Z"
+
+  /profile/bookmarks:
+    get:
+      summary: Профиль > Закладки
+      tags:
+        - Profile
+      parameters:
+        - in: query
+          name: limit
+          schema:
+           type: number
+          description: Ограничение на максимальное количество элементов в теле ответа
+        - in: query
+          name: skip
+          schema:
+           type: number
+          description: Количество пропускаемых элементов из начала выборки
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalSize:
+                    type: number
+                    description: Общее количество сущностей в БД
+                  items:
+                    type: array
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: Название фильма
+                        shortDesc:
+                          type: string
+                          description: Краткое описание 
+                        trailer:
+                          type: object
+                          properties:  
+                            id: 
+                              type: string
+                              description: Mongoose.ObjectId
+                            src: 
+                              type: string
+                              description: Путь к файлу изображению обложки 
+                            thumbnail: 
+                              type: string
+                              description: Миниатюра (кадр из видео)  
+                            duration:
+                              type: number
+                              description: Длительность
+                        ageLevel:
+                          type: string
+                          description: Возрастное ограничение
+                        dateReleased:
+                          type: Date
+                          description: Дата релиза
+                        categoryAlias:
+                          type: string
+                          description: Вид категориии. Может быть films, serials или collections
+                        poster:
+                          type: object
+                          properties:  
+                            src: 
+                              type: string
+                              description: Путь к файлу изображению
+                        rating:
+                          type: number
+                          description: Рейтинг от 0 до 10
+                        duration: 
+                          type: string
+                          description: Длительность фильма в секундах
+                        url:
+                          type: string
                           description: Url к фильму? путь к фильму?
                         addedToFavoritesAt:
                           type: Date 
@@ -3180,7 +3298,7 @@ paths:
                             description: Длительность фильма в секундах 
                           url:
                             type: string
-                            description: Url к фильму? путь к фильму?
+                            description: Url к фильму
                           genreName:
                             type: string
                             description: Жанр фильма
@@ -4255,11 +4373,61 @@ paths:
                   url:
                     type: string
                     description: Url к фильму
+                  similarItems: 
+                    type: array
+                    uniqueItems: true
+                    description: Массив фильмов/сериалов с подобными жанрами
+                    minItems: 0
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          description:  Id(mongoose.ObjectId) фильма/cериала (документа коллекции movie)
+                        name:
+                          type: string
+                          description: Название фильма на русском
+                        duration: 
+                          type: string
+                          description: Длительность фильма в секундах
+                        badge: 
+                          type: object
+                          description:  Бейдж
+                          required: false
+                          properties:
+                            type:
+                              type: string
+                              descriptipn: newSeason - новый сезон, premiere - премьера
+                            startAt: 
+                              type: date
+                              descriptipn: дата начала показа бейджа
+                            finishAt: 
+                              type: date
+                              descriptipn: дата окончания показа бейджа
+                        poster:
+                          type: object
+                          properties:  
+                            src: 
+                              type: string
+                              description: Путь к файлу изображению постера
+                        rating:
+                          type: number
+                          description: Рейтинг от 0 до 10
+                        url:
+                          type: string
+                          description: Url к фильму
+                        genreNames:
+                          type: array
+                          description:  Cписок жанров
+                          uniqueItems: true
+                          minItems: 0
+                          items:
+                            type: string
+                            description: Название жанра
                   movieratings:
                     type: array
                     uniqueItems: true
                     description: Массив отзывов
-                    minItems: 0
                     items:
                       type: object
                       properties:
@@ -4296,7 +4464,28 @@ paths:
                             displayName:
                               type: string
                               description: Отображаемое имя пользователя
-
+                          description:  Id(mongoose.ObjectId) фильма/cериала (документа коллекции movie)
+                        name:
+                          type: string
+                          description: Название фильма на русском
+                        duration: 
+                          type: string
+                          description: Длительность фильма в секундах
+                        poster:
+                          type: object
+                          properties:  
+                            src: 
+                              type: string
+                              description: Путь к файлу изображению постера
+                        genreNames:
+                          type: array
+                          description:  Cписок жанров
+                          uniqueItems: true
+                          minItems: 0
+                          items:
+                            type: string
+                            description: Название жанра
+                
 
                 example:
                   _id: 63ac8aa1b2c93ed2212186e7
@@ -4481,7 +4670,204 @@ paths:
                       firstname: Елена
                       lastname: svirepa
                       displayName: alena.svirepa
-
+                  similarItems:
+                    - _id: 63bafda44b33357ef706bd9e
+                      name: Ферри
+                      poster:
+                        src: "/images/63bb942ba10c560357ec2e9f.jpg"
+                      duration: 6420.5
+                      url: "/p/amerika-film"
+                      rating: 9
+                      badge:
+                        type: newSeason
+                        startAt: '2022-01-01T00:00:00.000Z'
+                        finishAt: '2024-01-01T00:00:00.000Z'
+                      genreNames:
+                      - Боевики
+                      - Триллеры
+                      - Драмы
+                      - Криминал
+                    - _id: 63bbf7ee23c814afb608a5d5
+                      name: Осада в Сильвертоне
+                      poster:
+                        src: "/images/63bcfcab23c814afb608c6a2.jpg"
+                      duration: 6062.625
+                      genreNames:
+                      - Боевики
+                      - Триллеры
+                      - Драмы
+                      - Криминал
+                      - Исторические
+                    - _id: 6499bdbe9c45fd3d06d89094
+                      name: Армия воров 3
+                      rating: 6
+                      duration: 0
+                      genreNames:
+                      - Боевики
+                      - Триллеры
+                      - Криминал
+                    - _id: 63ad7d34b2c93ed22121a4f2
+                      name: Армия мертвецов
+                      poster:
+                        src: "/images/63ad7d37b2c93ed22121a51e.jpg"
+                      duration: 8906.833333
+                      genreNames:
+                      - Ужасы
+                      - Боевики
+                      - Криминал
+                      - Триллеры
+                      - Фантастика
+                    - _id: 63adf8c5b2c93ed22121b7f9
+                      name: Беккет
+                      poster:
+                        src: "/images/63adf8c8b2c93ed22121b823.jpg"
+                      duration: 6605.791667
+                      genreNames:
+                      - Боевики
+                      - Триллеры
+                      - Драмы
+                      - Криминал
+                    - _id: 63ad873eb2c93ed22121a7c3
+                      name: В тени Луны
+                      poster:
+                        src: "/images/63ad8741b2c93ed22121a7ed.jpg"
+                      duration: 6931.791667
+                      genreNames:
+                      - Боевики
+                      - Фантастика
+                      - Криминал
+                      - Триллеры
+                      - Детективы
+                    - _id: 63acc01cb2c93ed221219609
+                      name: Кейт
+                      poster:
+                        src: "/images/63acc01fb2c93ed221219637.jpg"
+                      duration: 6470.125
+                      genreNames:
+                      - Боевики
+                      - Триллеры
+                      - Криминал
+                    - _id: 63b5deb6bada9539c72fb48e
+                      name: Экстремо
+                      poster:
+                        src: "/images/63b5def4bada9539c72fb590.jpg"
+                      duration: 6742.666667
+                      genreNames:
+                      - Боевики
+                      - Триллеры
+                      - Драмы
+                      - Криминал
+                      - Приключения
+                    - _id: 63c69fc21c98adb3690e592f
+                      name: В упор
+                      poster:
+                        src: "/images/63c94cc56396809788e002c7.jpg"
+                      duration: 5201.916667
+                      genreNames:
+                      - Боевики
+                      - Триллеры
+                      - Криминал
+                    - _id: 63bc071f23c814afb608b170
+                      name: Неогранённые алмазы
+                      poster:
+                        src: "/images/63bcf11c23c814afb608bf8b.jpg"
+                      duration: 8147.666667
+                      genreNames:
+                      - Триллеры
+                      - Драмы
+                      - Криминал
+                    - _id: 63bd642e23c814afb608ffde
+                      name: Виновный
+                      poster:
+                        src: "/images/63be3f5f23c814afb60919da.jpg"
+                      duration: 5465.375
+                      genreNames:
+                      - Триллеры
+                      - Криминал
+                    - _id: 63dc1fd594254691aaa7d4c8
+                      name: Расплата за грехи
+                      poster:
+                        src: "/images/63dd438128f91e4e4703f397.jpg"
+                      duration: 5778.75
+                      genreNames:
+                      - Триллеры
+                      - Драмы
+                      - Мелодрамы
+                      - Криминал
+                      - Детективы
+                    - _id: 63bbff8523c814afb608ac10
+                      name: Тройная граница
+                      poster:
+                        src: "/images/63bcf95623c814afb608c454.jpg"
+                      duration: 7557.375
+                      genreNames:
+                      - Боевики
+                      - Триллеры
+                    - _id: 63bbfd4223c814afb608aa04
+                      name: 'Тайлер Рейк: Операция по спасению'
+                      poster:
+                        src: "/images/63bd26e323c814afb608d4e5.jpg"
+                      duration: 7052.875
+                      genreNames:
+                      - Боевики
+                      - Криминал
+                    - _id: 63c213557621fcffb6e676d5
+                      name: В погоне за Бонни и Клайдом
+                      poster:
+                        src: "/images/63c3d4561c98adb3690e03a4.jpg"
+                      duration: 7936.541667
+                      genreNames:
+                      - Триллеры
+                      - Драмы
+                      - Криминал
+                      - Детективы
+                      - Биографии
+                    - _id: 63bb00ad4b33357ef706c023
+                      name: Внезапная удача
+                      poster:
+                        src: "/images/63bb9be6a10c560357ec32fd.jpg"
+                      duration: 5546.5
+                      genreNames:
+                      - Триллеры
+                      - Драмы
+                      - Криминал
+                    - _id: 63c1ddc423c814afb609b318
+                      name: Земля и кровь
+                      poster:
+                        src: "/images/641f48a9944e8bd192d19541.jpg"
+                      duration: 4856.5
+                      genreNames:
+                      - Боевики
+                      - Криминал
+                    - _id: 63c69e511c98adb3690e58fe
+                      name: Утёйа, 22 июля
+                      poster:
+                        src: "/images/63cd96a41a0acf0408641cd4.jpg"
+                      duration: 8639.041667
+                      genreNames:
+                      - Триллеры
+                      - Драмы
+                      - Криминал
+                      - Исторические
+                    - _id: 63cd29bb1a0acf040863ec84
+                      name: Ограбить Муссолини
+                      poster:
+                        src: "/images/63d19cc81a0acf040864e8c0.jpg"
+                      duration: 5986.958333
+                      genreNames:
+                      - Боевики
+                      - Комедии
+                      - Криминал
+                      - Драмы
+                    - _id: 63cd25911a0acf040863e817
+                      name: 4 наёмника
+                      poster:
+                        src: "/images/6407a0d35da2f6823e4b31d3.jpg"
+                      duration: 8512.625
+                      genreNames:
+                      - Боевики
+                      - Комедии
+                      - Криминал
 
   /movies/rating:
     get:
@@ -4614,6 +5000,72 @@ paths:
                   success: true
                   movieId: "63ac8aa1b2c93ed2212186e7"
                   isFavorite: true
+
+  /movies/bookmark:
+    get:
+      summary: Получение статуса на закладку
+      tags:
+        - Movies
+      parameters:
+        - in: query
+          name: movieId
+          schema:
+           type: string
+          description: Id(mongoose.ObjectId) фильма (документа коллекции movie)
+          required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  movieId:
+                    type: string
+                    description:  Id(mongoose.ObjectId) фильма (документа коллекции movie)
+                  isBookmark:
+                    type: boolean
+                    description: Добавлен ли данный фильм данным пользователем в закладки 
+                example:
+                  movieId: '63ac8aa1b2c93ed2212186e7' 
+                  isBookmark: true
+
+    post:
+      summary:  Добавление / удаление из закладок
+      tags:
+        - Movies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                movieId:
+                  type: string
+                  description:  Id фильма/cериала (mongoose.ObjectId) для добавления или удаления из изранного ( если значение в бд в коллекции userBoolmark есть для заданного фильма и пользователя - оно меняется на противоположное, если значения в бд нет - фильм добавляется в избранное)
+                  required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description:  Значение true - сообщение об успехе 
+                  movieId:
+                    type: string
+                    description: Id фильма/сериала (mongoose.ObjectId)
+                  isBookmark:
+                    type: boolean
+                    description: Добавлен ли данный фильм данным пользователем в закладки
+                example:
+                  success: true
+                  movieId: "63ac8aa1b2c93ed2212186e7"
+                  isBookmark: true
 
   /movies/logs:
     get:

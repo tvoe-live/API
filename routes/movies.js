@@ -6,6 +6,7 @@ const verify = require('../middlewares/verify');
 const MovieRating = require('../models/movieRating');
 const MoviePageLog = require('../models/moviePageLog');
 const MovieFavorite = require('../models/movieFavorite');
+const MovieBookmark = require('../models/movieBookmark');
 const movieOperations = require('../helpers/movieOperations');
 const resSuccess = require('../helpers/resSuccess');
 
@@ -162,6 +163,70 @@ router.get('/movie', async (req, res) => {
 					as: "movieratings"
 				}
 			},
+			{
+				$lookup: {
+					from: "movies",
+					let: {
+						selectedMovieGenresAliases: "$genresAliases",			
+						selectedMovieId: "$_id",
+						selectedMovieCategoryAlias: "$categoryAlias"
+					},
+					pipeline: [
+						{ $match: {
+								publishedAt: {$ne:null},
+								$expr: {
+									$and:[
+										{$ne: ["$_id", "$$selectedMovieId"]},
+										{$eq: ['$categoryAlias', '$$selectedMovieCategoryAlias']},
+										{$gte: [ 
+											{ $size:[
+												{	$setIntersection: ['$genresAliases', '$$selectedMovieGenresAliases']}
+											]},
+											1
+										]}
+									]
+								}
+							},
+						},
+						...movieOperations({
+							addToProject: {
+								_id: true,
+								shortDesc: true,
+								categoryAlias: true,
+								genresAliases: true,
+								logo: { src: true },
+								poster: { src: true },
+								genreNames: "$genres.name",
+							},
+						}),
+						{ $project: {
+							_id: true,
+							name:true,
+							genresAliases: true,
+							rating: true,
+							poster:true,
+							alias:true,
+							categoryAlias:true,
+							genreNames:true,
+							duration:true,
+							badge:true,
+							url:true,
+							genresMatchAmount: {
+								$size:[
+									{	$setIntersection: ['$genresAliases', '$$selectedMovieGenresAliases']}
+							]}
+						}}, 
+						{	$sort: { genresMatchAmount: -1	} },
+						{ $limit: 20 },
+						{ $project: {
+								genresAliases:false,
+								genresMatchAmount:false,
+								categoryAlias:false
+						}},
+					],
+					as: "similarItems"
+				}
+			} 
 		],
 		async (err, result) => {
 			if(err) return resError({ res, msg: err });
@@ -185,7 +250,6 @@ router.get('/movie', async (req, res) => {
 	} catch(err) {
 		return resError({ res, msg: err });
 	}
-
 });
 
 // Получить рейтинг и комментарий поставленный пользователем
@@ -467,6 +531,107 @@ router.post('/favorite', verify.token, async (req, res) => {
 		return resError({ res, msg: err });
 	}
 });
+
+// Получение статуса на закладки
+router.get('/bookmark', verify.token, async (req, res) => {
+	const { movieId } = req.query;
+
+	const movie = await Movie.findOne({ _id: movieId }, { _id: true });
+
+	if(!movie) {
+		return resError({
+			res, 
+			alert: true,
+			msg: 'Страница не найдена'
+		});
+	}
+
+	const userBookmark = await MovieBookmark.findOne(
+		{ 
+			movieId,
+			userId: req.user._id
+		}, 
+		{ 
+			_id: false, 
+			isBookmark: true
+		}
+	);
+
+	const isBookmark = userBookmark ? userBookmark.isBookmark : false;
+
+	return res.status(200).json({
+		movieId,
+		isBookmark
+	});
+});
+
+// Добавление / удаление из закладок
+router.post('/bookmark', verify.token, async (req, res) => {
+
+	const { movieId } = req.body;
+
+	if(!movieId) {
+		return resError({
+			res, 
+			alert: true,
+			msg: 'Ожидается ID'
+		});
+	}
+
+	try {
+		const movie = await Movie.findOne({ _id: movieId }, { _id: true });
+		console.log('movie:', movie)
+		if(!movie) {
+			return resError({
+				res, 
+				alert: true,
+				msg: 'Страница не найдена'
+			});
+		}
+
+		let isBookmark;
+
+		const userBookmark = await MovieBookmark.findOne(
+			{ 
+				movieId,
+				userId: req.user._id
+			}, 
+			{ 
+				_id: true, 
+				 isBookmark: true
+			}
+		);
+
+		if(userBookmark) {
+			isBookmark = !userBookmark.isBookmark;
+			await MovieBookmark.updateOne(
+				{ _id: userBookmark._id },
+				{ 
+					$set: { isBookmark },
+					$inc: { '__v': 1 }
+				}
+			);
+		
+		} else {
+			isBookmark = true;
+			
+			await MovieBookmark.create({
+				movieId,
+				isBookmark,
+				userId: req.user._id
+			});
+		}
+	
+		return res.status(200).json({
+			success: true,
+			movieId,
+			isBookmark
+		});
+	} catch(err) {
+		return resError({ res, msg: err });
+	}
+});
+
 
 // Получение логов просмотра фильма / серий сериала
 router.get('/logs', verify.token, async (req, res) => {
