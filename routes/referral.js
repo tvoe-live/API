@@ -300,6 +300,7 @@ router.delete('/deleteCard', verify.token, async (req, res) => {
  * Создание заявки на вывод c обнулением баланса
  */
 router.post('/withdrawBalance', verify.token, async (req, res) => {
+
 	const { card, balance } = req.user.referral
 
 	if(!card || card.number?.length !== 16) {
