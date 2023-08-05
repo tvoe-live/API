@@ -129,8 +129,8 @@ router.get('/movie', async (req, res) => {
 					foreignField: "movieId",
 					pipeline: [
 						{
-							$sort: {
-								review: -1, updatedAt:1
+							$match: {
+								review: {$ne: null}
 							}
 						},
 						{
@@ -165,7 +165,8 @@ router.get('/movie', async (req, res) => {
 								movieId:false
 						}},
 						{ $unwind: "$user" },
-						{ $limit: 20}
+						{ $limit: 20},
+						{ $sort: {updatedAt:-1}}
 					],
 					as: "movieratings"
 				}
