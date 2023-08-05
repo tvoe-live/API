@@ -76,8 +76,8 @@ router.get('/', async (req, res) => {
 
 // Получение одной записи
 router.get('/movie', async (req, res) => {
-	const skipSimilarItems = +req.query.skipSimilarItems || 0
 	const skipMovieRatings = +req.query.skipMovieRatings || 0
+	const limitMovieRatings = +(req.query.limitMovieRatings > 0 && req.query.limitMovieRatings <= 100 ? req.query.limitMovieRatings : 100);
 
 	const { _id, alias } = req.query;
 	const find = _id ? { _id: mongoose.Types.ObjectId(_id) } : { alias };
@@ -170,7 +170,7 @@ router.get('/movie', async (req, res) => {
 						{ $unwind: "$user" },
 						{ $sort: {updatedAt:-1}},
 						{ $skip: skipMovieRatings },
-						{ $limit: 20},
+						{ $limit: limitMovieRatings},
 					],
 					as: "movieratings"
 				}
@@ -229,7 +229,6 @@ router.get('/movie', async (req, res) => {
 							]}
 						}}, 
 						{	$sort: { genresMatchAmount: -1	} },
-						{ $skip: skipSimilarItems },
 						{ $limit: 20 },
 						{ $project: {
 								genresAliases:false,
