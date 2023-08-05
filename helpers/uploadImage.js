@@ -112,9 +112,8 @@ const uploadImageToS3 = async ({
 				...params
 			}),
 			params,
-			queueSize: 4,
-			partSize: 50 * 1024 * 1024,
-			leavePartsOnError: false,
+			isMultiPart: false,
+			partSize: 1024 ** 3
 		});
 
 		await parallelUploads3.done();
