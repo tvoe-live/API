@@ -302,7 +302,7 @@ router.delete('/deleteCard', verify.token, async (req, res) => {
 router.post('/withdrawBalance', verify.token, async (req, res) => {
 	const { card, balance } = req.user.referral
 
-	if(!card || card.number.length !== 16) {
+	if(!card || card.number?.length !== 16) {
 		return resError({
 			res, 
 			alert: true,
