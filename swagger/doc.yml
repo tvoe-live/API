@@ -3298,7 +3298,7 @@ paths:
                             description: Длительность фильма в секундах 
                           url:
                             type: string
-                            description: Url к фильму? путь к фильму?
+                            description: Url к фильму
                           genreName:
                             type: string
                             description: Жанр фильма
@@ -4390,6 +4390,87 @@ paths:
                         duration: 
                           type: string
                           description: Длительность фильма в секундах
+                        badge: 
+                          type: object
+                          description:  Бейдж
+                          required: false
+                          properties:
+                            type:
+                              type: string
+                              descriptipn: newSeason - новый сезон, premiere - премьера
+                            startAt: 
+                              type: date
+                              descriptipn: дата начала показа бейджа
+                            finishAt: 
+                              type: date
+                              descriptipn: дата окончания показа бейджа
+                        poster:
+                          type: object
+                          properties:  
+                            src: 
+                              type: string
+                              description: Путь к файлу изображению постера
+                        rating:
+                          type: number
+                          description: Рейтинг от 0 до 10
+                        url:
+                          type: string
+                          description: Url к фильму
+                        genreNames:
+                          type: array
+                          description:  Cписок жанров
+                          uniqueItems: true
+                          minItems: 0
+                          items:
+                            type: string
+                            description: Название жанра
+                  movieratings:
+                    type: array
+                    uniqueItems: true
+                    description: Массив отзывов
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          description:  Id(mongoose.ObjectId) отзыва (документа коллекции movieRating)
+                        movieId:
+                          type: string
+                          description:  Id(mongoose.ObjectId) фильма/cериала (документа коллекции movie)
+                        rating:
+                          type: number
+                          description:  Оценка фильма/сериала, поставленная пользователем
+                        review:
+                          type: string
+                          description:  Комментарий к фильму/сериалу от пользователя
+                        updatedAt:
+                          type: string
+                          description: Дата обновления отзыва/оценки от пользователя
+                        user: 
+                          type: object
+                          properties:
+                            _id: 
+                              type: string
+                              description: Id(mongoose.ObjectId) пользователя (документа коллекции users)
+                            avatar:
+                              type: string
+                              description: Путь к исходнику картинки профиля пользователя
+                            firstname:
+                              type: string
+                              description: Имя пользователя
+                            lastname:
+                              type: string
+                              description: Фамилия пользователя
+                            displayName:
+                              type: string
+                              description: Отображаемое имя пользователя
+                          description:  Id(mongoose.ObjectId) фильма/cериала (документа коллекции movie)
+                        name:
+                          type: string
+                          description: Название фильма на русском
+                        duration: 
+                          type: string
+                          description: Длительность фильма в секундах
                         poster:
                           type: object
                           properties:  
@@ -4404,7 +4485,7 @@ paths:
                           items:
                             type: string
                             description: Название жанра
-
+                
 
                 example:
                   _id: 63ac8aa1b2c93ed2212186e7
@@ -4467,12 +4548,140 @@ paths:
                     src: "/videos/63ad700ab2c93ed22121a0e3.mp4"
                     duration: 6388.583333
                     thumbnail: "/images/63ad700db2c93ed22121a0e5.jpg"
+                  movieratings:
+                  - _id: 63ef015e1894cb4889259f16
+                    movieId: 63ac7d6ab2c93ed221218186
+                    rating: 10
+                    updatedAt: '2023-02-17T04:23:58.962Z'
+                    user:
+                      _id: 63ef00f41894cb4889259eb3
+                      avatar:
+                      firstname: ''
+                      lastname: Dev
+                      displayName: Евгений
+                  - _id: 64c802905d0af132b68df659
+                    movieId: 63ac7d6ab2c93ed221218186
+                    rating: 9
+                    review: Захватывающий сюжет, невозможно оторваться. Супер атмосфера. Хочется пересмотреть
+                      еще раз! Но главный герой смотрится немного неуклюжим и нелогичгым. Я бы на его
+                      месте поступала по другому. Тем не менее в остальных моментах все выглядит очень
+                      правдоподобно
+                    updatedAt: '2023-07-31T19:00:29.607Z'
+                    user:
+                      _id: 6480807e904d20e5d4c1b6db
+                      avatar:
+                      firstname: Семён 12
+                      lastname: Папин
+                      displayName: 7on999@gmail.com
+                  - _id: 64c80572079b077cccb602fb
+                    movieId: 63ac7d6ab2c93ed221218186
+                    rating: 9
+                    review: 'И вот наконец-то стартовала премьера фильма, появление на свет которого
+                      многие зрители нашей необъятной ждали с 2021-ого года. Именно в конце того самого
+                      года режиссер ленты со своей командой отправился на орбиту, чтобы снять первый
+                      полнометражный фильм в космосе. Это событие дало старт мощнейшей пиар-кампании
+                      по заманиванию честных граждан в кинотеатры. Афиши, реклама по ТВ, вставки, многочисленные
+                      сюжеты по ''Первому каналу''... '
+                    updatedAt: '2023-07-31T19:03:14.577Z'
+                    user:
+                      _id: 64c161c1fc9fe294d4f1078a
+                      avatar:
+                      firstname: Анна
+                      lastname: Папина
+                      displayName: papina.annie
+                  - _id: 64c805ba82d27d3cf1b27602
+                    movieId: 63ac7d6ab2c93ed221218186
+                    rating: 5
+                    review: 'Фильм очень разочаровал, причём я изначально не ожидал многого от сюжета
+                      и игры актёров. Шёл в кино, чтобы увидеть космос на большом экране. К сожалению,
+                      космосу отвели минимум экранного времени:'
+                    updatedAt: '2023-07-31T19:04:26.228Z'
+                    user:
+                      _id: 63bfe1f923c814afb6093783
+                      avatar:
+                      firstname: Mikhail
+                      lastname: Zakharovskiy
+                      displayName: me@stwinnie.com
+                  - _id: 64c805f242c483a99d43a463
+                    movieId: 63ac7d6ab2c93ed221218186
+                    rating: 6
+                    review: Ещё на стадии съёмок зрители уже топили этот корабль, но кто-то верил, что
+                      чудо все таки существует. Ведь у создателей был козырь в виде первого фильма,
+                      снятого в космосе, которым они апеллировали весь период промо-кампании. И надо
+                      сказать, это одно из немногих, что в фильме действительно хорошо. Хотя в то же
+                      время, если хочется посмотреть кадры космоса, то это можно сделать дома в любое
+                      время, а не тратить более 2.5 часов в кинотеатре.
+                    updatedAt: '2023-07-31T19:05:22.975Z'
+                    user:
+                      _id: 63c85c9f6396809788dfb785
+                      avatar:
+                      firstname: Кирилл
+                      lastname: Степанов
+                      displayName: Kirill-Eremeev23
+                  - _id: 64c8065c74233ab1bac5f87e
+                    movieId: 63ac7d6ab2c93ed221218186
+                    rating: 8
+                    review: Очень тяжелый фильм! Уж сколько лет прошло с момента, как я его посмотрела,
+                      а все не могу пересмотреть, хоть и очень понравился. Во-первых, хорошо помню его
+                      - врезался в память, а во-вторых, такое впечатление оставляет после себя, что
+                      думаешь, думаешь, думаешь.... Очень сильный
+                    updatedAt: '2023-07-31T19:07:08.970Z'
+                    user:
+                      _id: 63c85d466396809788dfb88e
+                      avatar:
+                      firstname: Просто Костя
+                      lastname: Семенов
+                      displayName: kostya.semyonov2016@gmail.com
+                  - _id: 64c80695c9f163108ceb7363
+                    movieId: 63ac7d6ab2c93ed221218186
+                    rating: 4
+                    review: Смотрела этот фильм, но почти ничего не помню, кроме ужасной концовки и
+                      жуткого поступка этого нового домовладельца.
+                    updatedAt: '2023-07-31T19:08:05.187Z'
+                    user:
+                      _id: 63c85d766396809788dfb8ea
+                      avatar: "/images/63c85d766396809788dfb8e9.jpg"
+                      firstname: Максим
+                      lastname: Лепин
+                      displayName: Максим Лепин
+                  - _id: 64c8084f4ddfc2336b2d8aee
+                    movieId: 63ac7d6ab2c93ed221218186
+                    rating: 8
+                    review: Помню, когда я впервые посмотрела фильм, как меня переполняли эмоции. Это
+                      такая необычная история, которую я не видела ранее. Фильм произвёл на меня явно
+                      сильное впечатление. И несмотря на то, что кино идёт около трёх часов, время пролетает
+                      незаметно быстро.
+                    updatedAt: '2023-07-31T19:15:27.026Z'
+                    user:
+                      _id: 63c8c1d96396809788dfdc41
+                      avatar:
+                      firstname: Александр
+                      lastname: Балясников
+                      displayName: aleksandrbalyasnikov@gmail.com
+                  - _id: 64c8089ea22867adc906914b
+                    movieId: 63ac7d6ab2c93ed221218186
+                    rating: 10
+                    review: Фильм просто невероятный. Первый раз смотрела с замиранием сердца. Сколько
+                      эмоций и он не похож ни на один другой фильм
+                    updatedAt: '2023-07-31T19:20:14.605Z'
+                    user:
+                      _id: 63c8c9b96396809788dfdd58
+                      avatar: "/images/63c8c9b96396809788dfdd57.jpg"
+                      firstname: Елена
+                      lastname: svirepa
+                      displayName: alena.svirepa
                   similarItems:
                     - _id: 63bafda44b33357ef706bd9e
                       name: Ферри
                       poster:
                         src: "/images/63bb942ba10c560357ec2e9f.jpg"
                       duration: 6420.5
+                      url: "/p/amerika-film"
+                      rating: 9
+                      badge:
+                        type: newSeason
+                        startAt: '2022-01-01T00:00:00.000Z'
+                        finishAt: '2024-01-01T00:00:00.000Z'
                       genreNames:
                       - Боевики
                       - Триллеры
@@ -4660,10 +4869,9 @@ paths:
                       - Комедии
                       - Криминал
 
-
   /movies/rating:
     get:
-      summary: Получить рейтинг поставленный пользователем
+      summary: Получить рейтинг и комментарий поставленный пользователем
       tags:
         - Movies
       parameters:
@@ -4684,11 +4892,15 @@ paths:
                   rating:
                     type: number
                     description:  Рейтинг который поставил пользователь фильму с переданным id
+                  review:
+                    type: string
+                    description: Комментарий (отзыв) пользователя к фильму/cериалу
                 example:
                   rating: 8
+                  review: Классный фильм
 
     post:
-      summary: Отправка рейтинга
+      summary: Отправка рейтинга(оценки) и отзыва(комментария)
       tags:
         - Movies
       requestBody:
@@ -4704,7 +4916,10 @@ paths:
                 rating:
                   type: number
                   description: Оценка фильма по шкале от 1 до 10
-                  required: true
+                review:
+                    type: string
+                    description: Комментарий (отзыв) пользователя к фильму/cериалу
+                
       responses:
         '200':
           description: OK
@@ -4726,6 +4941,48 @@ paths:
                   success: true
                   movieId: "63ac8aa1b2c93ed2212186e7"
                   rating: 9
+                  review: Классный фильм
+    delete:
+      summary: Удаления рейтинга и отзыва
+      tags:
+        - Movies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                movieId:
+                  type: string
+                  description:  Id фильма (mongoose.ObjectId)
+                  required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    description: Надпись "success"
+                  alert:
+                    type: boolean
+                    description: Значение true
+                  _id:
+                    type: string
+                    description: Id удаленного фильма или сериала (mongoose.ObjectId) 
+                  msg:
+                    type: string
+                    description: Надпись "Успешно удалено"
+                example:
+                  type: "success"
+                  alert: true
+                  id: "63ac7d6ab2c93ed221218186"
+                  msg: "Успешно удалено"
+
+
 
   /movies/favorite:
     get:

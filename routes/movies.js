@@ -8,6 +8,8 @@ const MoviePageLog = require('../models/moviePageLog');
 const MovieFavorite = require('../models/movieFavorite');
 const MovieBookmark = require('../models/movieBookmark');
 const movieOperations = require('../helpers/movieOperations');
+const resSuccess = require('../helpers/resSuccess');
+
 const mongoose = require('mongoose');
 
 /*
@@ -122,6 +124,48 @@ router.get('/movie', async (req, res) => {
 			}),
 			{
 				$lookup: {
+					from: "movieratings",
+					localField: "_id",
+					foreignField: "movieId",
+					pipeline: [
+						{
+							$project: {
+								movieId:true,
+								userId: true,
+								rating: true,
+								updatedAt: true,
+								review: true,
+							}
+						},
+						{
+							$lookup: {
+								from: "users",
+								localField: "userId",
+								foreignField: "_id",
+								pipeline: [
+									{
+										$project: {
+											firstname:true,
+											lastname: true,
+											displayName: true,
+											avatar: true,
+									}
+									}
+								],
+								as: "user",
+							},
+						},
+						{	$project: {
+								userId: false,
+						}},
+						{ $unwind: "$user" },
+						{ $limit: 20}
+					],
+					as: "movieratings"
+				}
+			},
+			{
+				$lookup: {
 					from: "movies",
 					let: {
 						selectedMovieGenresAliases: "$genresAliases",			
@@ -148,7 +192,6 @@ router.get('/movie', async (req, res) => {
 						...movieOperations({
 							addToProject: {
 								_id: true,
-								rating: true,
 								shortDesc: true,
 								categoryAlias: true,
 								genresAliases: true,
@@ -167,6 +210,8 @@ router.get('/movie', async (req, res) => {
 							categoryAlias:true,
 							genreNames:true,
 							duration:true,
+							badge:true,
+							url:true,
 							genresMatchAmount: {
 								$size:[
 									{	$setIntersection: ['$genresAliases', '$$selectedMovieGenresAliases']}
@@ -198,7 +243,7 @@ router.get('/movie', async (req, res) => {
 
 			delete(data.films);
 			delete(data.series);
-
+		 
 			return res.status(200).json(data);
 
 		});
@@ -208,7 +253,7 @@ router.get('/movie', async (req, res) => {
 	}
 });
 
-// Получить рейтинг поставленный пользователем
+// Получить рейтинг и комментарий поставленный пользователем
 router.get('/rating', verify.token, async (req, res) => {
 
 	const { movieId } = req.query;
@@ -218,20 +263,20 @@ router.get('/rating', verify.token, async (req, res) => {
 		userId: req.user._id
 	}, { 
 		_id: false,
-		rating: true 
+		rating: true,
+		review: true 
 	});
 
 	return res.status(200).json( rating );
 });
 
-// Отправка рейтинга
+// Отправка рейтинга и комментария
 router.post('/rating', verify.token, async (req, res) => {
 	let {
 		movieId,
 		rating,
+		review
 	} = req.body;
-
-	movieId = mongoose.Types.ObjectId(movieId)
 
 	if(!movieId) {
 		return resError({
@@ -240,7 +285,18 @@ router.post('/rating', verify.token, async (req, res) => {
 			msg: 'Ожидается ID'
 		});
 	}
-	if((rating !== null && (rating < 1 || rating > 10)) || typeof rating === 'string' || rating === 0) {
+
+	movieId = mongoose.Types.ObjectId(movieId)
+	
+	if(typeof(rating)==='undefined' && typeof(rating)==='review') {
+		return resError({
+			res, 
+			alert: true,
+			msg: 'Ожидается rating и/или review'
+		});
+	}
+
+	if(rating === null || (rating < 1 || rating > 10) || typeof rating === 'string' || rating === 0) {
 		return resError({
 			res, 
 			alert: true,
@@ -265,24 +321,22 @@ router.post('/rating', verify.token, async (req, res) => {
 				userId: req.user._id
 			},
 			{ 
-				$set: { rating },
+				$set: {
+					rating,
+					review
+				},
 				$inc: { '__v': 1 }
 			}
 		);
 
-		if(!userRating && rating !== null) {
+		if(!userRating && !!rating) {
 			await MovieRating.create({ 
 				rating,
+				review,
 				movieId,
 				userId: req.user._id,
 			});
-		} else if(!userRating) {
-			return resError({
-				res, 
-				alert: true,
-				msg: 'Необходимо оценить перед сбросом оценки'
-			});
-		}
+		} 
 
 		// Получить все оценки фильма
 		const movieRatingLogs = await MovieRating.aggregate([
@@ -299,7 +353,7 @@ router.post('/rating', verify.token, async (req, res) => {
 			} }
 		]);
 
-		const newMovieRating = movieRatingLogs[0].avg || 0
+		const newMovieRating = movieRatingLogs[0].avg
 
 		// Обновить среднюю оценку фильма
 		await Movie.updateOne(
@@ -310,8 +364,77 @@ router.post('/rating', verify.token, async (req, res) => {
 		return res.status(200).json({
 			success: true,
 			movieId,
-			rating
+			rating,
+			review
 		});
+	} catch(err) {
+		return resError({ res, msg: err });
+	}
+});
+
+// Удаление рейтинга и комментария
+router.delete('/rating', verify.token, async (req, res) => {
+	let {
+		movieId,
+	} = req.body;
+
+	if(!movieId) {
+		return resError({
+			res, 
+			alert: true,
+			msg: 'Ожидается Id'
+		});
+	}
+
+	movieId = mongoose.Types.ObjectId(movieId)
+
+	try {
+
+		// Обнуление записи из БД
+		 await MovieRating.findOneAndUpdate(
+			{ 
+				movieId,
+				userId: req.user._id
+			},
+			{ 
+				$set: {
+					rating:null,
+					review:null
+				},
+				$inc: { '__v': 1 }
+			}
+		);
+		
+		// Получить все оценки фильма
+		const movieRatingLogs = await MovieRating.aggregate([
+			{ $match: {
+				movieId
+			} },
+			{ $group: { 
+				_id: null,
+				avg: { $avg: "$rating" } 
+			} },
+			{ $project: {
+				_id: false,
+				avg: true
+			} }
+		]);
+		
+		const newMovieRating = movieRatingLogs[0]?.avg || null
+
+		// Обновить среднюю оценку фильма
+		await Movie.updateOne(
+			{ _id: movieId },
+			{ $set: { rating: newMovieRating } }
+		);
+
+		return resSuccess({
+			res,
+			movieId,
+			alert: true,
+			msg: 'Успешно удалено'
+		})
+
 	} catch(err) {
 		return resError({ res, msg: err });
 	}
