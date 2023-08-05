@@ -4254,10 +4254,10 @@ paths:
            type: string
           description: Сгенерированный ЧПУ (человеко понятный url)
         - in: query
-          name: skipSimilarItems
+          name: limitMovieRatings
           schema:
            type: string
-          description: Параметр для пропуска первых n документов поля similarItems (похожих фильмов/cериалов)
+          description: Параметр опредеюящий максимальное количество элементов в поле movieratings  ( оценок с отзывами от пользователей)
         - in: query
           name: skipMovieRatings
           schema:
