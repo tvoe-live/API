@@ -279,10 +279,7 @@ router.delete('/deleteCard', verify.token, async (req, res) => {
 		await User.updateOne(
 			{ _id: req.user._id }, 
 			{ $set: { 
-				"referral.card": {
-					number:null,
-					cardholder:null
-				}
+				"referral.card": null
 			} }
 		)
 
