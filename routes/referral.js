@@ -342,4 +342,26 @@ router.post('/withdrawBalance', verify.token, async (req, res) => {
 	}
 })
 
+/*
+ *  Временный роут для пополнения баланса
+ */
+router.patch('/increaseBalance', verify.token, verify.isAdmin, async (req, res) => {
+	try {
+		await User.updateOne(
+			{ _id: req.user._id }, 
+			{ $set: { 
+				"referral.balance": 5000
+			} }
+		)
+
+		return resSuccess({
+			res,
+			alert: true,
+			msg: 'Баланс пополнен'
+		})
+	} catch(err) {
+		return resError({ res, msg: err });
+	}
+})
+
 module.exports = router;
