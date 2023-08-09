@@ -119,6 +119,7 @@ router.get('/', async (req, res) => {
 						videoId:  { $first: '$_id' },          
 						count: { $first: '$count' },
 						shortDesc: { $first: '$shortDesc' },
+						poster: { $first: "$poster" },
 						name: { $first: '$name' },
 						alias: { $first: '$alias' },
 						count: { $first: '$count' },
