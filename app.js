@@ -12,7 +12,6 @@ const verify = require('./middlewares/verify')
 
 const {
 	PORT,
-	TMP_DIR,
 	STATIC_DIR,
 	IMAGES_DIR,
 	VIDEOS_DIR,
@@ -38,9 +37,6 @@ app.use(expressUseragent.express())
 app.use(bodyParser.urlencoded({
 	extended: true,
 }));
-
-// Создание директории временных файлов для рендера видео
-if(!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR, { recursive: true });
 
 if(process.env.NODE_ENV !== 'production') {
 	app.use('/images', express.static(STATIC_DIR + IMAGES_DIR));
