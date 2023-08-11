@@ -7,7 +7,11 @@ const notificationSchema = new mongoose.Schema({
 		type:String,
 		enum: ['system', 'premiere']
 	},
-	willPublishedAt: Date, // Планируемая дата публикации
+	willPublishedAt: Date, // Планируемая дата публикации,
+	img: {
+		_id: mongoose.Schema.Types.ObjectId,
+		src: String
+	}
 }, {
 	timestamps: true
 })
