@@ -23,13 +23,13 @@ const uploadMemoryStorage = multer({ storage: memoryStorage });
 router.get('/', verify.token, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20);
-	
+
 	const lookupAndMatch = [
 		{
 			$match: {
 				$or: [
-					{ receiversIds: { $exists: false } }, // если поле receiversIds отсутствует
-					{ receiversIds: { $in: [req.user._id] } } // если поле receiversIds существует и содержит указанные id
+					{ receiversIds: [] },           // Поле является пустым массивом
+					{ receiversIds: { $elemMatch: { $eq: req.user._id } } } // Поле содержит заданный id
 				]
 			}
 		},
@@ -38,26 +38,18 @@ router.get('/', verify.token, async (req, res) => {
 			localField: "_id",
 			foreignField: "notificationId",
 			pipeline: [
-				{ $match: { 
+				{ $match: {
 					userId: req.user._id,
-				} },
-				{
-					$project:{
-						status:true
-					}
-				}
+				} }
 			],
 			as: "notificationReadLog"
 		} },
 		{$match: {
 			$expr: {
 				$and:[
-					{$or: [
-						{ $eq: [{ $size: "$notificationReadLog" }, 0]}, // Если записи в коллекции readlogs вообще нет
-						{ $eq: [ { $arrayElemAt: ["$notificationReadLog.status", 0]}, 'sent']  }, // Если запись есть в коллекции readlogs но поле status имеет значение sent ( отправлено, но не прочитано)
-					]},
+				  { $eq: [{ $size: "$notificationReadLog" }, 0]},  // Если записи в коллекции readlogs нет
 				  { $gte: [new Date(), '$willPublishedAt']},
-					{ $ne: ['$deleted', true]},
+				  { $ne: ['$deleted', true]},
 				]
 			},
 		}},
@@ -69,8 +61,8 @@ router.get('/', verify.token, async (req, res) => {
 				"$facet": {
 					"totalSize":[
 						...lookupAndMatch,
-						{ $group: { 
-							_id: null, 
+						{ $group: {
+							_id: null,
 							count: { $sum: 1 }
 						} },
 						{ $project: { _id: false } },
@@ -81,6 +73,7 @@ router.get('/', verify.token, async (req, res) => {
 						{$project: {
 							updatedAt: false,
 							createdAt:false,
+							notificationReadLog:false,
 							__v:false,
 						}},
 						{ $sort: { willPublishedAt: -1 } },
@@ -95,20 +88,6 @@ router.get('/', verify.token, async (req, res) => {
 				items: "$items",
 			} },
 		], async(err, result)=>{
-			console.log('result:', result)
-
-			const notificationStatusesForInsert = result[0].items // Для тех уведомлений которых нет в readlog для указанного пользователя формируем документы со стаусом sent ( отправлено но не прочитано)
-				.filter(notification=>notification.notificationReadLog?.length===0)
-				.map(({_id})=>({
-					notificationId: mongoose.Types.ObjectId(_id),
-					userId: mongoose.Types.ObjectId(req.user._id),
-					status:'sent'
-			}))
-
-			if (notificationStatusesForInsert.length){
-				await NotificationReadLog.insertMany(notificationStatusesForInsert);
-			}
-
 			return res.status(200).json(result[0]);
 		});
 
@@ -123,14 +102,13 @@ router.get('/', verify.token, async (req, res) => {
  */
 router.patch('/markAsRead', verify.token, async (req, res) => {
 
+	const NotificationReadLogForInsert = req.body.ids.map(notificationId=>({
+		notificationId: mongoose.Types.ObjectId(notificationId),
+		userId: mongoose.Types.ObjectId(req.user._id),
+	}))
+
 	try {
-	 await NotificationReadLog.updateMany(
-      { 
-				notificationId: { $in: req.body.ids },
-				userId: (req.user._id)
-			},
-      { $set: { "status" : 'read' } }
-   );
+		await NotificationReadLog.insertMany(NotificationReadLogForInsert);
 
 		return resSuccess({
 			res,
@@ -175,7 +153,7 @@ router.post('/', verify.token, verify.isManager, uploadMemoryStorage.single('fil
 		fileIdForDB = fileId
 		fileSrcForDB = fileSrc
 	}
-		
+
 	try {
 		const response = await Notification.create({
 				title,
@@ -189,7 +167,7 @@ router.post('/', verify.token, verify.isManager, uploadMemoryStorage.single('fil
 					src: fileSrcForDB
 				}
 		});
-
+		console.log('response:', response)
 		return res.status(200).json({
 			success: true,
 			id: response._id,
@@ -246,7 +224,7 @@ router.patch('/', verify.token, uploadMemoryStorage.single('file'), async (req, 
 		if (willPublishedAt) notification.willPublishedAt = willPublishedAt
 		if (link) notification.link = link
 		if (receiversIds) notification.receiversIds = receiversIds
-	
+
 		notification.save()
 
 		return resSuccess({
@@ -267,7 +245,7 @@ router.delete('/', verify.token, verify.isManager, async (req, res) => {
 	const {
 		_id
 	} = req.body
- 
+
 	if(!_id) return resError({ res, msg: 'Не передан _id' });
 
 	try {
@@ -314,10 +292,9 @@ router.get('/count', verify.token, verify.isManager, async (req, res) => {
 			{ "$facet": {
 				"totalSize": [
 					{$match:{
-						notificationId: mongoose.Types.ObjectId(_id),
-						status:"read"
+						notificationId: mongoose.Types.ObjectId(_id)
 					}},
-					{ $group: { 
+					{ $group: {
 						_id: null,
 						count: { $sum: 1 }
 					}},
@@ -346,21 +323,16 @@ router.get('/count', verify.token, verify.isManager, async (req, res) => {
 router.get('/countAll', verify.token, verify.isManager, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20);
-	
-	const lookup = { 
+
+	const lookup = {
 		$lookup: {
 			from: "notificationreadlogs",
 			localField: "_id",
 			foreignField: "notificationId",
-			pipeline: [
-				{ $match: { 
-						status: 'read',
-				} }
-			],
 			as: "NotificationReadLog"
-		} 
+		}
 	}
-	
+
 	try {
 		Notification.aggregate([
 			{
@@ -368,7 +340,7 @@ router.get('/countAll', verify.token, verify.isManager, async (req, res) => {
 					"totalSize": [
 						lookup,
 						{ $group: {
-							_id: null, 
+							_id: null,
 							count: { $sum: 1 }
 						} },
 						{ $project: { _id: false } },
@@ -384,7 +356,7 @@ router.get('/countAll', verify.token, verify.isManager, async (req, res) => {
 								description:true,
 								type:true,
 								img:true,
-								watchingAmount: { $size: "$NotificationReadLog" } 
+								watchingAmount: { $size: "$NotificationReadLog" }
 							}
 						},
 						{ $skip: skip },
