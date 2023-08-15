@@ -74,6 +74,7 @@ router.get('/', async (req, res) => {
 
 // Получение одной записи
 router.get('/movie', async (req, res) => {
+	console.log(' I am here')
 	const { _id, alias } = req.query;
 	const find = _id ? { _id: mongoose.Types.ObjectId(_id) } : { alias };
 

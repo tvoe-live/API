@@ -3,7 +3,7 @@ const router = express.Router();
 const verify = require('../../middlewares/verify');
 const resError = require('../../helpers/resError');
 const Notification = require('../../models/notification');
-const NotificationStatus = require('../../models/notificationStatus');
+const NotificationReadLog = require('../../models/notificationReadLog');
 const resSuccess = require('../../helpers/resSuccess');
 const multer = require('multer');
 const mongoose = require('mongoose');
@@ -25,8 +25,16 @@ router.get('/', verify.token, async (req, res) => {
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20);
 	
 	const lookupAndMatch = [
+		{
+			$match: {
+				$or: [
+					{ receivers: { $exists: false } }, // если поле receivers отсутствует
+					{ receivers: { $in: [req.user._id] } } // если поле receivers существует и содержит указанные id
+				]
+			}
+		},
 		{ $lookup: {
-			from: "notificationstatuses",
+			from: "notificationreadlogs",
 			localField: "_id",
 			foreignField: "notificationId",
 			pipeline: [
@@ -39,18 +47,19 @@ router.get('/', verify.token, async (req, res) => {
 					}
 				}
 			],
-			as: "NotificationStatus"
+			as: "notificationReadLog"
 		} },
 		{$match: {
 			$expr: {
 				$and:[
 					{$or: [
-						{ $eq: [{ $size: "$NotificationStatus" }, 0]},
-						{ $eq: [ { $arrayElemAt: ["$NotificationStatus.status", 0]}, 'sent']  },
+						{ $eq: [{ $size: "$notificationReadLog" }, 0]},
+						{ $eq: [ { $arrayElemAt: ["$notificationReadLog.status", 0]}, 'sent']  },
 					]},
-				  { $gte: [new Date(), '$willPublishedAt']}
+				  { $gte: [new Date(), '$willPublishedAt']},
+					{ $ne: ['$deleted', true]},
 				]
-			}
+			},
 		}},
 	]
 
@@ -86,9 +95,10 @@ router.get('/', verify.token, async (req, res) => {
 				items: "$items",
 			} },
 		], async(err, result)=>{
+			console.log('result:', result)
 
 			const notificationStatusesForInsert = result[0].items
-				.filter(notification=>notification.NotificationStatus?.length===0)
+				.filter(notification=>notification.notificationReadLog?.length===0)
 				.map(({_id})=>({
 					notificationId: mongoose.Types.ObjectId(_id),
 					userId: mongoose.Types.ObjectId(req.user._id),
@@ -96,7 +106,7 @@ router.get('/', verify.token, async (req, res) => {
 			}))
 
 			if (notificationStatusesForInsert.length){
-				await NotificationStatus.insertMany(notificationStatusesForInsert);
+				await NotificationReadLog.insertMany(notificationStatusesForInsert);
 			}
 
 			return res.status(200).json(result[0]);
@@ -114,7 +124,7 @@ router.get('/', verify.token, async (req, res) => {
 router.patch('/markAsRead', verify.token, async (req, res) => {
 
 	try {
-	 await NotificationStatus.updateMany(
+	 await NotificationReadLog.updateMany(
       { 
 				notificationId: { $in: req.body.ids },
 				userId: (req.user._id)
@@ -144,7 +154,9 @@ router.post('/', verify.token, verify.isManager, uploadMemoryStorage.single('fil
 		title,
 		description,
 		type,
-		willPublishedAt
+		willPublishedAt,
+		link,
+		receivers
 	} = req.body
 
 	if(!title) return resError({ res, msg: 'Не передан title' });
@@ -161,6 +173,8 @@ router.post('/', verify.token, verify.isManager, uploadMemoryStorage.single('fil
 				title,
 				description,
 				type,
+				link,
+				receivers,
 				willPublishedAt: new Date(willPublishedAt),
 				img: {
 					_id: fileId,
@@ -173,7 +187,9 @@ router.post('/', verify.token, verify.isManager, uploadMemoryStorage.single('fil
 			id: response._id,
 			title,
 			description,
+			link,
 			type,
+			receivers,
 			willPublishedAt,
 			img: response.img
 		});
@@ -189,7 +205,7 @@ router.post('/', verify.token, verify.isManager, uploadMemoryStorage.single('fil
 router.patch('/', verify.token, uploadMemoryStorage.single('file'), async (req, res) => {
 
 	const buffer = req.file?.buffer
-	const { title, description, _id, type, willPublishedAt } = req.body;
+	const { title, description, _id, type, willPublishedAt, link, receivers } = req.body;
 
 	try {
 
@@ -220,6 +236,8 @@ router.patch('/', verify.token, uploadMemoryStorage.single('file'), async (req, 
 		if (description) notification.description = description
 		if (type) notification.type = type
 		if (willPublishedAt) notification.willPublishedAt = willPublishedAt
+		if (link) notification.link = link
+		if (receivers) notification.receivers = receivers
 	
 		notification.save()
 
@@ -256,7 +274,9 @@ router.delete('/', verify.token, verify.isManager, async (req, res) => {
 		if(pathToFileIng) await deleteFileFromS3(pathToFileIng)
 
 		// Удаление записи из БД
-		notification.delete()
+		// notification.delete()
+		notification.deleted = true
+		notification.save()
 
 		return resSuccess({
 			res,

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const notoficationStatusSchema = new mongoose.Schema({
+const notificationReadLogSchema = new mongoose.Schema({
 	notificationId: mongoose.Schema.Types.ObjectId,
 	userId: mongoose.Schema.Types.ObjectId,
 	status: String, //read или sent
@@ -8,4 +8,4 @@ const notoficationStatusSchema = new mongoose.Schema({
 	timestamps: true
 })
 
-module.exports = mongoose.model('NotificationStatus', notoficationStatusSchema)
+module.exports = mongoose.model('NotificationReadLog', notificationReadLogSchema)
