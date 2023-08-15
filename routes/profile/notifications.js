@@ -28,8 +28,8 @@ router.get('/', verify.token, async (req, res) => {
 		{
 			$match: {
 				$or: [
-					{ receivers: { $exists: false } }, // если поле receivers отсутствует
-					{ receivers: { $in: [req.user._id] } } // если поле receivers существует и содержит указанные id
+					{ receiversIds: { $exists: false } }, // если поле receiversIds отсутствует
+					{ receiversIds: { $in: [req.user._id] } } // если поле receiversIds существует и содержит указанные id
 				]
 			}
 		},
@@ -53,8 +53,8 @@ router.get('/', verify.token, async (req, res) => {
 			$expr: {
 				$and:[
 					{$or: [
-						{ $eq: [{ $size: "$notificationReadLog" }, 0]},
-						{ $eq: [ { $arrayElemAt: ["$notificationReadLog.status", 0]}, 'sent']  },
+						{ $eq: [{ $size: "$notificationReadLog" }, 0]}, // Если записи в коллекции readlogs вообще нет
+						{ $eq: [ { $arrayElemAt: ["$notificationReadLog.status", 0]}, 'sent']  }, // Если запись есть в коллекции readlogs но поле status имеет значение sent ( отправлено, но не прочитано)
 					]},
 				  { $gte: [new Date(), '$willPublishedAt']},
 					{ $ne: ['$deleted', true]},
@@ -97,7 +97,7 @@ router.get('/', verify.token, async (req, res) => {
 		], async(err, result)=>{
 			console.log('result:', result)
 
-			const notificationStatusesForInsert = result[0].items
+			const notificationStatusesForInsert = result[0].items // Для тех уведомлений которых нет в readlog для указанного пользователя формируем документы со стаусом sent ( отправлено но не прочитано)
 				.filter(notification=>notification.notificationReadLog?.length===0)
 				.map(({_id})=>({
 					notificationId: mongoose.Types.ObjectId(_id),
@@ -148,7 +148,7 @@ router.patch('/markAsRead', verify.token, async (req, res) => {
  */
 
 router.post('/', verify.token, verify.isManager, uploadMemoryStorage.single('file'), async (req, res) => {
-	const { buffer } = req.file;
+	const buffer = req?.file
 
 	const {
 		title,
@@ -156,17 +156,25 @@ router.post('/', verify.token, verify.isManager, uploadMemoryStorage.single('fil
 		type,
 		willPublishedAt,
 		link,
-		receivers
+		receiversIds
 	} = req.body
 
 	if(!title) return resError({ res, msg: 'Не передан title' });
 	if(!type) return resError({ res, msg: 'Не передан type' });
 	if(!willPublishedAt) return resError({ res, msg: 'Не передана дата и время публикации - параметр willPublishedAt' });
 
-	const { fileId, fileSrc } = await uploadImageToS3({
-		res,
-		buffer,
-	})
+	let fileIdForDB
+	let fileSrcForDB
+
+	if (buffer){
+		const { fileId, fileSrc } = await uploadImageToS3({
+			res,
+			buffer,
+		})
+
+		fileIdForDB = fileId
+		fileSrcForDB = fileSrc
+	}
 		
 	try {
 		const response = await Notification.create({
@@ -174,11 +182,11 @@ router.post('/', verify.token, verify.isManager, uploadMemoryStorage.single('fil
 				description,
 				type,
 				link,
-				receivers,
+				receiversIds,
 				willPublishedAt: new Date(willPublishedAt),
 				img: {
-					_id: fileId,
-					src: fileSrc
+					_id: fileIdForDB,
+					src: fileSrcForDB
 				}
 		});
 
@@ -189,7 +197,7 @@ router.post('/', verify.token, verify.isManager, uploadMemoryStorage.single('fil
 			description,
 			link,
 			type,
-			receivers,
+			receiversIds,
 			willPublishedAt,
 			img: response.img
 		});
@@ -205,7 +213,7 @@ router.post('/', verify.token, verify.isManager, uploadMemoryStorage.single('fil
 router.patch('/', verify.token, uploadMemoryStorage.single('file'), async (req, res) => {
 
 	const buffer = req.file?.buffer
-	const { title, description, _id, type, willPublishedAt, link, receivers } = req.body;
+	const { title, description, _id, type, willPublishedAt, link, receiversIds } = req.body;
 
 	try {
 
@@ -237,7 +245,7 @@ router.patch('/', verify.token, uploadMemoryStorage.single('file'), async (req, 
 		if (type) notification.type = type
 		if (willPublishedAt) notification.willPublishedAt = willPublishedAt
 		if (link) notification.link = link
-		if (receivers) notification.receivers = receivers
+		if (receiversIds) notification.receiversIds = receiversIds
 	
 		notification.save()
 
@@ -302,7 +310,7 @@ router.get('/count', verify.token, verify.isManager, async (req, res) => {
 	if(!_id) return resError({ res, msg: 'Не передан _id' });
 
 	try {
-		const result = await NotificationStatus.aggregate([
+		const result = await NotificationReadLog.aggregate([
 			{ "$facet": {
 				"totalSize": [
 					{$match:{
@@ -341,7 +349,7 @@ router.get('/countAll', verify.token, verify.isManager, async (req, res) => {
 	
 	const lookup = { 
 		$lookup: {
-			from: "notificationstatuses",
+			from: "notificationreadlogs",
 			localField: "_id",
 			foreignField: "notificationId",
 			pipeline: [
@@ -349,7 +357,7 @@ router.get('/countAll', verify.token, verify.isManager, async (req, res) => {
 						status: 'read',
 				} }
 			],
-			as: "NotificationStatus"
+			as: "NotificationReadLog"
 		} 
 	}
 	
@@ -376,7 +384,7 @@ router.get('/countAll', verify.token, verify.isManager, async (req, res) => {
 								description:true,
 								type:true,
 								img:true,
-								watchingAmount: { $size: "$NotificationStatus" } 
+								watchingAmount: { $size: "$NotificationReadLog" } 
 							}
 						},
 						{ $skip: skip },

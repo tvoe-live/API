@@ -14,7 +14,7 @@ const notificationSchema = new mongoose.Schema({
 	},
 	deleted: Boolean,
 	link: String,
-	receivers: [mongoose.Schema.Types.ObjectId]
+	receiversIds: [mongoose.Schema.Types.ObjectId]
 }, {
 	timestamps: true
 })
