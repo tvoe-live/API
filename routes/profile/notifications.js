@@ -167,7 +167,7 @@ router.post('/', verify.token, verify.isManager, uploadMemoryStorage.single('fil
 					src: fileSrcForDB
 				}
 		});
-		console.log('response:', response)
+
 		return res.status(200).json({
 			success: true,
 			id: response._id,
@@ -271,7 +271,6 @@ router.delete('/', verify.token, verify.isManager, async (req, res) => {
 			msg: 'Успешно удалено'
 		})
 	} catch(err) {
-		console.log('err:', err)
 		return resError({ res, msg: err });
 	}
 })
