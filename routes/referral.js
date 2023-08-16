@@ -4,7 +4,7 @@ const User = require('../models/user');
 const verify = require('../middlewares/verify');
 const resError = require('../helpers/resError');
 const resSuccess = require('../helpers/resSuccess');
-const { DOMAIN, REFERRAL_PRECENT_BONUSE } = process.env;
+const { CLIENT_URL, REFERRAL_PRECENT_BONUSE } = process.env;
 const ReferralWithdrawalLog = require('../models/referralWithdrawalLog');
 
 /*
@@ -16,7 +16,7 @@ const ReferralWithdrawalLog = require('../models/referralWithdrawalLog');
  * Получение общих данных
  */
 router.get('/', verify.token, async (req, res) => {
-	const link = `${DOMAIN}/?r=${req.user._id}` // Реферальная ссылка
+	const link = `${CLIENT_URL}/?r=${req.user._id}` // Реферальная ссылка
 	const referralPercentBonuse = +REFERRAL_PRECENT_BONUSE // Бонус в процентах от реферала 
 	const balance = req.user.referral.balance // Текущий баланс с подписок рефералов
 	const card = req.user.referral.card // Данные карты для вывода баланса
@@ -56,7 +56,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 						pipeline: [
 							{ $match: {
 								type: 'paid',
-								status: 'success'
+								status: 'CONFIRMED'
 							} },
 							{ $project: {
 								_id: false
@@ -84,14 +84,14 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 						pipeline: [
 							{ $match: {
 								type: 'paid',
-								status: 'success'
+								status: 'CONFIRMED'
 							} },
 							{ $project: {
 								_id: false,
 								status: true,
 								createdAt: true,
 								bonuseAmount: {
-									$multiply: [ "$withdrawAmount", +REFERRAL_PRECENT_BONUSE / 100 ],
+									$multiply: [ "$amount", +REFERRAL_PRECENT_BONUSE / 100 ],
 								},
 							} },
 							{ $sort: { _id: 1 } },
@@ -122,7 +122,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 						},
 						payment: {
 							$cond: [
-								{ $eq: [ "$payment.status" , "success" ] },
+								{ $eq: [ "$payment.status" , "CONFIRMED" ] },
 								{ $mergeObjects: [ 
 									"$payment", 
 									{ tariffName: "$tariff.name" }

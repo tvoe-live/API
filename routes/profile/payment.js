@@ -73,9 +73,9 @@ router.get('/', verify.token, async (req, res) => {
 					{ $unwind: "$tariff" },
 					{ $project: {
 						type: true,
+						amount: true,
 						startAt: true,
 						finishAt: true,
-						withdrawAmount: true,
 						notificationType: true,
 						tariff: {
 							_id: true,

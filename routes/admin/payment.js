@@ -74,7 +74,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 					} },
 					{ $group: { 
 						_id: null, 
-						count: { $sum: "$withdrawAmount" }
+						count: { $sum: "$amount" }
 					} },
 					{ $project: { _id: false } },
 					{ $limit: 1 }
@@ -148,11 +148,11 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 					{ $unwind: { path: "$user" } },
 					{ $project: {
 						user: true,
+						amount: true,
 						tariff: true,
 						startAt: true,
 						finishAt: true,
-						updatedAt: true,
-						withdrawAmount: true
+						updatedAt: true
 					} },
 					{ $sort: { _id: -1 } }, // Была сортировка updatedAt
 					{ $skip: skip },
