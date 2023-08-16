@@ -610,7 +610,7 @@ router.get('/possibleYouLike', verify.token, async (req, res) => {
 });
 
 
-router.get('/popular', verify.token, async (req, res) => {
+router.get('/popular', async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20);
 
