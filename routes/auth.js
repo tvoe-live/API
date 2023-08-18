@@ -158,7 +158,7 @@ router.post('/login', async (req, res) => {
 			}).save();
 
 			const hostname = process.env.HOSTNAME;
-			const isLocalhost = hostname === 'localhost' || req.headers.origin.endsWith('ngrok-free.app');
+			const isLocalhost = hostname === 'localhost' && !req.headers.origin.endsWith('ngrok-free.app');
 
 			res.cookie('token', token, {
 				path: '/',
