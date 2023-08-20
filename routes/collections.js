@@ -53,9 +53,9 @@ router.get('/', async (req, res) => {
 	try {
 		const result = await Movie.aggregate([
 			{ $facet: {
-				
+
 				"willPublishedSoon": [
-					{ $match: { 
+					{ $match: {
 						willPublishedAt: { $gte: new Date() },
 					} },
 					{ $project: projectWillSoon },
@@ -63,7 +63,7 @@ router.get('/', async (req, res) => {
 
 				//Случайные фильмы с рейтингом 7+
 				"moviesWithRatingMore7": [
-					{ $match: { 
+					{ $match: {
 							publishedAt: { $ne: null },
 							rating: {  $gte: 7  }
 					} },
@@ -104,7 +104,7 @@ router.get('/', async (req, res) => {
 						'moviepagelog.updatedAt': {
 						$gte: dateWeekAgo
 					}}},
-					{ $group: { 
+					{ $group: {
 						_id: '$moviepagelog.videoId',
 						count: { $sum: 1 },
 						movieId: { $first: "$moviepagelog.movieId" },
@@ -115,8 +115,8 @@ router.get('/', async (req, res) => {
 					} },
 					{ $sort: {count:-1}},
 					{ $group: {
-						_id: '$movieId',         
-						videoId:  { $first: '$_id' },          
+						_id: '$movieId',
+						videoId:  { $first: '$_id' },
 						count: { $first: '$count' },
 						shortDesc: { $first: '$shortDesc' },
 						poster: { $first: "$poster" },
@@ -273,12 +273,12 @@ router.get('/', async (req, res) => {
 				genres: "$genres",
 			} },
 		]);
-	
+
 		collections = [
 			...result[0]['collections'],
 			...result[0]['genres'],
 		]
-	
+
 		const collectionsFiltered = collections
 									.filter(collection => collection.items.length >= 6||collection.type==='randomMoviesWithRatingMore7' || collection.type==='willPublishedSoon')
 									.map(collection => ({
@@ -299,7 +299,7 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20);
 
 	const titlesDuration =  10*60
-	
+
 	const lookup = {
 		from: "movies",
 		localField: "movieId",
@@ -360,7 +360,7 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 				 args: [ "$movie.series",  "$videoId"],
 				 lang: "js"
 			 }
-		},	
+		},
 	}
 
 	const match = {
@@ -386,15 +386,15 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 				"$facet": {
 					//Всего записей
 					"totalSize": [
-						{ $match: { 
+						{ $match: {
 							userId: req.user._id
 						} },
 						{ $lookup: lookup },
 						{ $unwind: { path: "$movie" } },
 						{ $project: project},
 						{ $match: match	},
-						{ $group: { 
-							_id: null, 
+						{ $group: {
+							_id: null,
 							count: { $sum: 1 }
 						} },
 						{ $project: { _id: false } },
@@ -402,7 +402,7 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 					],
 					// Список
 					"items":[
-						{ $match: { 
+						{ $match: {
 							userId: req.user._id
 						} },
 						{ $lookup: lookup },
@@ -422,8 +422,288 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 				items: "$items"
 			} },
 		]);
-		
+
 		return res.status(200).json(logs[0])
+	} catch(e){
+		return res.json(e);
+	}
+});
+
+router.get('/possibleYouLike', verify.token, async (req, res) => {
+
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20);
+
+	const lookup = {
+		from: "movies",
+		localField: "movieId",
+		foreignField: "_id",
+		pipeline: [
+			{ $project: {
+					name: true,
+					genresAliases: true,
+					categoryAlias:true,
+				},
+		 	},
+		],
+		as: "movie"
+	};
+
+	try {
+		const logs = await MoviePageLog.aggregate([
+			{
+				"$facet": {
+					// Список
+					"items":[
+						{ $match: {
+							userId: req.user._id
+						} },
+						{ $lookup: lookup },
+						{$project:{
+							userId:true,
+							movieId:true,
+							movie:true
+						}},
+						{ $unwind: { path: "$movie" } },
+						{ $project:{
+							genresAliases: '$movie.genresAliases'
+						}},
+						{ $unwind: { path: "$genresAliases" } },
+						{ $group: {
+							_id: '$genresAliases',
+							count: { $sum: 1 }
+						} },
+						{ $sort : { count: -1} },
+					],
+
+					"watchedMovieIds":[
+						{ $match: {
+							userId: req.user._id
+						} },
+						{ $group: { _id: null, ids: { $addToSet: "$movieId" } } }
+					]
+				}
+			},
+			{ $limit: 1 },
+			{ $unwind: { path: "$watchedMovieIds", preserveNullAndEmptyArrays: true } },
+			{ $project: {
+				genresWathingCount: "$items",
+				watchedMovieIds: "$watchedMovieIds.ids"
+			} },
+		]);
+
+		const {watchedMovieIds, genresWathingCount} = logs[0]
+
+		const match = [
+			{
+				$match: {
+					_id: { $nin: watchedMovieIds},
+					publishedAt: { $ne: null }
+				}
+			},
+			{
+				$project:{
+					duration:true,
+					name:true,
+					_id:true,
+					poster:true,
+					rating:true,
+					duration:true,
+					pointsAmount: {
+						$function:
+						{
+							body: function(genresWathingCount, genresAliases) {
+								let pointsAmount = 0
+								genresAliases.forEach(genre=>{
+									const candidate = genresWathingCount.find(item=>item._id===genre)
+									if (candidate) {
+										pointsAmount+=candidate.count
+									}
+								})
+								return pointsAmount
+							},
+							 args: [ genresWathingCount,  "$genresAliases"],
+							 lang: "js"
+						 }
+					},
+					duration: {
+						$switch: {
+							branches: [
+								{ case: { $eq: ["$categoryAlias", "films"] }, then: {
+									$sum: {
+										$map: {
+											"input": "$films",
+											"as": "item",
+											"in": "$$item.duration"
+										}
+									},
+								   } },
+								{ case: { $eq: ["$categoryAlias", "serials"] }, then: {
+									$sum: {
+										$map: {
+											"input": "$series",
+											"as": "seasons",
+											"in": {
+												$sum: {
+													$map: {
+														"input": "$$seasons",
+														"as": "item",
+														"in": "$$item.duration"
+													}
+												}
+											}
+										}
+									},
+							   } }
+							],
+							default: 0
+						}
+					},
+					url: { $concat: [ "/p/", "$alias" ] },
+				}
+			},
+			{ $match: {
+				pointsAmount: {  $gt: 0  }
+			}},
+		]
+
+		const result = await Movie.aggregate([
+			{
+				"$facet": {
+
+					//Всего записей
+					"totalSize": [
+						...match,
+						{ $group: {
+							_id: null,
+							count: { $sum: 1 }
+						} },
+						{ $limit: 1 }
+					],
+
+					// Список
+					"items":[
+						...match,
+						{ $sort:{pointsAmount:-1}},
+						{ $project: {
+							pointsAmount:false
+						}},
+						{ $skip: skip },
+						{ $limit: limit },
+					],
+				}
+			},
+			{ $limit: 1 },
+			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+			{ $project: {
+				totalSize: { $cond: [ "$totalSize.count", "$totalSize.count", 0] },
+				items: "$items"
+			} },
+
+		]);
+
+		return res.status(200).json(result[0])
+
+	} catch(e){
+		return res.json(e);
+	}
+});
+
+
+router.get('/popular', async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20);
+
+	const mainAgregation = [
+		...movieOperations({
+			addToProject: {
+				poster: { src: true },
+				alias:true
+			},
+		}),
+		{ $lookup: {
+			from: "moviepagelogs",
+			localField: "_id",
+			foreignField: "movieId",
+			pipeline: [
+				{ $project: {
+					_id: true,
+					userId: true,
+					movieId:true,
+					videoId:true,
+					updatedAt:true,
+					endTime:true
+				} },
+			],
+			as: "moviepagelog"
+		}},
+		{ $unwind: '$moviepagelog'},
+		{ $group: {
+			_id: '$moviepagelog.videoId',
+			count: { $sum: 1 },
+			movieId: { $first: "$moviepagelog.movieId" },
+			shortDesc: { $first: "$shortDesc" },
+			name: { $first: "$name" },
+			poster: { $first: "$poster" },
+			alias: { $first: "$alias" },
+			duration: { $first: "$duration" },
+			url: { $first: "$url" },
+
+		} },
+		{ $sort: {count:-1}},
+		{ $group: {
+			_id: '$movieId',
+			videoId:  { $first: '$_id' },
+			count: { $first: '$count' },
+			shortDesc: { $first: '$shortDesc' },
+			poster: { $first: "$poster" },
+			name: { $first: '$name' },
+			alias: { $first: '$alias' },
+			count: { $first: '$count' },
+			duration: { $first: "$duration" },
+			url: { $first: "$url" },
+		}},
+		{ $match:{
+			count: { $gte: 10 },
+		}}
+	]
+
+	try {
+		const result = await Movie.aggregate([
+			{
+				"$facet": {
+					//Всего записей
+					"totalSize": [
+						...mainAgregation,
+						{ $group: {
+							_id: null,
+							count: { $sum: 1 }
+						} },
+						{ $limit: 1 }
+					],
+
+					// Список
+					"items":[
+						...mainAgregation,
+						{ $sort: {count:-1}},
+						{ $project:{count:false}},
+						{ $skip: skip },
+						{ $limit: limit },
+					],
+				}
+			},
+			{ $limit: 1 },
+			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+			{ $project: {
+				totalSize: { $cond: [ "$totalSize.count", "$totalSize.count", 0] },
+				items: "$items",
+				name:"Самые популярные",
+				url:'/collections/popular'
+
+			}},
+		]);
+		return res.status(200).json(result[0])
+
 	} catch(e){
 		return res.json(e);
 	}

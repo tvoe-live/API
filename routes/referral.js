@@ -16,8 +16,10 @@ const ReferralWithdrawalLog = require('../models/referralWithdrawalLog');
  * Получение общих данных
  */
 router.get('/', verify.token, async (req, res) => {
+
 	const link = `${CLIENT_URL}/?r=${req.user._id}` // Реферальная ссылка
 	const referralPercentBonuse = +REFERRAL_PRECENT_BONUSE // Бонус в процентах от реферала 
+
 	const balance = req.user.referral.balance // Текущий баланс с подписок рефералов
 	const card = req.user.referral.card // Данные карты для вывода баланса
 
@@ -66,8 +68,8 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 						as: "payment"
 					} },
 					{ $unwind: { path: "$payment", preserveNullAndEmptyArrays: true } },
-					{ $group: { 
-						_id: null, 
+					{ $group: {
+						_id: null,
 						count: { $sum: 1 }
 					} },
 					{ $project: { _id: false } },
@@ -110,7 +112,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 					{ $skip: skip },
 					{ $limit: limit },
 				]
-				
+
 			} },
 			{ $limit: 1 },
 			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
@@ -143,8 +145,8 @@ router.get('/withdrawalOfMoney', verify.token, async (req, res) => {
 					{ $match: {
 						userId: req.user._id
 					} },
-					{ $group: { 
-						_id: null, 
+					{ $group: {
+						_id: null,
 						count: { $sum: 1 }
 					} },
 					{ $project: { _id: false } },
@@ -160,7 +162,7 @@ router.get('/withdrawalOfMoney', verify.token, async (req, res) => {
 						amount: true,
 						createdAt: true,
 						card: {
-							number: { 
+							number: {
 								$concat : [
 									"**** **** **** ",
 									{ $substrBytes: [ "$card.number", 12, 16 ] }
@@ -169,11 +171,11 @@ router.get('/withdrawalOfMoney', verify.token, async (req, res) => {
 						},
 						status: true
 					} },
-					{ $sort: { _id: -1 } },
+					{ $sort: { createdAt: -1 } },
 					{ $skip: skip },
 					{ $limit: limit },
 				]
-				
+
 			} },
 			{ $limit: 1 },
 			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
@@ -199,7 +201,7 @@ router.patch('/changeCard', verify.token, async (req, res) => {
 
 	if(!number || !cardholder) {
 		return resError({
-			res, 
+			res,
 			alert: true,
 			msg: 'Недостаточно данных'
 		});
@@ -210,7 +212,7 @@ router.patch('/changeCard', verify.token, async (req, res) => {
 
 	if(number.length !== 16) {
 		return resError({
-			res, 
+			res,
 			alert: true,
 			msg: 'Недопустимая длина поля: Номер карты'
 		});
@@ -218,7 +220,7 @@ router.patch('/changeCard', verify.token, async (req, res) => {
 
 	if(cardholder.length > 150) {
 		return resError({
-			res, 
+			res,
 			alert: true,
 			msg: 'Превышена длина поля: ФИО'
 		});
@@ -226,8 +228,8 @@ router.patch('/changeCard', verify.token, async (req, res) => {
 
 	try {
 		await User.updateOne(
-			{ _id: req.user._id }, 
-			{ $set: { 
+			{ _id: req.user._id },
+			{ $set: {
 				"referral.card": {
 					number,
 					cardholder
@@ -252,8 +254,8 @@ router.delete('/deleteCard', verify.token, async (req, res) => {
 
 	try {
 		await User.updateOne(
-			{ _id: req.user._id }, 
-			{ $set: { 
+			{ _id: req.user._id },
+			{ $set: {
 				"referral.card": null
 			} }
 		)
@@ -277,7 +279,7 @@ router.post('/withdrawBalance', verify.token, async (req, res) => {
 
 	if(!card || card.number?.length !== 16) {
 		return resError({
-			res, 
+			res,
 			alert: true,
 			msg: 'Требуется добавить карту'
 		});
@@ -285,12 +287,12 @@ router.post('/withdrawBalance', verify.token, async (req, res) => {
 
 	if(!balance || +balance <= 0) {
 		return resError({
-			res, 
+			res,
 			alert: true,
 			msg: 'Недостаточно средств для вывода'
 		});
 	}
-	
+
 	try {
 		await new ReferralWithdrawalLog({
 			userId: req.user._id,
@@ -301,8 +303,8 @@ router.post('/withdrawBalance', verify.token, async (req, res) => {
 
 
 		await User.updateOne(
-			{ _id: req.user._id }, 
-			{ $set: { 
+			{ _id: req.user._id },
+			{ $set: {
 				"referral.balance": 0
 			} }
 		)
