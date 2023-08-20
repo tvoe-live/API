@@ -597,9 +597,10 @@ router.get('/possibleYouLike', verify.token, async (req, res) => {
 			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
 			{ $project: {
 				totalSize: { $cond: [ "$totalSize.count", "$totalSize.count", 0] },
-				items: "$items"
+				items: "$items",
+				url:'/collections/possibleYouLike',
+				name:"Возможно вам понравится"
 			} },
-
 		]);
 
 		return res.status(200).json(result[0])
