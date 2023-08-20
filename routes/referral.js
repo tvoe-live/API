@@ -4,7 +4,7 @@ const User = require('../models/user');
 const verify = require('../middlewares/verify');
 const resError = require('../helpers/resError');
 const resSuccess = require('../helpers/resSuccess');
-const { DOMAIN, REFERRAL_PRECENT_BONUSE } = process.env;
+const { CLIENT_URL, REFERRAL_PRECENT_BONUSE } = process.env;
 const ReferralWithdrawalLog = require('../models/referralWithdrawalLog');
 
 /*
@@ -16,8 +16,10 @@ const ReferralWithdrawalLog = require('../models/referralWithdrawalLog');
  * Получение общих данных
  */
 router.get('/', verify.token, async (req, res) => {
-	const link = `${DOMAIN}/?r=${req.user._id}` // Реферальная ссылка
-	const referralPercentBonuse = +REFERRAL_PRECENT_BONUSE // Бонус в процентах от реферала
+
+	const link = `${CLIENT_URL}/?r=${req.user._id}` // Реферальная ссылка
+	const referralPercentBonuse = +REFERRAL_PRECENT_BONUSE // Бонус в процентах от реферала 
+
 	const balance = req.user.referral.balance // Текущий баланс с подписок рефералов
 	const card = req.user.referral.card // Данные карты для вывода баланса
 
@@ -55,8 +57,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 						foreignField: "userId",
 						pipeline: [
 							{ $match: {
-								type: 'paid',
-								status: 'success'
+								type: 'paid'
 							} },
 							{ $project: {
 								_id: false
@@ -83,55 +84,31 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 						foreignField: "userId",
 						pipeline: [
 							{ $match: {
-								type: 'paid',
-								status: 'success'
+								type: 'paid'
 							} },
 							{ $project: {
 								_id: false,
 								status: true,
 								createdAt: true,
 								bonuseAmount: {
-									$multiply: [ "$withdrawAmount", +REFERRAL_PRECENT_BONUSE / 100 ],
+									$multiply: [ "$amount", +REFERRAL_PRECENT_BONUSE / 100 ],
 								},
 							} },
-							{ $sort: { _id: 1 } },
+							{ $sort: { createdAt: -1 } },
 							{ $limit: 1 }
 						],
 						as: "payment"
 					} },
 					{ $unwind: { path: "$payment", preserveNullAndEmptyArrays: true } },
-					{ $lookup: {
-						from: "tariffs",
-						localField: "tariffId",
-						foreignField: "payment.tariffId",
-						pipeline: [
-							{ $project: {
-								_id: false,
-								name: true
-							} },
-							{ $limit: 1 }
-						],
-						as: "tariff"
-					} },
-					{ $unwind: { path: "$tariff" } },
 					{ $project: {
 						_id: false,
 						user: {
 							avatar: "$avatar",
 							firstname: "$firstname",
 						},
-						payment: {
-							$cond: [
-								{ $eq: [ "$payment.status" , "success" ] },
-								{ $mergeObjects: [
-									"$payment",
-									{ tariffName: "$tariff.name" }
-								] },
-								null
-							]
-						},
+						payment: true
 					} },
-					{ $sort: { _id: -1 } },
+					{ $sort: { createdAt: -1 } },
 					{ $skip: skip },
 					{ $limit: limit },
 				]

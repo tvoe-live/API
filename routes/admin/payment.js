@@ -70,24 +70,31 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 				foreignField: "tariffId",
 				pipeline: [
 					{ $match: {
-						status: 'success'
+						$or: [
+							{ status: 'success' },
+							{ status: 'CONFIRMED' }
+						]
 					} },
 					{ $group: { 
 						_id: null, 
-						count: { $sum: "$withdrawAmount" }
+						count: { 
+							$sum: { 
+								$cond: [ "$withdrawAmount" > 0, "$withdrawAmount", "$amount" ]
+							}
+						}
 					} },
 					{ $project: { _id: false } },
 					{ $limit: 1 }
 				],
-				as: "totalWithdrawAmount"
+				as: "totalAmount"
 			} },
-			{ $unwind: { path: "$totalWithdrawAmount", preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: "$totalAmount", preserveNullAndEmptyArrays: true } },
 			{ $unwind: { path: "$activeSubscriptions", preserveNullAndEmptyArrays: true } },
 			{ $unwind: { path: "$activationsSubscriptions", preserveNullAndEmptyArrays: true } },
 			{ $project: {
 				name: true,
 				duration: true,
-				totalWithdrawAmount: { $cond: [ "$totalWithdrawAmount.count", "$totalWithdrawAmount.count", 0] },
+				totalAmount: { $cond: [ "$totalAmount.count", "$totalAmount.count", 0] },
 				activeSubscriptions: { $cond: [ "$activeSubscriptions.count", "$activeSubscriptions.count", 0] },
 				activationsSubscriptions: { $cond: [ "$activationsSubscriptions.count", "$activationsSubscriptions.count", 0] },
 			} },
@@ -100,7 +107,10 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 				// Всего записей
 				"totalSize": [
 					{ $match: {
-						status: 'success'
+						$or: [
+							{ status: 'success' },
+							{ status: 'CONFIRMED' }
+						]
 					} },
 					{ $group: { 
 						_id: null, 
@@ -112,7 +122,10 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 				// Список
 				"items": [
 					{ $match: {
-						status: 'success'
+						$or: [
+							{ status: 'success' },
+							{ status: 'CONFIRMED' }
+						]
 					} },
 					{ $lookup: {
 						from: "tariffs",
@@ -152,7 +165,9 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 						startAt: true,
 						finishAt: true,
 						updatedAt: true,
-						withdrawAmount: true
+						amount: {
+							$cond: [ "$withdrawAmount", "$withdrawAmount", "$amount" ]
+						}
 					} },
 					{ $sort: { _id: -1 } }, // Была сортировка updatedAt
 					{ $skip: skip },
@@ -161,10 +176,10 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 				
 			} },
 			{ $limit: 1 },
-			{ $unwind: { path: "$totalWithdrawAmount", preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: "$totalAmount", preserveNullAndEmptyArrays: true } },
 			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
 			{ $project: {
-				totalWithdrawAmount: { $cond: [ "$totalWithdrawAmount.count", "$totalWithdrawAmount.count", 0] },
+				totalAmount: { $cond: [ "$totalAmount.count", "$totalAmount.count", 0] },
 				totalSize: { $cond: [ "$totalSize.count", "$totalSize.count", 0] },
 				items: "$items"
 			} },

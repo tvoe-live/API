@@ -1,4 +1,4 @@
-const { DOMAIN } = process.env;
+const { CLIENT_URL } = process.env;
 const express = require('express');
 const router = express.Router();
 const xml = require('xml');
@@ -35,23 +35,27 @@ router.get('/', async (req, res) => {
 				category: {
 					aliasInUrl: true
 				}
-			} }
+			} },
+			{ $limit: 49000 }
 		]);
 
 		const catalogPages = await getCatalogPages({});
 
-		movies.map(item => {
+		movies
+		.map(item => {
 			sitemapUrls.push({
 				url: [
 					{ priority: 0.8 },
 					{ changefreq: 'weekly' },
-					{ loc: `${DOMAIN}/p/${item.alias}` },
+					{ loc: `${CLIENT_URL}/p/${item.alias}` },
 					{ lastmod: new Date(item.updatedAt).toISOString().split("T")[0] }
 				]
 			})
 		});
 
-		catalogPages.reverse().map(item => {
+		catalogPages
+		.reverse()
+		.map(item => {
 			let base = [ item.categoryAlias]
 
 			if(item.genreAlias) base.push(item.genreAlias)
@@ -59,7 +63,7 @@ router.get('/', async (req, res) => {
 
 			base = base.join('/')
 			
-			const loc = new URL(base, DOMAIN)
+			const loc = new URL(base, CLIENT_URL)
 
 			sitemapUrls.push({
 				url: [
@@ -74,7 +78,7 @@ router.get('/', async (req, res) => {
 			url: [
 				{ priority: 1},
 				{ changefreq: 'always' },
-				{ loc: DOMAIN }
+				{ loc: CLIENT_URL }
 			]
 		})
 
