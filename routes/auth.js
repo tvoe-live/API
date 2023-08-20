@@ -51,8 +51,16 @@ const generateAccessToken = (userId) => {
 };
 
 router.post('/login', async (req, res) => {
-	const refererUserId = req.header('refererUserId')
-	const authorization = req.header('authorization')
+	const refererUserId = req.header('RefererUserId') || null
+	const authorization = req.header('Authorization') || null
+
+	if(!authorization) {
+		return resError({ 
+			res, 
+			alert: true,
+			msg: 'Не получен authorization'
+		});
+	}
 
 	try {
 		axios({
@@ -115,15 +123,17 @@ router.post('/login', async (req, res) => {
 					lastVisitAt: Date.now()
 				}
 
-				// Поиск пользователя в БД, который пригласил на регистрацию
-				const refererUser = await User.findOneAndUpdate(
-					{ _id: refererUserId },
-					{ $addToSet: {
-						'referral.userIds': _id
-					} },
-				);
-				// Привязать пользователя к рефереру
-				if(refererUser) registrationUserData.refererUserId = mongoose.Types.ObjectId(refererUserId)
+				if(refererUserId) {
+					// Поиск пользователя в БД, который пригласил на регистрацию
+					const refererUser = await User.findOneAndUpdate(
+						{ _id: refererUserId },
+						{ $addToSet: {
+							'referral.userIds': _id
+						} },
+					);
+					// Привязать пользователя к рефереру
+					if(refererUser) registrationUserData.refererUserId = mongoose.Types.ObjectId(refererUserId)
+				}
 
 				user = await new User(registrationUserData).save();
 			}
