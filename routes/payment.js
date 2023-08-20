@@ -176,7 +176,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 			} }
 		);
 
-		return res.status(200).json({ urlOfRedirectToPay: successUrlWithPaymentLogId });
+		return res.status(200).json({ urlOfRedirectToPay: successURL });
 	}
 
 
@@ -209,22 +209,33 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		//Recurrent:
 		PayType: 'O', // Тип проведения платежа ("O" - одностадийная оплата)
 		Language: 'ru', // Язык платежной формы
+		Receipt: {
+			Items: [{
+				Name: `Подписка на ${selectedTariff.name}`, // Наименование товара
+				Price: selectedTariff.price * 100, // Цена в копейках
+				Quantity: 1, // Количество или вес товара
+				Amount: selectedTariff.price * 100, // Стоимость товара в копейках. Произведение Quantity и Price
+				PaymentMethod: 'lfull_prepayment', // Признак способа расчёта (предоплата 100%)
+				PaymentObject: 'commodity', // Признак предмета расчёта (товар)
+				Tax: 'vat20', // Ставка НДС (ставка 20%)
+				//Ean13: '', // Штрих-код (от Атол)
+				//ShopCode: '' // Код магазина
+			}],
+			FfdVersion: '1.05', // Версия ФФД
+			Email: req.user.email || 'support@tvoe.team',
+			Phone: req.user.phone || '+74956635979',
+			Taxation: "usn_income", // Упрощенная СН (доходы)
+		}
 	}
 
 	// Получить токен для проверки подлинности запросов
 	const token = getToken(terminalParams)
 
-
 	// Добавить токен в платежный лог
 	await PaymentLog.updateOne(
 		{ _id: paymentLog._id }, 
-		{ 
-			$set: { 
-				token
-			}
-		}
+		{ $set: { token } }
 	);
-
 
 	// Формирование платежа 
 	const { data: initPaymentData } = await axios({
@@ -294,9 +305,6 @@ router.post('/notification', async (req, res) => {
 	const paymentLogId = mongoose.Types.ObjectId(orderId); // ID платежа в эквайринге и в БД
 	const paymentLog = await PaymentLog.findOne({ _id: paymentLogId }); // Нахождение платежа в БД по ID
 
-	// Запретить повторную активацию подписки
-	//if(paymentLog.status === 'success') return resError({ res, msg: 'Подписка уже оплачена' });
-
 	const user = await User.findOne({ _id: paymentLog.userId }); // Нахождение пользователя платежа
 	const tariff = await Tariff.findOne({ _id: paymentLog.tariffId }); // Нахождение оплаченого тарифа
 	const tariffDuration = Number(tariff.duration); // Длительность тарифа
@@ -331,21 +339,46 @@ router.post('/notification', async (req, res) => {
 				errorCode,
 				terminalKey
 			},
-			$unset: {
-				token: null
-			},
+			$unset: { token: null },
 			$inc: { '__v': 1 }
 		}
 	);
 
-	switch(status) {
-		case 'AUTHORIZED': { // Деньги захолдированы на карте клиента. Ожидается подтверждение операции
-			return res.status(200).send('OK');
+
+	// Начислить рефереру долю с первой подписки пользователя
+	const shareWithReferrer = async ({ userId, amount, refererUserId }) => {
+		if(!userId || !amount || !refererUserId) return
+
+		const countOfSuccessfulPaid = await PaymentLog.find({
+			userId,
+			type: 'paid',
+			$or: [
+				{ status: 'success' },
+				{ status: 'CONFIRMED' }
+			]
+		}).count();
+
+		// Проверить, не было ли ранее успешных оплат у пользователя
+		// Либо если amount отрицательный, проверяем на единственную оплату
+		const requiredCountOfSuccessfulPaid = Number(amount < 0)
+
+		if(countOfSuccessfulPaid === requiredCountOfSuccessfulPaid) {
+			const addToBalance = amount * (REFERRAL_PRECENT_BONUSE / 100)
+
+			await User.updateOne(
+				{ _id: refererUserId }, 
+				{ $inc: { 
+					"referral.balance": addToBalance
+				} }
+			);
 		}
-		case 'CONFIRMED': { // Операция подтверждена
+	}
+
+	switch(status) {
+		case 'CONFIRMED': // Операция подтверждена
 			// Обновить время подписки пользователю
 			await User.updateOne(
-				{ _id: paymentLog.userId }, 
+				{ _id: user._id }, 
 				{ $set: {
 					subscribe: {
 						startAt,
@@ -354,61 +387,63 @@ router.post('/notification', async (req, res) => {
 					},
 					allowTrialTariff: false
 				} }
-			);
+			)
 
-			// Начислить рефереру долю с первой подписки пользователя
-			if(user.refererUserId) {
-				const countOfSuccessfulPaid = await PaymentLog.find({
-					type: 'paid',
-					$or: [
-						{ status: 'success' },
-						{ status: 'CONFIRMED' }
-					],
-					userId: paymentLog.userId
-				}).count();
+			await shareWithReferrer({
+				amount,
+				userId: user._id,
+				refererUserId: user.refererUserId
+			})
 
-				// Проверить, не было ли ранее успешных оплат у пользователя
-				if(countOfSuccessfulPaid === 0) {
-					const addToBalance = amount * (REFERRAL_PRECENT_BONUSE / 100)
+			break;
+		case 'REFUNDED': // Произведён возврат
+		case 'PARTIAL_REFUNDED': // Произведён частичный возврат
+			// Проверить доступен ли еще предыдущий тариф
+			const lastActivePayment = await PaymentLog.findOne({
+													userId: user._id,
+													type: 'paid',
+													$or: [
+														{ status: 'success' },
+														{ status: 'CONFIRMED' }
+													],
+													finishAt: { $gt: new Date() }
+												})
+												.sort({ _id: -1 })
 
-					await User.updateOne(
-						{ _id: user.refererUserId }, 
-						{ $inc: { 
-							"referral.balance": addToBalance
-						} }
-					);
-				}
+			if(!!lastActivePayment) {
+				// Обновить время подписки пользователю, если есть предыдущий активный тариф
+				await User.updateOne(
+					{ _id: user._id }, 
+					{ $set: {
+						subscribe: {
+							startAt: lastActivePayment.startAt,
+							finishAt: lastActivePayment.finishAt,
+							tariffId: lastActivePayment.tariffId,
+						}
+					} }
+				)
+			} else {
+				await User.updateOne(
+					{ _id: user._id }, 
+					{ $unset: { subscribe: null } },
+					{ timestamps: false }	
+				);
 			}
-		}
-		case 'PARTIAL_REVERSED': { // Частичная отмена
-			return res.status(200).send('OK');
-		}
-		case 'REVERSED': { // Операция отменена
-			return res.status(200).send('OK');
-		}
-		case 'PARTIAL_REFUNDED': { // Произведён частичный возврат
-			await User.updateOne(
-				{ _id: paymentLog.userId }, 
-				{ $unset: { subscribe: null } }
-			);
 
-			// ДОПИСАТЬ УДАЛЕНИЕ БОНУСА У РЕФЕРЕРА
-		}
-		case 'REFUNDED': { // Произведён возврат
-			await User.updateOne(
-				{ _id: paymentLog.userId }, 
-				{ $unset: { subscribe: null } }
-			);
-		}
-		case 'REJECTED': { // Списание денежных средств закончилась ошибкой
-			return res.status(200).send('OK');
-		}
-		case '3DS_CHECKING': { // Автоматическое закрытие сессии, которая превысила срок пребывания в статусе 3DS_CHECKING (более 36 часов)
-			return res.status(200).send('OK');
-		}
-		default: {
-			return res.status(200).send('OK');
-		}
+
+			await shareWithReferrer({
+				amount: -amount,
+				userId: user._id,
+				refererUserId: user.refererUserId
+			})
+
+			break;
+		case 'AUTHORIZED': // Деньги захолдированы на карте клиента. Ожидается подтверждение операции
+		case 'PARTIAL_REVERSED': // Частичная отмена
+		case 'REVERSED': // Операция отменена
+		case 'REJECTED': // Списание денежных средств закончилась ошибкой
+		case '3DS_CHECKING': // Автоматическое закрытие сессии, которая превысила срок пребывания в статусе 3DS_CHECKING (более 36 часов)
+		default: break;
 	}
 
 	return res.status(200).send('OK');

@@ -602,7 +602,7 @@ router.post('/bookmark', verify.token, async (req, res) => {
 
 	try {
 		const movie = await Movie.findOne({ _id: movieId }, { _id: true });
-		console.log('movie:', movie)
+
 		if(!movie) {
 			return resError({
 				res, 

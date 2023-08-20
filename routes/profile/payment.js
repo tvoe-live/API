@@ -22,6 +22,9 @@ router.get('/', verify.token, async (req, res) => {
 		userId: req.user._id,
 		startAt: { $ne: null },
 		finishAt: { $ne: null },
+		status: {
+			$in: [ 'success', 'CONFIRMED' ]
+		}
 	};
 
 	try {
@@ -73,14 +76,15 @@ router.get('/', verify.token, async (req, res) => {
 					{ $unwind: "$tariff" },
 					{ $project: {
 						type: true,
-						amount: true,
 						startAt: true,
 						finishAt: true,
 						notificationType: true,
 						tariff: {
 							_id: true,
-							name: true,
-							price: true
+							name: true
+						},
+						amount: {
+							$cond: [ "$withdrawAmount", "$withdrawAmount", "$amount" ]
 						}
 					} },
 					{ $sort : { _id: -1 } },

@@ -55,8 +55,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 						foreignField: "userId",
 						pipeline: [
 							{ $match: {
-								type: 'paid',
-								status: 'CONFIRMED'
+								type: 'paid'
 							} },
 							{ $project: {
 								_id: false
@@ -83,8 +82,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 						foreignField: "userId",
 						pipeline: [
 							{ $match: {
-								type: 'paid',
-								status: 'CONFIRMED'
+								type: 'paid'
 							} },
 							{ $project: {
 								_id: false,
@@ -94,44 +92,21 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 									$multiply: [ "$amount", +REFERRAL_PRECENT_BONUSE / 100 ],
 								},
 							} },
-							{ $sort: { _id: 1 } },
+							{ $sort: { createdAt: -1 } },
 							{ $limit: 1 }
 						],
 						as: "payment"
 					} },
 					{ $unwind: { path: "$payment", preserveNullAndEmptyArrays: true } },
-					{ $lookup: {
-						from: "tariffs",
-						localField: "tariffId",
-						foreignField: "payment.tariffId",
-						pipeline: [
-							{ $project: {
-								_id: false,
-								name: true
-							} },
-							{ $limit: 1 }
-						],
-						as: "tariff"
-					} },
-					{ $unwind: { path: "$tariff" } },
 					{ $project: {
 						_id: false,
 						user: {
 							avatar: "$avatar",
 							firstname: "$firstname",
 						},
-						payment: {
-							$cond: [
-								{ $eq: [ "$payment.status" , "CONFIRMED" ] },
-								{ $mergeObjects: [ 
-									"$payment", 
-									{ tariffName: "$tariff.name" }
-								] },
-								null
-							]
-						},
+						payment: true
 					} },
-					{ $sort: { _id: -1 } },
+					{ $sort: { createdAt: -1 } },
 					{ $skip: skip },
 					{ $limit: limit },
 				]
