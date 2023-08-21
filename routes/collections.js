@@ -494,6 +494,14 @@ router.get('/possibleYouLike', verify.token, async (req, res) => {
 
 		const {watchedMovieIds, genresWathingCount} = logs[0]
 
+		if (!watchedMovieIds || !genresWathingCount.length){
+			return resError({
+				res,
+				alert: true,
+				msg: 'Для составления индивидуальных рекомендаций сперва посмотрите какие либо фильмы/сериалы'
+			});
+		}
+
 		const match = [
 			{
 				$match: {
