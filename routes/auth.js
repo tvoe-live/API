@@ -84,6 +84,7 @@ router.post('/login', async (req, res) => {
 				first_name,
 				display_name,
 				default_email,
+				default_phone,
 				is_avatar_empty,
 				default_avatar_id
 			} = data;
@@ -112,6 +113,7 @@ router.post('/login', async (req, res) => {
 					initial_client_id: client_id,
 					initial_firstname: first_name,
 					initial_displayName: display_name,
+					initial_phone: default_phone?.number,
 
 					sex: sex,
 					avatar: avatar,
@@ -120,6 +122,7 @@ router.post('/login', async (req, res) => {
 					email: defaultEmail,
 					firstname: first_name,
 					displayName: display_name,
+					phone: default_phone?.number,
 					lastVisitAt: Date.now()
 				}
 

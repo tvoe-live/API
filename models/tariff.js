@@ -1,11 +1,15 @@
 const mongoose = require('mongoose');
 
+/*
+ * Список тарифов
+ */
+
 const tariffSchema = new mongoose.Schema({
-	name: String,
-	sort: Number,
-	price: Number,
-	hidden: Boolean,
-	duration: String
+	name: String,		// Название
+	sort: Number,		// Сортировка
+	price: Number,		// Цена
+	hidden: Boolean,	// Скрыт ли нет
+	duration: String	// Длительность
 }, {
 	versionKey: false
 })

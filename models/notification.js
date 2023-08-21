@@ -1,5 +1,9 @@
 const mongoose = require('mongoose');
 
+/*
+ * Журнал всех уведомлений
+ */
+
 const notificationSchema = new mongoose.Schema({
 	title:String,
 	description: String,

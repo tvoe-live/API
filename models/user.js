@@ -1,9 +1,14 @@
 const mongoose = require('mongoose');
 
+/*
+ * Список пользователей
+ */
+
 const userSchema = new mongoose.Schema({
 	initial_email: String,
 	initial_id: String,
 	initial_sex: String,
+	initial_phone: String,
 	initial_birthday: String,
 	initial_firstname: String,
 	initial_lastname: String,
@@ -13,6 +18,7 @@ const userSchema = new mongoose.Schema({
 	email: String,
 	avatar: String,
 	sex: String,
+	phone: String,
 	birthday: String,
 	firstname: String,
 	lastname: String,
@@ -39,8 +45,8 @@ const userSchema = new mongoose.Schema({
 		default: null
 	},
 	allowTrialTariff: {
-		type: Boolean, // Воспользовался ли пробным бесплатным тарифом
-		default: true
+		type: Boolean, // Разрешить воспользоваться пробным тарифом
+		default: true // По умолчанию разрешено
 	},
 
 	refererUserId: mongoose.Schema.Types.ObjectId, // От какого ID пользователя был приглашен по реферальной программе

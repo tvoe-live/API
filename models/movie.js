@@ -1,5 +1,9 @@
 const mongoose = require('mongoose');
 
+/*
+ * Структура видео на странице фильма / сериала
+ */
+
 const videoSchema = {
 	_id: mongoose.Schema.Types.ObjectId,
 	src: String, // Путь к видео
@@ -17,6 +21,10 @@ const videoSchema = {
 	uploaded: Number, // Сколько файлов загружено
 	total: Number // Всего файлов нужно загрузить
 }
+
+/*
+ * Структура страницы фильма / сериала
+ */
 
 const movieSchema = new mongoose.Schema({
 	name: String, // Название

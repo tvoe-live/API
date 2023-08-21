@@ -1,5 +1,9 @@
 const mongoose = require('mongoose');
 
+/*
+ * Журнал пользователей просмотра видео (не трейлеров)
+ */
+
 const moviePageLogSchema = new mongoose.Schema({
 	device: Object,
 	referer: String,
