@@ -24,6 +24,7 @@ router.get('/', async (req, res) => {
 		poster: true,
 		trailer: true,
 		logo: true,
+		cover:true,
 	}
 
 	const projectRatingMore7 = {
@@ -39,6 +40,7 @@ router.get('/', async (req, res) => {
 		poster: true,
 		trailer: true,
 		logo: true,
+		cover:true,
 		rating:true,
 		categoryAlias: true,
 		url: { $concat: [ "/p/", "$alias" ] },
@@ -316,6 +318,9 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 					poster: {
 						src: true
 					},
+					cover: {
+						src: true
+					},
 				},
 		 	},
 			{ $unwind: { path: "$films", preserveNullAndEmptyArrays: true }}
@@ -335,6 +340,7 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 			categoryAlias: '$movie.categoryAlias',
 			filmDuration:"$movie.films.duration",
 			poster: '$movie.poster',
+			cover: '$movie.cover',
 		},
 		seriaInfo: {
 			$function:
@@ -494,6 +500,102 @@ router.get('/possibleYouLike', verify.token, async (req, res) => {
 
 		const {watchedMovieIds, genresWathingCount} = logs[0]
 
+		if (!watchedMovieIds || !genresWathingCount.length){
+
+			const mainAgregation = [
+				...movieOperations({
+					addToProject: {
+						poster: { src: true },
+						cover: { src: true },
+						alias:true
+					},
+				}),
+				{ $lookup: {
+					from: "moviepagelogs",
+					localField: "_id",
+					foreignField: "movieId",
+					pipeline: [
+						{ $project: {
+							_id: true,
+							userId: true,
+							movieId:true,
+							videoId:true,
+							updatedAt:true,
+							endTime:true,
+						} },
+					],
+					as: "moviepagelog"
+				}},
+				{ $unwind: '$moviepagelog'},
+				{ $group: {
+					_id: '$moviepagelog.videoId',
+					count: { $sum: 1 },
+					movieId: { $first: "$moviepagelog.movieId" },
+					shortDesc: { $first: "$shortDesc" },
+					name: { $first: "$name" },
+					poster: { $first: "$poster" },
+					cover: { $first: "$cover" },
+					alias: { $first: "$alias" },
+					duration: { $first: "$duration" },
+					url: { $first: "$url" },
+
+				} },
+				{ $sort: {count:-1}},
+				{ $group: {
+					_id: '$movieId',
+					videoId:  { $first: '$_id' },
+					count: { $first: '$count' },
+					shortDesc: { $first: '$shortDesc' },
+					poster: { $first: "$poster" },
+					cover: { $first: "$cover" },
+					name: { $first: '$name' },
+					alias: { $first: '$alias' },
+					count: { $first: '$count' },
+					duration: { $first: "$duration" },
+					url: { $first: "$url" },
+				}},
+				{ $match:{
+					count: { $gte: 10 },
+				}}
+			]
+
+			const result = await Movie.aggregate([
+				{
+					"$facet": {
+						//Всего записей
+						"totalSize": [
+							...mainAgregation,
+							{ $group: {
+								_id: null,
+								count: { $sum: 1 }
+							} },
+							{ $limit: 1 }
+						],
+
+						// Список
+						"items":[
+							...mainAgregation,
+							{ $sort: {count:-1}},
+							{ $project:{count:false}},
+							{ $skip: skip },
+							{ $limit: limit },
+						],
+					}
+				},
+				{ $limit: 1 },
+				{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+				{ $project: {
+					totalSize: { $cond: [ "$totalSize.count", "$totalSize.count", 0] },
+					items: "$items",
+					url:'/collections/possibleYouLike',
+					name:"Возможно вам понравится"
+
+				}},
+			]);
+
+			return res.status(200).json(result[0])
+		}
+
 		const match = [
 			{
 				$match: {
@@ -507,6 +609,7 @@ router.get('/possibleYouLike', verify.token, async (req, res) => {
 					name:true,
 					_id:true,
 					poster:true,
+					cover:true,
 					rating:true,
 					duration:true,
 					pointsAmount: {
