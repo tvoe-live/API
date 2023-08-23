@@ -53,6 +53,7 @@ const search = require('./routes/search');
 const movies = require('./routes/movies');
 const catalog = require('./routes/catalog');
 const payment = require('./routes/payment');
+const promocodes = require('./routes/promocodes');
 const sitemap = require('./routes/sitemap');
 const profile = require('./routes/profile');
 const notFound = require('./routes/notFound');
@@ -80,6 +81,7 @@ app.use('/sitemap', sitemap) // Данные для sitemap.xml
 app.use('/catalog', catalog) // Фильмы / сериалы с фильтром
 app.use('/referral', referral) // Реферальная программа
 app.use('/collections', collections) // Подборки и жанры для главной страницы
+app.use('/promocodes', promocodes) // Промокоды
 
 app.use('/profile', profile) // Профиль
 app.use('/profile/payment', profilePayment) // Профиль > Подписка
