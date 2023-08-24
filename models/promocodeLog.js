@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
  */
 
 const promocodesLogSchema = new mongoose.Schema({
-	promocodId: mongoose.Schema.Types.ObjectId,
+	promocodeId: mongoose.Schema.Types.ObjectId,
 	userId: mongoose.Schema.Types.ObjectId,
 }, {
 	timestamps: true
