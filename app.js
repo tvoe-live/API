@@ -53,6 +53,7 @@ const search = require('./routes/search');
 const movies = require('./routes/movies');
 const catalog = require('./routes/catalog');
 const payment = require('./routes/payment');
+const promocodes = require('./routes/promocodes');
 const sitemap = require('./routes/sitemap');
 const profile = require('./routes/profile');
 const notFound = require('./routes/notFound');
@@ -71,6 +72,7 @@ const adminSearchHistory = require('./routes/admin/searchHistory');
 const profileNotifications = require('./routes/profile/notifications');
 const adminMoviesRatingHistory = require('./routes/admin/moviesRatingHistory');
 const adminMoviesViewingHistory = require('./routes/admin/moviesViewingHistory');
+const adminPromocodes = require('./routes/admin/promocodes');
 
 app.use('/auth', auth) // Авторизация / регистрация через Яндекс и разрушение сессии
 app.use('/movies', movies) // Фильмы и сериалы
@@ -80,6 +82,7 @@ app.use('/sitemap', sitemap) // Данные для sitemap.xml
 app.use('/catalog', catalog) // Фильмы / сериалы с фильтром
 app.use('/referral', referral) // Реферальная программа
 app.use('/collections', collections) // Подборки и жанры для главной страницы
+app.use('/promocodes', promocodes) // Промокоды
 
 app.use('/profile', profile) // Профиль
 app.use('/profile/payment', profilePayment) // Профиль > Подписка
@@ -97,6 +100,7 @@ app.use('/admin/movieEditor', adminMovieEditor) // Админ-панель > Р�
 app.use('/admin/searchHistory', adminSearchHistory) // Админ-панель > История поиска
 app.use('/admin/moviesRatingHistory', adminMoviesRatingHistory) // Админ-панель > История рейтингов
 app.use('/admin/moviesViewingHistory', adminMoviesViewingHistory) // Админ-панель > История просмотров
+app.use('/admin/promocodes', adminPromocodes) // Админ-панель > Промокоды
 
 // Работа со сваггером
 const data = fs.readFileSync('swagger/doc.yml', 'utf8');
