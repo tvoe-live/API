@@ -79,7 +79,7 @@ router.get('/movie', async (req, res) => {
 
 	const skipMovieRatings = +req.query.skipMovieRatings || 0
 	const limitMovieRatings = +(req.query.limitMovieRatings > 0 && req.query.limitMovieRatings <= 100 ? req.query.limitMovieRatings : 100);
-	
+
 	const { _id, alias } = req.query;
 	const find = _id ? { _id: mongoose.Types.ObjectId(_id) } : { alias };
 
@@ -347,7 +347,7 @@ router.post('/rating', verify.token, async (req, res) => {
 
 	movieId = mongoose.Types.ObjectId(movieId)
 
-	if(typeof(rating)==='undefined' && typeof(rating)==='review') {
+	if(typeof(rating)==='undefined' && typeof(review)==='undefined') {
 		return resError({
 			res,
 			alert: true,
@@ -360,6 +360,14 @@ router.post('/rating', verify.token, async (req, res) => {
 			res,
 			alert: true,
 			msg: 'Оценка должна быть от 1 до 10'
+		});
+	}
+
+	if(review && review.length>500) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Длина комментария не должна превышать 500'
 		});
 	}
 
