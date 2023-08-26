@@ -22,6 +22,7 @@ const paymentLogSchema = new mongoose.Schema({
 	// Данные от Тинькофф Кассы
 	terminalKey: String,						// Идентификатор терминала. Выдается Мерчанту Тинькофф Кассой при заведении терминала.
 	amount: Number, 							// Сумма пополнения
+	refundedAmount: Number, 					// Сумма возврата или частичного возврата
 	orderId: mongoose.Schema.Types.ObjectId,	// Идентификатор заказа в системе Мерчанта
 	success: Boolean,							// Выполнение платежа
 	status: {									// Статус платежа

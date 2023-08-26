@@ -326,7 +326,6 @@ router.post('/notification', async (req, res) => {
 				finishAt,
 				startAt: paymentStartAt,
 				pan,
-				amount,
 				cardId,
 				status,
 				expDate,
@@ -337,7 +336,9 @@ router.post('/notification', async (req, res) => {
 				rebillId,
 				paymentId,
 				errorCode,
-				terminalKey
+				terminalKey,
+				amount: status === 'REFUNDED' || status === 'PARTIAL_REFUNDED' ? paymentLog.amount : amount,
+				refundedAmount: status === 'REFUNDED' || status === 'PARTIAL_REFUNDED' ? amount : 0
 			},
 			$unset: { token: null },
 			$inc: { '__v': 1 }
