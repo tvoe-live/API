@@ -294,20 +294,20 @@ router.post('/withdrawBalance', verify.token, async (req, res) => {
 	}
 
 	try {
-		// await new ReferralWithdrawalLog({
-		// 	userId: req.user._id,
-		// 	amount: +balance,
-		// 	card: req.user.referral.card,
-		// 	status: 'pending'
-		// }).save();
+		await new ReferralWithdrawalLog({
+			userId: req.user._id,
+			amount: +balance,
+			card: req.user.referral.card,
+			status: 'pending'
+		}).save();
 
 
-		// await User.updateOne(
-		// 	{ _id: req.user._id },
-		// 	{ $set: {
-		// 		"referral.balance": 0
-		// 	} }
-		// )
+		await User.updateOne(
+			{ _id: req.user._id },
+			{ $set: {
+				"referral.balance": 0
+			} }
+		)
 
 		return resSuccess({
 			res,
