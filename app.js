@@ -57,7 +57,6 @@ const sitemap = require('./routes/sitemap');
 const profile = require('./routes/profile');
 const notFound = require('./routes/notFound');
 const referral = require('./routes/referral');
-const withdrawal = require('./routes/withdrawal');
 const adminUsers = require('./routes/admin/users');
 const collections = require('./routes/collections');
 const adminMovies = require('./routes/admin/movies');
@@ -68,6 +67,7 @@ const profileHistory = require('./routes/profile/history');
 const adminMovieEditor= require('./routes/admin/movieEditor');
 const profileFavorites = require('./routes/profile/favorites');
 const profileBookmarks = require('./routes/profile/bookmarks');
+const profileWithdrawal = require('./routes/profile/withdrawal');
 const adminSearchHistory = require('./routes/admin/searchHistory');
 const profileNotifications = require('./routes/profile/notifications');
 const adminMoviesRatingHistory = require('./routes/admin/moviesRatingHistory');
@@ -81,7 +81,6 @@ app.use('/sitemap', sitemap) // Данные для sitemap.xml
 app.use('/catalog', catalog) // Фильмы / сериалы с фильтром
 app.use('/referral', referral) // Реферальная программа
 app.use('/collections', collections) // Подборки и жанры для главной страницы
-app.use('/withdrawal', withdrawal) // Подборки и жанры для главной страницы
 
 app.use('/profile', profile) // Профиль
 app.use('/profile/payment', profilePayment) // Профиль > Подписка
@@ -90,6 +89,7 @@ app.use('/profile/history', profileHistory) // Моё > История прос�
 app.use('/profile/favorites', profileFavorites) // Моё > Избранное
 app.use('/profile/bookmarks', profileBookmarks) // Моё > Закладки
 app.use('/profile/notifications', profileNotifications) // Навигация > Уведомления
+app.use('/profile/withdrawal', profileWithdrawal) // Профиль > Журнал заявок на возврат денежных средств
 
 app.use('/admin', admin) // Админ-панель
 app.use('/admin/users', adminUsers) // Админ-панель > Пользователи
