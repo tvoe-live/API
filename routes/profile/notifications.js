@@ -74,6 +74,7 @@ router.get('/', verify.token, async (req, res) => {
 							updatedAt: false,
 							createdAt:false,
 							notificationReadLog:false,
+							receiversIds:false,
 							__v:false,
 						}},
 						{ $sort: { willPublishedAt: -1 } },
@@ -126,7 +127,7 @@ router.patch('/markAsRead', verify.token, async (req, res) => {
  */
 
 router.post('/', verify.token, verify.isManager, uploadMemoryStorage.single('file'), async (req, res) => {
-	const buffer = req?.file
+	const buffer = req?.file?.buffer
 
 	const {
 		title,
@@ -280,18 +281,15 @@ router.delete('/', verify.token, verify.isManager, async (req, res) => {
  */
 router.get('/count', verify.token, verify.isManager, async (req, res) => {
 
-	const {
-		_id
-	} = req.body
-
-	if(!_id) return resError({ res, msg: 'Не передан _id' });
+	const id = req.query.id
+	if(!id) return resError({ res, msg: 'Не передан id' });
 
 	try {
 		const result = await NotificationReadLog.aggregate([
 			{ "$facet": {
 				"totalSize": [
 					{$match:{
-						notificationId: mongoose.Types.ObjectId(_id)
+						notificationId: mongoose.Types.ObjectId(id)
 					}},
 					{ $group: {
 						_id: null,
@@ -304,7 +302,7 @@ router.get('/count', verify.token, verify.isManager, async (req, res) => {
 			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
 			{ $project: {
 				totalSize: { $cond: [ "$totalSize.count", "$totalSize.count", 0] },
-				id:_id
+				id: id
 			}},
 		])
 
