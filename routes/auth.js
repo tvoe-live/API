@@ -14,9 +14,6 @@ const { uploadImageToS3 } = require('../helpers/uploadImage');
  * Авторизация / регистрация через Яндекс и разрушение сессии
  */
 
-// Получение уникального ID от базы данных
-const getObjectId = () => new mongoose.Types.ObjectId();
-
 // Скачивание аватарки 
 const downloadAvatar = async (res, default_avatar_id) => {
 	try {
@@ -54,8 +51,8 @@ const generateAccessToken = (userId) => {
 };
 
 router.post('/login', async (req, res) => {
-	const refererUserId = req.header('RefererUserId') || null
 	const authorization = req.header('Authorization') || null
+	let refererUserId = req.header('RefererUserId') || null
 
 	if(!authorization) {
 		return resError({ 
@@ -99,15 +96,10 @@ router.post('/login', async (req, res) => {
 			
 			// Если пользователя нет в БД, создаем нового
 			if(!user) {
-				// Получение уникального ID от базы данных
-				const _id = getObjectId();
-
 				// Скачать аватар с поставщика регистрации
 				const avatar = !is_avatar_empty ? await downloadAvatar(res, default_avatar_id) : null;
 
-				// "initial" обозначаются неизменные данные от поставщика регистрации
-				const registrationUserData = {
-					_id,
+				user = await new User({
 					initial_id: id,
 					initial_sex: sex,
 					initial_birthday: birthday,
@@ -127,21 +119,24 @@ router.post('/login', async (req, res) => {
 					displayName: display_name,
 					phone: default_phone?.number,
 					lastVisitAt: Date.now()
-				}
+				}).save();
 
 				if(refererUserId) {
 					// Поиск пользователя в БД, который пригласил на регистрацию
 					const refererUser = await User.findOneAndUpdate(
 						{ _id: refererUserId },
 						{ $addToSet: {
-							'referral.userIds': _id
+							'referral.userIds': user._id
 						} },
 					);
 					// Привязать пользователя к рефереру
-					if(refererUser) registrationUserData.refererUserId = mongoose.Types.ObjectId(refererUserId)
+					if(refererUser) {
+						await User.updateOne(
+							{ _id: user._id },
+							{ $set: { refererUserId }}
+						)
+					}
 				}
-
-				user = await new User(registrationUserData).save();
 			}
 
 			// Генерируем токен
