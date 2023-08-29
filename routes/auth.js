@@ -113,7 +113,7 @@ router.post('/login', async (req, res) => {
 					initial_client_id: client_id,
 					initial_firstname: first_name,
 					initial_displayName: display_name,
-					initial_phone: default_phone?.number,
+					initial_phone: default_phone ? default_phone.number : null,
 
 					sex: sex,
 					avatar: avatar,
@@ -122,7 +122,7 @@ router.post('/login', async (req, res) => {
 					email: defaultEmail,
 					firstname: first_name,
 					displayName: display_name,
-					phone: default_phone?.number,
+					phone: default_phone ? default_phone.number : null,
 					lastVisitAt: Date.now()
 				}
 
