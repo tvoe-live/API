@@ -14,6 +14,9 @@ const { uploadImageToS3 } = require('../helpers/uploadImage');
  * Авторизация / регистрация через Яндекс и разрушение сессии
  */
 
+// Получение уникального ID от базы данных
+const getObjectId = () => new mongoose.Types.ObjectId();
+
 // Скачивание аватарки 
 const downloadAvatar = async (res, default_avatar_id) => {
 	try {
@@ -97,7 +100,7 @@ router.post('/login', async (req, res) => {
 			// Если пользователя нет в БД, создаем нового
 			if(!user) {
 				// Получение уникального ID от базы данных
-				const _id = new mongoose.Types.ObjectId();
+				const _id = getObjectId();
 
 				// Скачать аватар с поставщика регистрации
 				const avatar = !is_avatar_empty ? await downloadAvatar(res, default_avatar_id) : null;
@@ -113,7 +116,7 @@ router.post('/login', async (req, res) => {
 					initial_client_id: client_id,
 					initial_firstname: first_name,
 					initial_displayName: display_name,
-					initial_phone: default_phone ? default_phone.number : null,
+					initial_phone: default_phone?.number,
 
 					sex: sex,
 					avatar: avatar,
@@ -122,7 +125,7 @@ router.post('/login', async (req, res) => {
 					email: defaultEmail,
 					firstname: first_name,
 					displayName: display_name,
-					phone: default_phone ? default_phone.number : null,
+					phone: default_phone?.number,
 					lastVisitAt: Date.now()
 				}
 
