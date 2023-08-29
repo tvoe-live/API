@@ -18,7 +18,7 @@ const ReferralWithdrawalLog = require('../models/referralWithdrawalLog');
 router.get('/', verify.token, async (req, res) => {
 
 	const link = `${CLIENT_URL}/?r=${req.user._id}` // Реферальная ссылка
-	const referralPercentBonuse = +REFERRAL_PRECENT_BONUSE // Бонус в процентах от реферала 
+	const referralPercentBonuse = +REFERRAL_PRECENT_BONUSE // Бонус в процентах от реферала
 
 	const balance = req.user.referral.balance // Текущий баланс с подписок рефералов
 	const card = req.user.referral.card // Данные карты для вывода баланса
@@ -41,7 +41,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 
 	const searchMatch = {
 		_id: {
-			$in: req.user.referral.userIds
+			$in: req.user.referral.userIds||[]
 		}
 	};
 
@@ -122,7 +122,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 			} },
 		]);
 
-		return res.status(200).json(result);
+		return res.status(200).json(result[0]);
 
 	} catch(err) {
 		return resError({ res, msg: err });
