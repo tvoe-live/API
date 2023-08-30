@@ -7,6 +7,40 @@ const movieOperations = require('../helpers/movieOperations');
 const verify = require('../middlewares/verify');
 const MoviePageLog = require('../models/moviePageLog');
 
+const carousel = [
+	{ $lookup: {
+		from: "moviepagelogs",
+		localField: "_id",
+		foreignField: "movieId",
+		pipeline: [
+			{ $match: {
+				updatedAt: {
+					$gte: new Date(new Date() - 3 * 60 * 60 * 24 * 1000)
+				}
+			} },
+			{ $group: {
+				_id: '$userId',
+				items: {
+					$push: '$$ROOT',
+				}
+			} },
+			{ $project: {
+				_id: true
+			} }
+		],
+		as: "countPageViewed"
+	} },
+	...movieOperations({
+		addToProject: {
+			logo: true,
+			cover: { src: true },
+			genreName: { $first: "$genres.name" },
+			countPageViewed: { $size: "$countPageViewed" },
+		},
+		sort: { countPageViewed: -1, raisedUpAt: -1, publishedAt: -1 },
+	})
+]
+
 /*
  * Подборки и жанры для главной страницы
  */
@@ -131,38 +165,8 @@ router.get('/', async (req, res) => {
 				],
 				// Карусель - самые популярные
 				"carousel": [
-					{ $lookup: {
-						from: "moviepagelogs",
-						localField: "_id",
-						foreignField: "movieId",
-						pipeline: [
-							{ $match: {
-								updatedAt: {
-									$gte: new Date(new Date() - 3 * 60 * 60 * 24 * 1000)
-								}
-							} },
-							{ $group: {
-								_id: '$userId',
-								items: {
-									$push: '$$ROOT',
-								}
-							} },
-							{ $project: {
-								_id: true
-							} }
-						],
-						as: "countPageViewed"
-					} },
-					...movieOperations({
-						addToProject: {
-							logo: true,
-							cover: { src: true },
-							genreName: { $first: "$genres.name" },
-							countPageViewed: { $size: "$countPageViewed" },
-						},
-						sort: { countPageViewed: -1, raisedUpAt: -1, publishedAt: -1 },
-						limit: limit
-					}),
+					...carousel,
+					{$limit: limit},
 					{ $project: {
 						countPageViewed: false
 					} }
@@ -803,6 +807,100 @@ router.get('/popular', async (req, res) => {
 				items: "$items",
 				name:"Самые популярные",
 				url:'/collections/popular'
+
+			}},
+		]);
+		return res.status(200).json(result[0])
+
+	} catch(e){
+		return res.json(e);
+	}
+});
+
+router.get('/carouselWithFavoritesAndBookmarks', verify.token, async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 18 ? req.query.limit : 18);
+
+	const mainAgregation = [
+		...carousel,
+		{ $lookup: {
+			from: "moviefavorites",
+			localField: "_id",
+			foreignField: "movieId",
+			pipeline: [
+				{ $match: {
+					userId: req.user._id,
+				} },
+			],
+			as: "favorite"
+		} },
+		{ $unwind: { path: "$favorite", preserveNullAndEmptyArrays: true } },
+		{ $lookup: {
+			from: "moviebookmarks",
+			localField: "_id",
+			foreignField: "movieId",
+			pipeline: [
+				{ $match: {
+					userId: req.user._id,
+				} },
+			],
+			as: "bookmark"
+		} },
+		{ $unwind: { path: "$bookmark", preserveNullAndEmptyArrays: true } },
+		{
+			$addFields: {
+				isFavorite: {
+					$cond: {
+						if: { $ifNull: ["$favorite", false] },
+						then: "$favorite.isFavorite",
+						else: false
+					}
+				},
+				isBookmark: {
+					$cond: {
+						if: { $ifNull: ["$bookmark", false] },
+						then: "$bookmark.isBookmark",
+						else: false
+					}
+				}
+			}
+		},
+		{$project:{
+			bookmark:false,
+			favorite:false,
+			countPageViewed: false
+		}}
+	]
+
+	try {
+		const result = await Movie.aggregate([
+			{
+				"$facet": {
+					//Всего записей
+					"totalSize": [
+						...mainAgregation,
+						{ $group: {
+							_id: null,
+							count: { $sum: 1 }
+						} },
+						{ $limit: 1 }
+					],
+
+					// Список
+					"items":[
+						...mainAgregation,
+						{ $skip: skip },
+						{ $limit: limit },
+					],
+				}
+			},
+			{ $limit: 1 },
+			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+			{ $project: {
+				totalSize: { $cond: [ "$totalSize.count", "$totalSize.count", 0] },
+				items: "$items",
+				name:"Карусель с закладками и избранными",
+				url:'/collections/carouselWithFavoritesAndBookmarks'
 
 			}},
 		]);
