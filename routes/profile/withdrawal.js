@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const resError = require('../../helpers/resError');
 const resSuccess = require('../../helpers/resSuccess');
@@ -11,53 +12,28 @@ const verify = require('../../middlewares/verify');
 
 
 /*
- * Получение всех записей для юзера
+ * Получение последней записи для юзера
  */
 router.get('/', verify.token, async (req, res) => {
-	const skip = +req.query.skip || 0
-	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20);
 
 	try {
-		WithdrawalLog.aggregate([
-			{
-				"$facet": {
-					"totalSize": [
-						{$match: {
-							userId:req.user._id
-						}},
-						{ $group: {
-							_id: null,
-							count: { $sum: 1 }
-						} },
-						{ $project: { _id: false } },
-						{ $limit: 1 }
-					],
-					"items":[
-						{$match: {
-							userId:req.user._id
-						}},
-						{$sort: {createdAt: -1}},
-						{
-							$project: {
-								createdAt:true,
-								updatedAt:true,
-								status:true,
-								reason:true,
-							}
-						},
-						{ $skip: skip },
-						{ $limit: limit }
-					],
-				},
-			},
-			{ $limit: 1 },
-			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
-			{ $project: {
-				totalSize: { $cond: [ "$totalSize.count", "$totalSize.count", 0] },
-				items: "$items"
-			} },
-		], async(err, result)=>{
-			return res.status(200).json(result[0]);
+
+		const withdrawalLog = await WithdrawalLog.findOne({userId:req.user._id, status:'WAITING'})
+
+		if(!withdrawalLog){
+			return resError({
+				res,
+				alert: true,
+				msg: 'В данный момент нет заявки, находящейся в режиме ожидания'
+			});
+		}
+
+		return res.status(200).json({
+			_id:withdrawalLog._id,
+			reason:withdrawalLog.reason,
+			status:withdrawalLog.status,
+			createdAt: withdrawalLog.createdAt,
+
 		});
 
 	} catch(err) {
@@ -73,19 +49,10 @@ router.get('/', verify.token, async (req, res) => {
 router.post('/', verify.token, async (req, res) => {
 
 	const {
-		status,
 		reason
 	} = req.body;
 
-	if(!status) {
-		return resError({
-			res,
-			alert: true,
-			msg: 'Не получен status'
-		});
-	}
-
-	if(!reason || !reason.type || !reason.text) {
+	if(!reason || !reason.types || !reason.text) {
 		return resError({
 			res,
 			alert: true,
@@ -94,20 +61,78 @@ router.post('/', verify.token, async (req, res) => {
 	}
 
 	try {
+		const existWithdrawalLog = await WithdrawalLog.findOne({userId:req.user._id, status:'WAITING'})
+		if (existWithdrawalLog) return resError({
+			res,
+			alert: true,
+			msg: 'Ваша заявка на вывод средств уже создана и находится в режиме ожидания'
+		});
 
-		const {_id} = await WithdrawalLog.create({
+
+		const {_id } = await WithdrawalLog.create({
 			userId:req.user._id,
-			status,
+			status:"WAITING",
 			reason
 		});
 
 		return resSuccess({
 			_id,
 			res,
-			status,
+			status:"WAITING",
 			reason,
 			alert: true,
 			msg: 'Заявка на вывод средств успешно cоздана'
+		})
+	} catch (error) {
+		return res.json(error);
+	}
+});
+
+
+/*
+ * Редактирование записи
+ */
+router.patch('/', verify.token, verify.isManager, async (req, res) => {
+	let {
+		status,
+		_id,
+	} = req.body;
+
+	if(!status) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Поле status обязательное'
+		});
+	}
+
+	try {
+		const withdrawalLog = await WithdrawalLog.findOneAndUpdate(
+			{
+				_id: mongoose.Types.ObjectId(_id),
+			},
+			{
+				$set: {
+					status,
+					managerUserId: req.user._id
+				},
+				$inc: { '__v': 1 }
+			}
+		);
+
+		if (!withdrawalLog){
+			return resError({
+				res,
+				alert: true,
+				msg: 'Заявки с указанным _id не найдено'
+			});
+
+		}
+		return resSuccess({
+			_id,
+			res,
+			alert: true,
+			msg: 'Заявка на вывод средств успешно обновлена'
 		})
 	} catch (error) {
 		return res.json(error);
