@@ -56,7 +56,7 @@ router.post('/', verify.token, async (req, res) => {
 		return resError({
 			res,
 			alert: true,
-			msg: 'Значение обязательного поля reason не валидно. Параметр reason представляет собой объект с полями type и text'
+			msg: 'Значение обязательного поля reason не валидно. Параметр reason представляет собой объект с полями types и text'
 		});
 	}
 
