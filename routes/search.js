@@ -185,19 +185,19 @@ router.get('/oftenSeek', async (req, res) => {
 router.get('/', getSearchQuery, async (req, res) => {
 	const skip = +(req.query.skip ?? 0);
 	const query = req.searchQuery?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-	const RegExpQuery = new RegExp(query, 'i');
+	const RegExpQuery = new RegExp(query.replace(/[eё]/gi, "[её]"), "i");
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
 
 	const aggregationForTotalSize = {
 		$or: [
 			{ name: RegExpQuery },
 			{ origName: RegExpQuery },
-			{ shortDesc: RegExpQuery },
-			{ fullDesc: RegExpQuery },
-			{ countries: RegExpQuery },
-			{ persons: {
-				$elemMatch: { name: RegExpQuery }
-			} },
+			// { shortDesc: RegExpQuery },
+			// { fullDesc: RegExpQuery },
+			// { countries: RegExpQuery },
+			// { persons: {
+			// 	$elemMatch: { name: RegExpQuery }
+			// } },
 		],
 		publishedAt: { $ne: null }
 	}
