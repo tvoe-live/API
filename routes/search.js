@@ -192,12 +192,12 @@ router.get('/', getSearchQuery, async (req, res) => {
 		$or: [
 			{ name: RegExpQuery },
 			{ origName: RegExpQuery },
-			// { shortDesc: RegExpQuery },
-			// { fullDesc: RegExpQuery },
-			// { countries: RegExpQuery },
-			// { persons: {
-			// 	$elemMatch: { name: RegExpQuery }
-			// } },
+			{ shortDesc: RegExpQuery },
+			{ fullDesc: RegExpQuery },
+			{ countries: RegExpQuery },
+			{ persons: {
+				$elemMatch: { name: RegExpQuery }
+			} },
 		],
 		publishedAt: { $ne: null }
 	}
