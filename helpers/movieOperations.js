@@ -1,5 +1,5 @@
-const movieOperations = ({ 
-	addToMatch, 
+const movieOperations = ({
+	addToMatch,
 	addToProject,
 	sort = { createdAt: -1 },
 	limit = 10000,
@@ -45,6 +45,13 @@ const movieOperations = ({
 		categoryAlias: true,
 		shortDesc:true,
 		trailer:true,
+		series: {
+			$cond: {
+			  if: { $eq: ["$categoryAlias", "serials"] },
+			  then:  '$series',
+			  else: "$$REMOVE"
+			}
+		},
 		duration: {
 			$switch: {
 				branches: [
@@ -82,7 +89,7 @@ const movieOperations = ({
 	};
 
 	return [
-		{ $match: { 
+		{ $match: {
 			...match,
 			...addToMatch
 		} },
@@ -92,7 +99,7 @@ const movieOperations = ({
 		{ $addFields: { genres: "$category.genres" } },
 		{ $project: {
 			...project,
-			...addToProject
+			...addToProject,
 		} },
 		{ $skip: skip },
 		{ $limit: limit },
