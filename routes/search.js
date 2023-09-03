@@ -11,63 +11,169 @@ const getSearchQuery = require('../middlewares/getSearchQuery');
  * Поиск фильмов, сериалов и всего их персонала сьемочной группы
  */
 
-// Часто ищут (! Сейчас логика из карусели !)
+// Часто ищут
 router.get('/oftenSeek', async (req, res) => {
 	const skip = +req.query.skip || 0
-	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 20);
 
-	const agregationListForTotalSize = [
-		{ $lookup: {
-			from: "moviepagelogs",
-			localField: "_id",
-			foreignField: "movieId",
-			pipeline: [
-				{ $match: {
-					updatedAt: {
-						$gte: new Date(new Date() - 5 * 60 * 60 * 24 * 1000)
-					}
-				} },
-			],
-			as: "countPageViewed"
-		} },
-		...movieOperations({
-			addToProject: {
-				countPageViewed: { $size: "$countPageViewed" },
-				poster: { src: true }
-			},
-			sort: { countPageViewed: -1, raisedUpAt: -1 },
-		}),
+	const mainAgregation = [
+		{
+			$group: {
+			  _id: "$query",
+			  count: { $sum: 1 },
+			}
+		  },
+		  {
+			  $match: {
+				  count: { $gt: 3 }
+			  }
+		  },
+		  {
+			  $sort: {
+				  count:-1
+			  }
+		  },
+		  {
+			  $limit: 500
+		  },
+		  {
+			$lookup: {
+			  from: "movies",
+			  let: { searchValue: '$_id' },
+			  pipeline: [
+				  {
+					  $match: {
+						  $expr: {
+							$and:[
+								{ $ne: ["$publishedAt", null] },
+								{ $or: [
+										{$regexMatch: {
+											input: "$name",
+											regex:  "$$searchValue",
+											options: "i"
+										}},
+										{$regexMatch: {
+											input: "$origName",
+											regex:  "$$searchValue",
+											options: "i"
+										}},
+									]
+								}
+							]
+						  }
+					  },
+					},
+				  {
+					  $project: {
+						  _id:true,
+						  categoryAlias: true,
+						  series: {
+							$cond: {
+								if: { $eq: ["$categoryAlias", "serials"] },
+								then:  '$series',
+								else: "$$REMOVE"
+							}
+						  },
+						  name: true,
+						  origName:true,
+						  poster:true,
+						  dateReleased:true,
+						  rating:true,
+						  ageLevel:true,
+						  shortDesc:true,
+						  trailer:true,
+						  badge:true,
+						  duration: {
+							$switch: {
+								branches: [
+									{ case: { $eq: ["$categoryAlias", "films"] }, then: {
+										$sum: {
+											$map: {
+												"input": "$films",
+												"as": "item",
+												"in": "$$item.duration"
+											}
+										},
+									   } },
+									{ case: { $eq: ["$categoryAlias", "serials"] }, then: {
+										$sum: {
+											$map: {
+												"input": "$series",
+												"as": "seasons",
+												"in": {
+													$sum: {
+														$map: {
+															"input": "$$seasons",
+															"as": "item",
+															"in": "$$item.duration"
+														}
+													}
+												}
+											}
+										},
+								   } }
+								],
+								default: 0
+							}
+						},
+						url: { $concat: [ "/p/", "$alias" ] },
+					  }
+				  },
+			  ],
+			  as: "movie"
+			}
+		  },
+		  { $unwind: "$movie" },
+		  {
+			$group: {
+				_id: "$movie._id",
+				name: { $first: "$movie.name" },
+				origName: { $first: "$movie.origName" },
+				generalCount: { $sum: '$count' },
+				dateReleased: { $first: '$movie.dateReleased' },
+				duration: { $first: '$movie.duration' },
+				trailer: { $first: '$movie.trailer' },
+				shortDesc: { $first: '$movie.shortDesc' },
+				ageLevel: { $first: '$movie.ageLevel' },
+				rating: { $first: '$movie.rating' },
+				badge: { $first: '$movie.badge' },
+				url: { $first: '$movie.url' },
+				categoryAlias: { $first: '$movie.categoryAlias' },
+				series: { $first: '$movie.series' },
+			}
+		  },
 	]
 
 	try {
-		const result = await Movie.aggregate([
-			{
-				"$facet": {
-					"totalSize":[
-						...agregationListForTotalSize,
-						{ $group: { 
-							_id: null, 
-							count: { $sum: 1 }
-						} },
-						{ $project: { _id: false } },
-						{ $limit: 1 }
-					],
-					"items": [
-						...agregationListForTotalSize,
-						{ $project: { 
-							countPageViewed: false
-						} },
-						{ $skip: skip },
-						{ $limit: limit },
-					]
-				}
-			},
+		const result = await searchLog.aggregate([
+			{ "$facet": {
+				// Всего записей
+				"totalSize": [
+					...mainAgregation,
+					{ $group: {
+						_id: null,
+						count: { $sum: 1 }
+					} },
+					{ $project: { _id: false } },
+					{ $limit: 1 }
+				],
+				// Список
+				"items": [
+					...mainAgregation,
+					{ $sort: { generalCount:-1 }},
+					{$project: {generalCount:false}},
+					{ $skip: skip },
+					{ $limit: limit },
+				]
+			} },
+			{ $limit: 1 },
 			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
-			{ $project:{
+			{ $project: {
 				totalSize: { $cond: [ "$totalSize.count", "$totalSize.count", 0] },
-				items: "$items",
-			}}
-		]);
+				items: "$items"
+			} },
+
+		  ]);
 
 		return res.status(200).json(result[0]);
 
@@ -79,7 +185,7 @@ router.get('/oftenSeek', async (req, res) => {
 router.get('/', getSearchQuery, async (req, res) => {
 	const skip = +(req.query.skip ?? 0);
 	const query = req.searchQuery?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-	const RegExpQuery = new RegExp(query, 'i');
+	const RegExpQuery = new RegExp(query.replace(/[eё]/gi, "[её]"), "i");
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
 
 	const aggregationForTotalSize = {
@@ -89,7 +195,7 @@ router.get('/', getSearchQuery, async (req, res) => {
 			{ shortDesc: RegExpQuery },
 			{ fullDesc: RegExpQuery },
 			{ countries: RegExpQuery },
-			{ persons: { 
+			{ persons: {
 				$elemMatch: { name: RegExpQuery }
 			} },
 		],
@@ -98,7 +204,7 @@ router.get('/', getSearchQuery, async (req, res) => {
 
 	if(!req.searchQuery || !req.searchQuery.length) {
 		return resError({
-			res, 
+			res,
 			alert: true,
 			msg: 'Пустая строка поиска'
 		});
@@ -106,7 +212,7 @@ router.get('/', getSearchQuery, async (req, res) => {
 
 	if(req.searchQuery.length > 250) {
 		return resError({
-			res, 
+			res,
 			alert: true,
 			msg: 'Превышена длина поля поиска'
 		});
@@ -118,8 +224,8 @@ router.get('/', getSearchQuery, async (req, res) => {
 				// Всего записей
 				"totalSize": [
 					{ $match: aggregationForTotalSize },
-					{ $group: { 
-						_id: null, 
+					{ $group: {
+						_id: null,
 						count: { $sum: 1 }
 					} },
 					{ $project: { _id: false } },
@@ -136,7 +242,7 @@ router.get('/', getSearchQuery, async (req, res) => {
 						limit,
 					}),
 					{ $sort : { _id : -1 } },
-				]		
+				]
 			} },
 			{ $limit: 1 },
 			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
@@ -159,7 +265,7 @@ router.post('/addLog', getSearchQuery, async (req, res) => {
 
 	if(!req.searchQuery || !req.searchQuery.length) {
 		return resError({
-			res, 
+			res,
 			alert: true,
 			msg: 'Пустая строка поиска'
 		});
@@ -167,7 +273,7 @@ router.post('/addLog', getSearchQuery, async (req, res) => {
 
 	if(req.searchQuery.length > 250) {
 		return resError({
-			res, 
+			res,
 			alert: true,
 			msg: 'Превышена длина поля поиска'
 		});
