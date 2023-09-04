@@ -61,12 +61,24 @@ const userSchema = new mongoose.Schema({
 		},
 		userIds: [mongoose.Schema.Types.ObjectId], // ID приглашенных пользователей по реферальной программе
 	},
-	
+
 
 	role: String,
 	lastVisitAt: Date,
 	banned: Object, // Дата блокировки и восстановления
-	deleted: Object // Дата удаления и восстановления
+	deleted: Object, // Дата удаления и восстановления
+	disabledNotifications: { // Типы отключенных уведомлений
+		type: Array,
+		required: true,
+		validator: function(arrTypes) {
+			const validValues = ['SERVICE_NEWS', 'GIFTS_AND_PROMOTIONS', 'PROFILE', 'CINEMA_NEWS', 'SERVICE_NOVELTIES', 'FAVOTITES_AND_BOOKMARKS_NEWS']
+			for ( let i=0; i<arrTypes.length; i++){
+				if(!validValues.includes(arrTypes[i])) return false
+			}
+			return true
+		},
+		message: props => `<${props.value}> - не валидное значение! Возможные варианты: 'SERVICE_NEWS', 'GIFTS_AND_PROMOTIONS', 'PROFILE', 'CINEMA_NEWS', 'SERVICE_NOVELTIES', 'FAVOTITES_AND_BOOKMARKS_NEWS'`
+	},
 }, {
 	timestamps: true
 })

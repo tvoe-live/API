@@ -3,6 +3,7 @@ const router = express.Router();
 const verify = require('../../middlewares/verify');
 const resError = require('../../helpers/resError');
 const Notification = require('../../models/notification');
+const User = require('../../models/user');
 const NotificationReadLog = require('../../models/notificationReadLog');
 const resSuccess = require('../../helpers/resSuccess');
 const multer = require('multer');
@@ -23,13 +24,22 @@ const uploadMemoryStorage = multer({ storage: memoryStorage });
 router.get('/', verify.token, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20);
+	console.log('req.user.disabledNotifications:', req.user.disabledNotifications)
 
 	const lookupAndMatch = [
 		{
 			$match: {
-				$or: [
-					{ receiversIds: [] },           // Поле является пустым массивом
-					{ receiversIds: { $elemMatch: { $eq: req.user._id } } } // Поле содержит заданный id
+				$and: [
+					{ $or: [
+						{ receiversIds: [] },  // Поле является пустым массивом
+						{ receiversIds: { $elemMatch: { $eq: req.user._id } } }, // Поле содержит заданный id
+
+					]},
+					{
+						type: {
+							$nin: req.user.disabledNotifications
+						}
+					},
 				]
 			}
 		},
@@ -110,6 +120,44 @@ router.patch('/markAsRead', verify.token, async (req, res) => {
 
 	try {
 		await NotificationReadLog.insertMany(NotificationReadLogForInsert);
+
+		return resSuccess({
+			res,
+			alert: true,
+			msg: 'Успешно обновлено'
+		})
+
+	} catch(err) {
+		return resError({ res, msg: err });
+	}
+})
+
+router.patch('/settings', verify.token, async (req, res) => {
+
+	const notificationTypes= ['SERVICE_NEWS', 'GIFTS_AND_PROMOTIONS', 'PROFILE', 'CINEMA_NEWS', 'SERVICE_NOVELTIES', 'FAVOTITES_AND_BOOKMARKS_NEWS']
+
+	Object.keys(req.body).forEach(notificationType=>{
+		if (!notificationTypes.includes(notificationType)){
+			return resError({
+				res,
+				alert: true,
+				msg: `${notificationType} - не валидное значение. Возможные варианты: ${notificationTypes}`
+			});
+		}
+	})
+
+	const turnOn = Object.entries(req.body).filter(arr=>arr[1]).map(arr=>arr[0])
+	const turnOff = Object.entries(req.body).filter(arr=>!arr[1]).map(arr=>arr[0])
+
+	try {
+
+		const user = await User.findOne({ _id:req.user.id });
+
+		let newDisabledNotifications= Array.from(new Set([...user.disabledNotifications, ...turnOff]))
+		newDisabledNotifications = newDisabledNotifications.filter(kind=>!turnOn.includes(kind))
+
+		user.disabledNotifications=newDisabledNotifications
+		user.save()
 
 		return resSuccess({
 			res,
