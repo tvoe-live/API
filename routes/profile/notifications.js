@@ -57,7 +57,6 @@ router.get('/', verify.token, async (req, res) => {
 		{$match: {
 			$expr: {
 				$and:[
-				  { $eq: [{ $size: "$notificationReadLog" }, 0]},  // Если записи в коллекции readlogs нет
 				  { $gte: [new Date(), '$willPublishedAt']},
 				  { $ne: ['$deleted', true]},
 				]
@@ -81,12 +80,18 @@ router.get('/', verify.token, async (req, res) => {
 					"items": [
 						...lookupAndMatch,
 						{$project: {
-							updatedAt: false,
-							createdAt:false,
-							notificationReadLog:false,
-							receiversIds:false,
-							__v:false,
-						}},
+							title: '$title',
+							description: '$description',
+							type: '$type',
+							willPublishedAt: '$willPublishedAt',
+							isReaded: {
+								$cond: {
+									if: { $eq: [ {$size: '$notificationReadLog'}, 0] },
+									then: false,
+									else: true
+								}
+							 },
+							}},
 						{ $sort: { willPublishedAt: -1 } },
 						{ $skip: skip },
 						{ $limit: limit },
