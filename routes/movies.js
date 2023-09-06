@@ -258,6 +258,7 @@ router.get('/movie', async (req, res) => {
 									duration:true,
 									badge:true,
 									url:true,
+									series:true,
 									genresMatchAmount: {
 										$size:[
 											{	$setIntersection: ['$genresAliases', '$$selectedMovieGenresAliases']}
