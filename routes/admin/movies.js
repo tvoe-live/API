@@ -255,36 +255,49 @@ router.put('/publish', verify.token, verify.isManager, async (req, res) => {
 	try {
 		const movie = await Movie.findOne({ _id });
 
-		if(!movie.name) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Необходимо название'
-			});
-		}
 
-		if(!movie.alias) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Необходим ЧПУ-адрес'
-			});
-		}
+		if (!movie.publishedAt){ // Снять фильм с публикации можно всегда. Опубликовать фильм - только если заполнены обязательные поля
 
-		if(!movie.categoryAlias) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Необходима категория'
-			});
-		}
+			if(!movie.name) {
+				return resError({
+					res,
+					alert: true,
+					msg: 'Необходимо название'
+				});
+			}
 
-		if(!movie.genresAliases || !movie.genresAliases.length) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Необходимы жанры'
-			});
+			if(!movie.alias) {
+				return resError({
+					res,
+					alert: true,
+					msg: 'Необходим ЧПУ-адрес'
+				})
+			}
+
+			if(!movie.categoryAlias) {
+				return resError({
+					res,
+					alert: true,
+					msg: 'Необходима категория'
+				});
+			}
+
+			if(!movie.genresAliases || !movie.genresAliases.length) {
+				return resError({
+					res,
+					alert: true,
+					msg: 'Необходимы жанры'
+				});
+			}
+
+			const existMovies = await Movie.find({alias:movie.alias, publishedAt:{$ne:null} })
+			if (existMovies.length){
+				return resError({
+					res,
+					alert: true,
+					msg: `Фильм с ЧПУ-адресом ${movie.alias} уже существует`
+				});
+			}
 		}
 
 		const set = {
