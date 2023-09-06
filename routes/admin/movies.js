@@ -31,34 +31,34 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 					{ $match: {
 						...searchMatch,
 					} },
-					{ $group: { 
-						_id: null, 
+					{ $group: {
+						_id: null,
 						count: { $sum: 1 }
 					} },
 					{ $project: { _id: false } },
 					{ $limit: 1 }
 				],
-				// Опубликованные 
+				// Опубликованные
 				"totalSizePublished": [
 					{ $match: {
 						...searchMatch,
 						publishedAt: { $ne: null },
 					} },
-					{ $group: { 
-						_id: null, 
+					{ $group: {
+						_id: null,
 						count: { $sum: 1 }
 					} },
 					{ $project: { _id: false } },
 					{ $limit: 1 }
 				],
-				// Не опубликованные 
+				// Не опубликованные
 				"totalSizeUnpublished": [
 					{ $match: {
 						...searchMatch,
 						publishedAt: null,
 					} },
-					{ $group: { 
-						_id: null, 
+					{ $group: {
+						_id: null,
 						count: { $sum: 1 }
 					} },
 					{ $project: { _id: false } },
@@ -66,7 +66,7 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 				],
 				// Список
 				"items": [
-					{ $match: { 
+					{ $match: {
 						...searchMatch
 					} },
 					{ $project: { __v: false } },
@@ -74,7 +74,7 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 					{ $skip: skip },
 					{ $limit: limit }
 				]
-				
+
 			} },
 			{ $limit: 1 },
 			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
@@ -104,7 +104,7 @@ router.get('/movie', verify.token, verify.isManager, async (req, res) => {
 
 	try {
 		const movie = await Movie.findOne({ _id });
-			
+
 		return res.status(200).json( movie );
 	} catch(err) {
 		return resError({ res, msg: err });
@@ -160,8 +160,8 @@ router.post('/', verify.token, verify.isManager, async (req, res) => {
 						raisedUpAt: new Date()
 					} }
 				);
-		
-				schedule.scheduleJob(new Date(badge.finishAt), async function() {    
+
+				schedule.scheduleJob(new Date(badge.finishAt), async function() {
 					await Movie.updateOne(
 						{ _id, },
 						{ $set: { badge: {} } }
@@ -175,26 +175,49 @@ router.post('/', verify.token, verify.isManager, async (req, res) => {
 					series: true,
 					categoryAlias: true
 				})
-	
+
 				if(categoryAlias === 'serials' && (movie.films && movie.films.length)) {
 					return resError({
-						res, 
+						res,
 						alert: true,
 						msg: 'Необходимо удалить фильм'
 					});
 				}
-	
+
 				if(categoryAlias === 'films' && (movie.series && movie.series.length)) {
 					return resError({
-						res, 
+						res,
 						alert: true,
 						msg: 'Необходимо удалить серии'
 					});
 				}
 			}
-			
+
+			if(alias){
+				const existMovie = await Movie.findOne({ _id:{$ne:_id}, alias })
+				if(existMovie){
+					return resError({
+						res,
+						alert: true,
+						msg: 'Фильм с таким alias уже существует'
+					})
+				}
+			}
+
 			movie = await Movie.findOneAndUpdate({ _id }, { $set: data }, { new: true })
 		} else {
+
+			if(alias){
+				const existMovie = await Movie.findOne({alias })
+				if(existMovie){
+					return resError({
+						res,
+						alert: true,
+						msg: 'Фильм с таким alias уже существует'
+					})
+				}
+			}
+
 			movie = await Movie.create({
 				...data,
 				raisedUpAt: new Date(),
@@ -223,7 +246,7 @@ router.put('/publish', verify.token, verify.isManager, async (req, res) => {
 
 	if(!_id) {
 		return resError({
-			res, 
+			res,
 			alert: true,
 			msg: 'Не получен _id'
 		});
@@ -234,7 +257,7 @@ router.put('/publish', verify.token, verify.isManager, async (req, res) => {
 
 		if(!movie.name) {
 			return resError({
-				res, 
+				res,
 				alert: true,
 				msg: 'Необходимо название'
 			});
@@ -242,7 +265,7 @@ router.put('/publish', verify.token, verify.isManager, async (req, res) => {
 
 		if(!movie.alias) {
 			return resError({
-				res, 
+				res,
 				alert: true,
 				msg: 'Необходим ЧПУ-адрес'
 			});
@@ -250,7 +273,7 @@ router.put('/publish', verify.token, verify.isManager, async (req, res) => {
 
 		if(!movie.categoryAlias) {
 			return resError({
-				res, 
+				res,
 				alert: true,
 				msg: 'Необходима категория'
 			});
@@ -258,7 +281,7 @@ router.put('/publish', verify.token, verify.isManager, async (req, res) => {
 
 		if(!movie.genresAliases || !movie.genresAliases.length) {
 			return resError({
-				res, 
+				res,
 				alert: true,
 				msg: 'Необходимы жанры'
 			});
@@ -272,7 +295,7 @@ router.put('/publish', verify.token, verify.isManager, async (req, res) => {
 			{ _id },
 			{ $set: set }
 		);
-		
+
 		return resSuccess({
 			_id,
 			res,
@@ -286,7 +309,7 @@ router.put('/publish', verify.token, verify.isManager, async (req, res) => {
 });
 
 /*
- * Поднять медиа страницу во всех списках 
+ * Поднять медиа страницу во всех списках
  */
 router.put('/raiseUp', verify.token, verify.isManager, async (req, res) => {
 	try {
@@ -294,12 +317,12 @@ router.put('/raiseUp', verify.token, verify.isManager, async (req, res) => {
 
 		if(!_id) {
 			return resError({
-				res, 
+				res,
 				alert: true,
 				msg: 'Не получен _id'
 			});
 		}
-		
+
 		const set = {
 			raisedUpAt: new Date()
 		}
@@ -308,7 +331,7 @@ router.put('/raiseUp', verify.token, verify.isManager, async (req, res) => {
 			{ _id },
 			{ $set: set }
 		);
-		
+
 		return resSuccess({
 			_id,
 			res,
