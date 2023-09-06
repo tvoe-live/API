@@ -52,14 +52,6 @@ router.post('/', verify.token, async (req, res) => {
 		reason
 	} = req.body;
 
-	if(!reason || ((!reason.types||!reason.types.length) && !reason.text)) { // Для создания заявки необходимо либо комментарий от юзера либо выбранные селекты либо и то и другое
-		return resError({
-			res,
-			alert: true,
-			msg: 'Пожалуйста укажите причину'
-		});
-	}
-
 	try {
 		const existWithdrawalLog = await WithdrawalLog.findOne({userId:req.user._id, status:'WAITING'})
 		if (existWithdrawalLog) return resError({
