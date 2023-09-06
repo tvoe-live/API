@@ -193,8 +193,31 @@ router.post('/', verify.token, verify.isManager, async (req, res) => {
 				}
 			}
 
+			if(alias){
+				const existMovie = await Movie.findOne({ _id:{$ne:_id}, alias })
+				if(existMovie){
+					return resError({
+						res,
+						alert: true,
+						msg: 'Фильм с таким alias уже существует'
+					})
+				}
+			}
+
 			movie = await Movie.findOneAndUpdate({ _id }, { $set: data }, { new: true })
 		} else {
+
+			if(alias){
+				const existMovie = await Movie.findOne({alias })
+				if(existMovie){
+					return resError({
+						res,
+						alert: true,
+						msg: 'Фильм с таким alias уже существует'
+					})
+				}
+			}
+
 			movie = await Movie.create({
 				...data,
 				raisedUpAt: new Date(),
@@ -231,6 +254,7 @@ router.put('/publish', verify.token, verify.isManager, async (req, res) => {
 
 	try {
 		const movie = await Movie.findOne({ _id });
+
 
 		if (!movie.publishedAt){ // Снять фильм с публикации можно всегда. Опубликовать фильм - только если заполнены обязательные поля
 
@@ -274,7 +298,6 @@ router.put('/publish', verify.token, verify.isManager, async (req, res) => {
 					msg: `Фильм с ЧПУ-адресом ${movie.alias} уже существует`
 				});
 			}
-
 		}
 
 		const set = {
