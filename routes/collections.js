@@ -443,7 +443,6 @@ router.get('/possibleYouLike', verify.token, async (req, res) => {
 
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20);
-
 	const lookup = {
 		from: "movies",
 		localField: "movieId",
@@ -542,6 +541,10 @@ router.get('/possibleYouLike', verify.token, async (req, res) => {
 					alias: { $first: "$alias" },
 					duration: { $first: "$duration" },
 					url: { $first: "$url" },
+					dateReleased: { $first: "$dateReleased" },
+					rating: { $first: "$rating" },
+
+
 
 				} },
 				{ $sort: {count:-1}},
@@ -557,6 +560,9 @@ router.get('/possibleYouLike', verify.token, async (req, res) => {
 					count: { $first: '$count' },
 					duration: { $first: "$duration" },
 					url: { $first: "$url" },
+					dateReleased: { $first: "$dateReleased" },
+					rating: { $first: "$rating" },
+
 				}},
 				{ $match:{
 					count: { $gte: 10 },
@@ -616,6 +622,7 @@ router.get('/possibleYouLike', verify.token, async (req, res) => {
 					cover:true,
 					rating:true,
 					duration:true,
+					dateReleased:true,
 					pointsAmount: {
 						$function:
 						{

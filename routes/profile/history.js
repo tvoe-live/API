@@ -95,9 +95,69 @@ router.get('/', verify.token, async (req, res) => {
 			as: "movie"
 		} },
 		{ $unwind: "$movie" },
-		{$group:{
-			_id:"$movie._id"
-		}}
+		{ $group:{
+			_id:"$movie._id",
+			name: { $first: "$movie.name" },
+			rating:{ $first: "$movie.rating" },
+			duration:{ $first: "$movie.duration" },
+			ageLevel:{ $first: "$movie.ageLevel" },
+			trailer:{$first:"$movie.trailer"},
+			categoryAlias:{ $first: "$movie.categoryAlias" },
+			series:{ $first: "$movie.series" },
+			poster: { $first: "$movie.poster" },
+			updatedAt:{$max: '$updatedAt'},
+			alias: { $first: "$movie.alias" },
+			// url: { $concat: [ "/p/", { $first: "$movie.alias" } ] },
+			// updatedAt:{$push: '$addToSet'}
+		}},
+		// {
+		// 	$project:{
+		// 		url: { $concat: [ "/p/", "$alias" ] },
+		// 	}
+		// },
+		{
+			$addFields: {
+				url: { $concat: [ "/p/", "$alias" ] },
+				duration: {
+					$switch: {
+						branches: [
+							{ case: { $eq: ["$categoryAlias", "films"] }, then: {
+								$sum: {
+									$map: {
+										"input": "$films",
+										"as": "item",
+										"in": "$$item.duration"
+									}
+								},
+							   } },
+							{ case: { $eq: ["$categoryAlias", "serials"] }, then: {
+								$sum: {
+									$map: {
+										"input": "$series",
+										"as": "seasons",
+										"in": {
+											$sum: {
+												$map: {
+													"input": "$$seasons",
+													"as": "item",
+													"in": "$$item.duration"
+												}
+											}
+										}
+									}
+								},
+						   } }
+						],
+						default: 0
+					}
+				},
+			}
+		  },
+		{
+			$sort:{
+				updatedAt:-1
+			}
+		}
 	]
 
 	try {
@@ -134,6 +194,7 @@ router.get('/', verify.token, async (req, res) => {
 				items: "$items"
 			} },
 		], (err, result)=>{
+			console.log('result:', result)
 			return res.status(200).json(result[0]);
 		});
 
