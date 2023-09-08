@@ -350,29 +350,14 @@ router.post('/notification', async (req, res) => {
 	const shareWithReferrer = async ({ userId, amount, refererUserId }) => {
 		if(!userId || !amount || !refererUserId) return
 
-		const countOfSuccessfulPaid = await PaymentLog.find({
-			userId,
-			type: 'paid',
-			$or: [
-				{ status: 'success' },
-				{ status: 'CONFIRMED' }
-			]
-		}).count();
+		const addToBalance = amount * (REFERRAL_PRECENT_BONUSE / 100)
 
-		// Проверить, не было ли ранее успешных оплат у пользователя
-		// Либо если amount отрицательный, проверяем на единственную оплату
-		const requiredCountOfSuccessfulPaid = Number(amount < 0)
-
-		if(countOfSuccessfulPaid === requiredCountOfSuccessfulPaid) {
-			const addToBalance = amount * (REFERRAL_PRECENT_BONUSE / 100)
-
-			await User.updateOne(
-				{ _id: refererUserId }, 
-				{ $inc: { 
-					"referral.balance": addToBalance
-				} }
-			);
-		}
+		await User.updateOne(
+			{ _id: refererUserId }, 
+			{ $inc: { 
+				"referral.balance": addToBalance
+			} }
+		);
 	}
 
 	switch(status) {
