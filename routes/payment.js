@@ -2,7 +2,7 @@ const {
 	API_URL,
 	CLIENT_URL,
 	PAYMENT_TERMINAL_KEY,
-	REFERRAL_PRECENT_BONUSE,
+	REFERRAL_PERCENT_BONUSE,
 	PAYMENT_TERMINAL_PASSWORD
 } = process.env;
 const express = require('express');
@@ -350,7 +350,7 @@ router.post('/notification', async (req, res) => {
 	const shareWithReferrer = async ({ userId, amount, refererUserId }) => {
 		if(!userId || !amount || !refererUserId) return
 
-		const addToBalance = amount * (REFERRAL_PRECENT_BONUSE / 100)
+		const addToBalance = amount * (REFERRAL_PERCENT_BONUSE / 100)
 
 		await User.updateOne(
 			{ _id: refererUserId }, 
@@ -617,7 +617,7 @@ router.get('/status', async (req, res) => {
 
 // 		// Проверить, не было ли ранее успешных оплат у пользователя
 // 		if(countOfSuccessfulPaid === 0) {
-// 			const addToBalance = amount * (REFERRAL_PRECENT_BONUSE / 100)
+// 			const addToBalance = amount * (REFERRAL_PERCENT_BONUSE / 100)
 
 // 			await User.updateOne(
 // 				{ _id: user.refererUserId }, 

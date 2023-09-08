@@ -4,7 +4,7 @@ const User = require('../models/user');
 const verify = require('../middlewares/verify');
 const resError = require('../helpers/resError');
 const resSuccess = require('../helpers/resSuccess');
-const { CLIENT_URL, REFERRAL_PRECENT_BONUSE } = process.env;
+const { CLIENT_URL, REFERRAL_PERCENT_BONUSE } = process.env;
 const ReferralWithdrawalLog = require('../models/referralWithdrawalLog');
 
 /*
@@ -18,7 +18,7 @@ const ReferralWithdrawalLog = require('../models/referralWithdrawalLog');
 router.get('/', verify.token, async (req, res) => {
 
 	const link = `${CLIENT_URL}/?r=${req.user._id}` // Реферальная ссылка
-	const referralPercentBonuse = +REFERRAL_PRECENT_BONUSE // Бонус в процентах от реферала
+	const referralPercentBonuse = +REFERRAL_PERCENT_BONUSE // Бонус в процентах от реферала
 
 	const balance = req.user.referral.balance // Текущий баланс с подписок рефералов
 	const card = req.user.referral.card // Данные карты для вывода баланса
@@ -89,7 +89,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 								status: true,
 								createdAt: true,
 								bonuseAmount: {
-									$multiply: [ "$amount", +REFERRAL_PRECENT_BONUSE / 100 ],
+									$multiply: [ "$amount", +REFERRAL_PERCENT_BONUSE / 100 ],
 								},
 							} },
 							{ $sort: { createdAt: -1 } }
