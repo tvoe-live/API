@@ -139,7 +139,14 @@ router.patch('/markAsRead', verify.token, async (req, res) => {
 
 router.patch('/settings', verify.token, async (req, res) => {
 
-	const notificationTypes= ['SERVICE_NEWS', 'GIFTS_AND_PROMOTIONS', 'PROFILE', 'CINEMA_NEWS', 'SERVICE_NOVELTIES', 'FAVOTITES_AND_BOOKMARKS_NEWS']
+	const notificationTypes= [
+		'SERVICE_NEWS',  // Новости сервиса - уведомления о технических работах на сайте и новинках обновленного сервиса
+		'GIFTS_AND_PROMOTIONS', // Подарки и акции - бонусы для пользователей
+		'PROFILE', // Профиль - напоминание об окончании подписки и индивидуальные предложения
+		'CINEMA_NEWS', // Новинки кинематографа
+		'SERVICE_NOVELTIES', // Новинки на сервисе
+		'FAVOTITES_AND_BOOKMARKS_NEWS' // Новинки из раздела "избранное" и "буду смотреть"
+	]
 
 	Object.keys(req.body).forEach(notificationType=>{
 		if (!notificationTypes.includes(notificationType)){

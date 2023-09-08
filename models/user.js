@@ -63,8 +63,8 @@ const userSchema = new mongoose.Schema({
 	},
 
 
-	role: String,
-	lastVisitAt: Date,
+	role: String, // Роль пользователя: admin или manager. Для обычных пользователей это поле отсутствует, у них нет роли.
+	lastVisitAt: Date, // Дата последнего визита
 	banned: Object, // Дата блокировки и восстановления
 	deleted: Object, // Дата удаления и восстановления
 	disabledNotifications: { // Типы отключенных уведомлений
