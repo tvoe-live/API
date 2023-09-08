@@ -10,71 +10,6 @@ const movieOperations = require('../../helpers/movieOperations');
  * Профиль > История просмотров
  */
 
-// router.get('/', verify.token, async (req, res) => {
-// 	const skip = +req.query.skip || 0
-// 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
-
-// 	const agregationListForTotalSize = [
-// 		{ $lookup: {
-// 			from: "moviepagelogs",
-// 			localField: "_id",
-// 			foreignField: "movieId",
-// 			pipeline: [
-// 				{ $match: { userId: req.user._id } },
-// 				{ $group: {
-// 					_id: "$movieId",
-// 					count: { $sum: 1 },
-// 					updatedAt: { $push: "$$ROOT.updatedAt" }
-// 				} },
-// 				{ $sort: { updatedAt: -1 } }
-// 			],
-// 			as: "moviepagelogs"
-// 		} },
-// 		{ $unwind: "$moviepagelogs" },
-// 	]
-
-// 	try {
-// 		Movie.aggregate([
-// 			{
-// 				"$facet": {
-// 					"totalSize":[
-// 						...agregationListForTotalSize,
-// 						{ $group: {
-// 							_id: null,
-// 							count: { $sum: 1 }
-// 						} },
-// 						{ $project: { _id: false } },
-// 						{ $limit: 1 }
-// 					],
-// 					"items":[
-// 						...agregationListForTotalSize,
-// 						...movieOperations({
-// 							addToProject: {
-// 								poster: { src: true },
-// 								moviepagelogs: "$moviepagelogs",
-// 								lastLogUpdatedAt: "$moviepagelogs.updatedAt"
-// 							},
-// 							skip,
-// 							limit
-// 						}),
-// 						{ $sort: { lastLogUpdatedAt: -1 } },
-// 					]
-// 				}
-// 			},
-// 			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
-// 			{ $project: {
-// 				totalSize: { $cond: [ "$totalSize.count", "$totalSize.count", 0] },
-// 				items: "$items"
-// 			} },
-// 		], (err, result)=>{
-// 			return res.status(200).json(result[0]);
-// 		});
-
-// 	} catch(err) {
-// 		return resError({ res, msg: err });
-// 	}
-// });
-
 router.get('/', verify.token, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
@@ -99,22 +34,16 @@ router.get('/', verify.token, async (req, res) => {
 			_id:"$movie._id",
 			name: { $first: "$movie.name" },
 			rating:{ $first: "$movie.rating" },
-			duration:{ $first: "$movie.duration" },
 			ageLevel:{ $first: "$movie.ageLevel" },
 			trailer:{$first:"$movie.trailer"},
 			categoryAlias:{ $first: "$movie.categoryAlias" },
 			series:{ $first: "$movie.series" },
+			films:{ $first: "$movie.films" },
 			poster: { $first: "$movie.poster" },
 			updatedAt:{$max: '$updatedAt'},
 			alias: { $first: "$movie.alias" },
-			// url: { $concat: [ "/p/", { $first: "$movie.alias" } ] },
-			// updatedAt:{$push: '$addToSet'}
+			dateReleased: { $first: "$movie.dateReleased" },
 		}},
-		// {
-		// 	$project:{
-		// 		url: { $concat: [ "/p/", "$alias" ] },
-		// 	}
-		// },
 		{
 			$addFields: {
 				url: { $concat: [ "/p/", "$alias" ] },
@@ -153,9 +82,26 @@ router.get('/', verify.token, async (req, res) => {
 				},
 			}
 		  },
-		{
-			$sort:{
-				updatedAt:-1
+		  {
+			$project:{
+				url:true,
+				duration:true,
+				_id: true,
+				name: true,
+				rating: true,
+				ageLevel:true,
+				trailer:true,
+				categoryAlias: true,
+				dateReleased:true,
+				poster: true,
+				updatedAt:true,
+				series: {
+					$cond: {
+					  if: { $eq: ["$categoryAlias", "serials"] },
+					  then:  '$series',
+					  else: "$$REMOVE"
+					}
+				},
 			}
 		}
 	]
@@ -175,16 +121,9 @@ router.get('/', verify.token, async (req, res) => {
 					],
 					"items":[
 						...agregationListForTotalSize,
-						// ...movieOperations({
-						// 	addToProject: {
-						// 		poster: { src: true },
-						// 		moviepagelogs: "$moviepagelogs",
-						// 		lastLogUpdatedAt: "$moviepagelogs.updatedAt"
-						// 	},
-						// 	skip,
-						// 	limit
-						// }),
-						// { $sort: { lastLogUpdatedAt: -1 } },
+						{ $sort:{ updatedAt:-1 }},
+						{ $skip: skip },
+						{ $limit: limit },
 					]
 				}
 			},
@@ -194,7 +133,6 @@ router.get('/', verify.token, async (req, res) => {
 				items: "$items"
 			} },
 		], (err, result)=>{
-			console.log('result:', result)
 			return res.status(200).json(result[0]);
 		});
 
