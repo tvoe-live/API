@@ -32,6 +32,7 @@ const carousel = [
 	} },
 	...movieOperations({
 		addToProject: {
+			poster: { src: true },
 			logo: true,
 			cover: { src: true },
 			genreName: { $first: "$genres.name" },
