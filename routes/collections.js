@@ -444,6 +444,7 @@ router.get('/possibleYouLike', verify.token, async (req, res) => {
 
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20);
+
 	const lookup = {
 		from: "movies",
 		localField: "movieId",
@@ -620,7 +621,6 @@ router.get('/possibleYouLike', verify.token, async (req, res) => {
 					rating:true,
 					dateReleased: true,
 					duration:true,
-					dateReleased:true,
 					pointsAmount: {
 						$function:
 						{
