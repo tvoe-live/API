@@ -62,8 +62,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 							{ $project: {
 								_id: false
 							} },
-							{ $sort: { _id: 1 } },
-							{ $limit: 1 }
+							{ $sort: { _id: 1 } }
 						],
 						as: "payment"
 					} },
@@ -72,8 +71,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 						_id: null,
 						count: { $sum: 1 }
 					} },
-					{ $project: { _id: false } },
-					{ $limit: 1 }
+					{ $project: { _id: false } }
 				],
 				// Список
 				"items": [
@@ -94,8 +92,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 									$multiply: [ "$amount", +REFERRAL_PRECENT_BONUSE / 100 ],
 								},
 							} },
-							{ $sort: { createdAt: -1 } },
-							{ $limit: 1 }
+							{ $sort: { createdAt: -1 } }
 						],
 						as: "payment"
 					} },
