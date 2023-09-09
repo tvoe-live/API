@@ -52,14 +52,6 @@ router.post('/', verify.token, async (req, res) => {
 		reason
 	} = req.body;
 
-	if(!reason || !reason.types || !reason.text) {
-		return resError({
-			res,
-			alert: true,
-			msg: 'Значение обязательного поля reason не валидно. Параметр reason представляет собой объект с полями types и text'
-		});
-	}
-
 	try {
 		const existWithdrawalLog = await WithdrawalLog.findOne({userId:req.user._id, status:'WAITING'})
 		if (existWithdrawalLog) return resError({

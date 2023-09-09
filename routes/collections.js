@@ -32,6 +32,7 @@ const carousel = [
 	} },
 	...movieOperations({
 		addToProject: {
+			poster: { src: true },
 			logo: true,
 			cover: { src: true },
 			genreName: { $first: "$genres.name" },
@@ -542,6 +543,8 @@ router.get('/possibleYouLike', verify.token, async (req, res) => {
 					alias: { $first: "$alias" },
 					duration: { $first: "$duration" },
 					url: { $first: "$url" },
+					dateReleased: { $first: "$dateReleased" },
+					rating: { $first: "$rating" },
 
 				} },
 				{ $sort: {count:-1}},
@@ -557,6 +560,8 @@ router.get('/possibleYouLike', verify.token, async (req, res) => {
 					count: { $first: '$count' },
 					duration: { $first: "$duration" },
 					url: { $first: "$url" },
+					dateReleased: { $first: "$dateReleased" },
+					rating: { $first: "$rating" },
 				}},
 				{ $match:{
 					count: { $gte: 10 },
@@ -615,6 +620,7 @@ router.get('/possibleYouLike', verify.token, async (req, res) => {
 					poster:true,
 					cover:true,
 					rating:true,
+					dateReleased: true,
 					duration:true,
 					pointsAmount: {
 						$function:
@@ -756,7 +762,8 @@ router.get('/popular', async (req, res) => {
 			alias: { $first: "$alias" },
 			duration: { $first: "$duration" },
 			url: { $first: "$url" },
-
+			rating: { $first: "$rating" },
+			dateReleased: { $first: "$dateReleased" },
 		} },
 		{ $sort: {count:-1}},
 		{ $group: {
@@ -770,6 +777,8 @@ router.get('/popular', async (req, res) => {
 			count: { $first: '$count' },
 			duration: { $first: "$duration" },
 			url: { $first: "$url" },
+			rating: { $first: "$rating" },
+			dateReleased: { $first: "$dateReleased" },
 		}},
 		{ $match:{
 			count: { $gte: 10 },
