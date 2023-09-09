@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
  * Журнал удалений аккаунтов
  */
 
-const deletingProfileLogSchema = new mongoose.Schema({
+const userDeletionLogSchema = new mongoose.Schema({
 	userId: mongoose.Schema.Types.ObjectId,
 	isRefund: Boolean, // Хочет ли пользователь оформить возврат средств за оставшиеся дни подписки
 	reason: {
@@ -14,7 +14,13 @@ const deletingProfileLogSchema = new mongoose.Schema({
 			required: true,
 			validate: {
 				validator: function(arrReasons) {
-					const validValues = ['NOT_ENOUGH_CONTENT', 'BAD_QUALITY_VIDEO', 'BAD_SOUND', 'NOT_MATCH_TARIFF', 'HIGH_COST_SUBSCRIBTION']
+					const validValues = [
+						'NOT_ENOUGH_CONTENT', // Не достаточно контента
+						'BAD_QUALITY_VIDEO', // Плохое качество видео
+						'BAD_SOUND', // Плохой звук
+						'NOT_MATCH_TARIFF', // Нет подходящего тарифа
+						'HIGH_COST_SUBSCRIBTION' // Высокая стоимость подписки
+					]
 					for ( let i=0; i<arrReasons.length; i++){
 						if(!validValues.includes(arrReasons[i])) return false
 					}
@@ -37,4 +43,4 @@ const deletingProfileLogSchema = new mongoose.Schema({
 	timestamps: true
 })
 
-module.exports = mongoose.model('DeletingProfileLog', deletingProfileLogSchema)
+module.exports = mongoose.model('UserDeletionLog', userDeletionLogSchema)

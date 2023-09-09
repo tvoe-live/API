@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const User = require('../../models/user');
 const Tariff = require('../../models/tariff');
-const DeletingProfileLog = require('../../models/deleatingProfileLogs');
+const UserDeletionLog = require('../../models/userDeletionLog');
 const verify = require('../../middlewares/verify');
 const resError = require('../../helpers/resError');
 const resSuccess = require('../../helpers/resSuccess');
@@ -101,14 +101,6 @@ router.delete('/', verify.token, async (req, res) => {
 		});
 	}
 
-	if(!reason || !reason.types || !reason.text) {
-		return resError({
-			res,
-			alert: true,
-			msg: 'Значение обязательного поля reason не валидно. Параметр reason представляет собой объект с полями types и text'
-		});
-	}
-
 	let refundAmount
 
 	try {
@@ -128,7 +120,7 @@ router.delete('/', verify.token, async (req, res) => {
 			refundAmount = Math.floor((restAmountDaysSubscribtion/generalAmountDaysSubscribtion) * price) //Cумма для возврата пользователю за неиспользованные дни подписки
 		}
 
-		await DeletingProfileLog.create({
+		await UserDeletionLog.create({
 			userId:_id,
 			refundAmount,
 			reason,
