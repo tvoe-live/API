@@ -71,7 +71,14 @@ const userSchema = new mongoose.Schema({
 		type: Array,
 		required: true,
 		validator: function(arrTypes) {
-			const validValues = ['SERVICE_NEWS', 'GIFTS_AND_PROMOTIONS', 'PROFILE', 'CINEMA_NEWS', 'SERVICE_NOVELTIES', 'FAVOTITES_AND_BOOKMARKS_NEWS']
+			const validValues = [
+				'SERVICE_NEWS', // Новости сервиса - уведомления о технических работах на сайте и новинках обновленного сервиса
+				'GIFTS_AND_PROMOTIONS',  // Подарки и акции - бонусы для пользователей
+				'PROFILE', // Профиль - напоминание об окончании подписки и индивидуальные предложения
+				'CINEMA_NEWS', // Новинки кинематографа
+				'SERVICE_NOVELTIES', // Новинки на сервисе
+				'FAVOTITES_AND_BOOKMARKS_NEWS' // Новинки из раздела "избранное" и "буду смотреть"
+			]
 			for ( let i=0; i<arrTypes.length; i++){
 				if(!validValues.includes(arrTypes[i])) return false
 			}
