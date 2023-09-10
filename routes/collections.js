@@ -362,7 +362,8 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 								return {
 									season: i+1,
 									episode: j+1,
-									seriaDuration: episode.duration
+									seriaDuration: episode.duration,
+									thumbnail: episode.thumbnail
 								}
 							}
 						}
