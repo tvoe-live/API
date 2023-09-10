@@ -70,6 +70,12 @@ paths:
                   role:
                     type: string
                     description: Admin, manager или, если это обычный пользователь - это поле отсуствует.
+                  disabledNotifications:
+                    type: Array
+                    description: Типы отключенных уведомлений - 'SERVICE_NEWS', 'GIFTS_AND_PROMOTIONS', 'PROFILE', 'CINEMA_NEWS', 'SERVICE_NOVELTIES', 'FAVOTITES_AND_BOOKMARKS_NEWS'
+                    items:
+                      type: string
+                      description: Тип отключенного уведомления
                 example:
                   _id: "4180807e904d20e5d4c1b6qw"
                   email: "alex22@yandex.ru"
@@ -81,6 +87,9 @@ paths:
                     startAt: "2021-04-13T07:41:42.000Z"
                     finishAt: "2021-04-13T07:41:42.000Z"
                     tariffId: "63dbe1687f457bc81bc920cb"
+                  disabledNotifications:
+                    - GIFTS_AND_PROMOTIONS
+                    - FAVOTITES_AND_BOOKMARKS_NEWS
     patch:
       summary: Обновления профиля
       tags: 
@@ -1248,6 +1257,64 @@ paths:
               minItems: 0
               items:
                 type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:  
+                    type: string
+                    description: "success"
+                  msg: 
+                    type: string
+                    description: "Успешно обновлено"
+                  alert: 
+                    type: boolean
+                    description: true
+                example:
+                  type: "success"
+                  alert: true
+                  msg: "Успешно обновлено"
+
+  /profile/notifications/settings:
+    patch:
+      summary: Профиль > Настройка уведомлений ( включение и выключение определенных категорий)
+      tags:
+        - Profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Ключи - виды уведомлений, значения - булевый тип, определяйющий включение если извлечение заданного типа уведомлений из списка выключенных уведомлений. False - для добавления заданного вида уведомлений в список выключенных, true - для извлечения из выключенных
+              properties:
+                SERVICE_NEWS:
+                  type: boolean
+                  description:  Новости сервиса - уведомления о технических работах на сайте и новинках обновленного сервиса
+                  required: false
+                GIFTS_AND_PROMOTIONS:
+                  type: boolean
+                  description:  Подарки и акции - бонусы для пользователей
+                  required: false
+                PROFILE:
+                  type: boolean
+                  description: Профиль - напоминание об окончании подписки и индивидуальные предложения
+                  required: false
+                CINEMA_NEWS:
+                  type: boolean
+                  description: Новинки кинематографа
+                  required: false
+                SERVICE_NOVELTIES:
+                  type: boolean
+                  description:  Новинки на сервисе
+                  required: false
+                FAVOTITES_AND_BOOKMARKS_NEWS:
+                  type: boolean
+                  description: Новинки из раздела "избранное" и "буду смотреть"
+                  required: false
       responses:
         '200':
           description: OK

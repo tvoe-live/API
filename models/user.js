@@ -61,12 +61,31 @@ const userSchema = new mongoose.Schema({
 		},
 		userIds: [mongoose.Schema.Types.ObjectId], // ID приглашенных пользователей по реферальной программе
 	},
-	
 
-	role: String,
-	lastVisitAt: Date,
+
+	role: String, // Роль пользователя: admin или manager. Для обычных пользователей это поле отсутствует, у них нет роли.
+	lastVisitAt: Date, // Дата последнего визита
 	banned: Object, // Дата блокировки и восстановления
-	deleted: Object // Дата удаления и восстановления
+	deleted: Object, // Дата удаления и восстановления
+	disabledNotifications: { // Типы отключенных уведомлений
+		type: Array,
+		required: true,
+		validator: function(arrTypes) {
+			const validValues = [
+				'SERVICE_NEWS', // Новости сервиса - уведомления о технических работах на сайте и новинках обновленного сервиса
+				'GIFTS_AND_PROMOTIONS',  // Подарки и акции - бонусы для пользователей
+				'PROFILE', // Профиль - напоминание об окончании подписки и индивидуальные предложения
+				'CINEMA_NEWS', // Новинки кинематографа
+				'SERVICE_NOVELTIES', // Новинки на сервисе
+				'FAVOTITES_AND_BOOKMARKS_NEWS' // Новинки из раздела "избранное" и "буду смотреть"
+			]
+			for ( let i=0; i<arrTypes.length; i++){
+				if(!validValues.includes(arrTypes[i])) return false
+			}
+			return true
+		},
+		message: props => `<${props.value}> - не валидное значение! Возможные варианты: 'SERVICE_NEWS', 'GIFTS_AND_PROMOTIONS', 'PROFILE', 'CINEMA_NEWS', 'SERVICE_NOVELTIES', 'FAVOTITES_AND_BOOKMARKS_NEWS'`
+	},
 }, {
 	timestamps: true
 })

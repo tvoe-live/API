@@ -58,9 +58,9 @@ router.get('/', async (req, res) => {
 			(rating ? +page.rating === +rating : true) &&
 			(genreAlias ? page.genreAlias === genreAlias : true) &&
 			(dateReleased ? page.dateReleased === dateReleased : true) &&
-			page.categoryAlias === categoryAlias
+			(categoryAlias!=='collections'?page.categoryAlias === categoryAlias:true)
 		);
-
+		
 		if(!page) return resError({ res,  msg: 'Страницы не существует' });
 
 		delete page.genreName;
@@ -71,7 +71,7 @@ router.get('/', async (req, res) => {
 		}
 
 		// Переименовать поле genreAlias в genresAliases для поиска в бд
-		if(page.genreAlias) 
+		if(page.genreAlias)
 			page.genresAliases = page.genreAlias;
 			delete page.genreAlias;
 
@@ -105,7 +105,7 @@ router.get('/', async (req, res) => {
 								}
 							},
 						}
-	
+
 					}
 				} }
 			],
@@ -116,14 +116,14 @@ router.get('/', async (req, res) => {
 			{ "$facet": {
 				// Всего записей
 				"totalSize": [
-					{ $match: { 
+					{ $match: {
 							publishedAt: { $ne: null },
 							...page
 					} },
 					{ $lookup: lookupFromCategories },
 					{ $unwind: "$category" },
 					{ $group: {
-						_id: null, 
+						_id: null,
 						count: { $sum: 1 }
 					} },
 					{ $project: { _id: false } },

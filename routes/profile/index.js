@@ -30,7 +30,8 @@ router.get('/', verify.token, async (req, res) => {
 			deleted: true,
 			firstname: true,
 			subscribe: true,
-			allowTrialTariff: true
+			allowTrialTariff: true,
+			disabledNotifications:true,
 		}
 	);
 

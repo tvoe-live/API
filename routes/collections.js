@@ -362,7 +362,8 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 								return {
 									season: i+1,
 									episode: j+1,
-									seriaDuration: episode.duration
+									seriaDuration: episode.duration,
+									thumbnail: episode.thumbnail
 								}
 							}
 						}
@@ -545,7 +546,6 @@ router.get('/possibleYouLike', verify.token, async (req, res) => {
 					url: { $first: "$url" },
 					dateReleased: { $first: "$dateReleased" },
 					rating: { $first: "$rating" },
-
 				} },
 				{ $sort: {count:-1}},
 				{ $group: {
@@ -562,7 +562,7 @@ router.get('/possibleYouLike', verify.token, async (req, res) => {
 					url: { $first: "$url" },
 					dateReleased: { $first: "$dateReleased" },
 					rating: { $first: "$rating" },
-				}},
+         		}},
 				{ $match:{
 					count: { $gte: 10 },
 				}}

@@ -7,9 +7,9 @@ const mongoose = require('mongoose');
 const notificationSchema = new mongoose.Schema({
 	title:String,
 	description: String,
-	type: { // Тип уведомлений - системные или премьера
+	type: { // Тип уведомлений - Новости сервиса, подарки и акции, профиль (напоминание об окончании подписки и индивидуальные предложения), Новинки кинематографа, новинки на сервисе, новинки из раздела "Избранное" и "Буду смотреть"
 		type: String,
-		enum: ['system', 'premiere']
+		enum: ['SERVICE_NEWS', 'GIFTS_AND_PROMOTIONS', 'PROFILE', 'CINEMA_NEWS', 'SERVICE_NEWS', 'FAVOTITES_AND_BOOKMARKS_NEWS']
 	},
 	willPublishedAt: Date, // Планируемая дата публикации,
 	img: {

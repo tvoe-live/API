@@ -129,6 +129,7 @@ router.get('/oftenSeek', async (req, res) => {
 				_id: "$movie._id",
 				name: { $first: "$movie.name" },
 				origName: { $first: "$movie.origName" },
+				poster: { $first: "$movie.poster" },
 				generalCount: { $sum: '$count' },
 				dateReleased: { $first: '$movie.dateReleased' },
 				duration: { $first: '$movie.duration' },
