@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const User = require('../../models/user');
+const Tariff = require('../../models/tariff');
+const UserDeletionLog = require('../../models/userDeletionLog');
 const verify = require('../../middlewares/verify');
 const resError = require('../../helpers/resError');
 const resSuccess = require('../../helpers/resSuccess');
@@ -83,8 +85,14 @@ router.delete('/', verify.token, async (req, res) => {
 
 	const {
 		_id,
-		deleted
+		deleted,
+		subscribe
 	} = req.user;
+
+	const {
+		isRefund,
+		reason
+	} = req.body;
 
 	if(deleted) {
 		return resError({
@@ -94,19 +102,51 @@ router.delete('/', verify.token, async (req, res) => {
 		});
 	}
 
-	const now = new Date();
-	const finish = now.setMonth(now.getMonth() + 1);
+	let refundAmount
 
-	const set = {
-		deleted: {
-			start: new Date(),
-			finish: new Date(finish)
+	try {
+		if (isRefund){
+
+			if (!subscribe || subscribe.finishAt < Date.now()){
+				return resError({
+					res,
+					alert: true,
+					msg: 'У вас нет действующей подписки, вернуть средства не представляется возможным'
+				});
+			}
+
+			const generalAmountDaysSubscribtion = Math.ceil((subscribe.finishAt - subscribe.startAt ) / (1000 * 60 * 60 * 24)); //Общее количество дней подписки
+			const restAmountDaysSubscribtion = Math.ceil((subscribe.finishAt - Date.now()) / (1000 * 60 * 60 * 24)); //Оставшееся количество дней подписки
+			const {price} = await Tariff.findOne({ _id: subscribe.tariffId })
+			refundAmount = Math.floor((restAmountDaysSubscribtion/generalAmountDaysSubscribtion) * price) //Cумма для возврата пользователю за неиспользованные дни подписки
 		}
-	};
 
-	await User.updateOne({ _id: _id }, { $set: set })
+		await UserDeletionLog.create({
+			userId:_id,
+			refundAmount,
+			reason,
+			isRefund,
+			...(isRefund && { refundStatus: "WAITING" }),
+		})
 
-	return res.status(200).json({ ...set });
+		const now = new Date();
+		const finish = now.setMonth(now.getMonth() + 1);
+
+		const set = {
+			deleted: {
+				start: new Date(),
+				finish: new Date(finish)
+			}
+		};
+
+	    await User.updateOne({ _id: _id }, { $set: set })
+
+		return res.status(200).json({ ...set });
+
+	} catch(err){
+		return resError({ res, msg: err });
+	}
+
 });
 
 // Восстановление профиля

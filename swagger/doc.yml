@@ -119,6 +119,27 @@ paths:
       summary: Удаление профиля
       tags: 
         - Profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isRefund:
+                  type: string
+                  description: Желает ли пользователь вернуть средства средства за оставшийся период подписки.
+                reason:
+                  type: object
+                  description: Причины удаления аккаунта
+                  properties:
+                    text:
+                      type: string
+                      description: Комментарий пользователя почему хочет удалить аккаунт
+                    types:
+                      type: array
+                      items:
+                        type: string
+                        description: Список выбранных пользователем причин - возможные значения - 'NOT_ENOUGH_CONTENT', 'BAD_QUALITY_VIDEO', 'BAD_SOUND', 'NOT_MATCH_TARIFF', 'HIGH_COST_SUBSCRIBTION'
       responses:
         '200':
           description: OK
