@@ -28,7 +28,8 @@ router.get('/', verify.token, async (req, res) => {
 			deleted: true,
 			firstname: true,
 			subscribe: true,
-			allowTrialTariff: true
+			allowTrialTariff: true,
+			disabledNotifications:true,
 		}
 	);
 
@@ -41,29 +42,29 @@ router.get('/', verify.token, async (req, res) => {
 
 // Изменение профиля
 router.patch('/', verify.token, async (req, res) => {
-	
+
 	let { firstname } = req.body;
 
 	if (typeof(firstname)==='undefined'){
 		return resError({
-				res, 
+				res,
 				alert: true,
 				msg: 'Поле firstname обязательное'
 			});
 	}
-	
+
 	firstname = firstname.toString();
 
 	if(firstname.length > 50) {
 		return resError({
-			res, 
+			res,
 			alert: true,
 			msg: 'Превышена длина поля: Имя пользователя'
 		});
 	}
 
 	await User.updateOne(
-		{ _id: req.user._id }, 
+		{ _id: req.user._id },
 		{
 			$set: { firstname },
 			$inc: { '__v': 1 }
@@ -87,7 +88,7 @@ router.delete('/', verify.token, async (req, res) => {
 
 	if(deleted) {
 		return resError({
-			res, 
+			res,
 			alert: true,
 			msg: 'Профиль уже в режиме удаления'
 		});
@@ -118,7 +119,7 @@ router.post('/recover', verify.token, async (req, res) => {
 
 	if(new Date().getTime() > deleted.finish.getTime()) {
 		return resError({
-			res, 
+			res,
 			alert: true,
 			msg: 'Профиль уже полностью удален'
 		});
@@ -141,8 +142,8 @@ router.post('/avatar', verify.token, uploadMemoryStorage.single('file'), async (
 
 	if(!buffer) return resError({ res, msg: 'Фаил не получен' });
 	if(req.file.buffer.byteLength >= maxSizeByte) {
-		return resError({ 
-			res, 
+		return resError({
+			res,
 			alert: true,
 			msg: `Размер файла не должен превышать ${maxSizeMbyte} МБ`
 		});
@@ -158,7 +159,7 @@ router.post('/avatar', verify.token, uploadMemoryStorage.single('file'), async (
 
 	// Добавление / обновление ссылки на фаил в БД
 	const user = await User.findOneAndUpdate(
-		{ _id: req.user._id }, 
+		{ _id: req.user._id },
 		{ $set: {
 			avatar: fileSrc
 		} }
@@ -168,7 +169,7 @@ router.post('/avatar', verify.token, uploadMemoryStorage.single('file'), async (
 	if(user.avatar) await deleteFileFromS3(user.avatar)
 
 	return resSuccess({
-		res, 
+		res,
 		alert: true,
 		src: fileSrc,
 		msg: 'Аватар обновлен'
@@ -180,7 +181,7 @@ router.delete('/avatar', verify.token, async (req, res) => {
 
 	// Удаление ссылки на фаил в БД
 	const user = await User.findOneAndUpdate(
-		{ _id: req.user._id }, 
+		{ _id: req.user._id },
 		{ $set: {
 			avatar: null
 		} }
@@ -189,10 +190,10 @@ router.delete('/avatar', verify.token, async (req, res) => {
 	// Удаление старого файла
 	if(user.avatar) await deleteFileFromS3(user.avatar)
 
-	return resSuccess({ 
-		res, 
+	return resSuccess({
+		res,
 		src: null,
-		alert: true, 
+		alert: true,
 		msg: 'Аватар удален'
 	})
 });
