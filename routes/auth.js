@@ -1,14 +1,14 @@
-const express = require("express");
-const router = express.Router();
-const axios = require("axios");
-const jwt = require("jsonwebtoken");
-const mongoose = require("mongoose");
-const User = require("../models/user");
-const AuthLog = require("../models/authLog");
-const verify = require("../middlewares/verify");
-const resError = require("../helpers/resError");
-const resSuccess = require("../helpers/resSuccess");
-const { uploadImageToS3 } = require("../helpers/uploadImage");
+const express = require('express')
+const router = express.Router()
+const axios = require('axios')
+const jwt = require('jsonwebtoken')
+const mongoose = require('mongoose')
+const User = require('../models/user')
+const AuthLog = require('../models/authLog')
+const verify = require('../middlewares/verify')
+const resError = require('../helpers/resError')
+const resSuccess = require('../helpers/resSuccess')
+const { uploadImageToS3 } = require('../helpers/uploadImage')
 
 /*
  * Авторизация / регистрация через Яндекс и разрушение сессии
@@ -18,12 +18,12 @@ const { uploadImageToS3 } = require("../helpers/uploadImage");
 const downloadAvatar = async (res, default_avatar_id) => {
 	try {
 		const { data } = await axios({
-			method: "GET",
+			method: 'GET',
 			url: `https://avatars.yandex.net/get-yapic/${default_avatar_id}/islands-retina-50`,
-			responseType: "arraybuffer",
-		});
+			responseType: 'arraybuffer',
+		})
 
-		if (!data) return null;
+		if (!data) return null
 
 		// Конвертирование в JPEG и запись картинки на диск
 		const { fileSrc } = await uploadImageToS3({
@@ -31,49 +31,49 @@ const downloadAvatar = async (res, default_avatar_id) => {
 			buffer: data,
 			width: 100,
 			height: 100,
-			fit: "fill",
-		});
+			fit: 'fill',
+		})
 
-		return fileSrc;
+		return fileSrc
 	} catch (err) {
-		console.log(err);
+		console.log(err)
 	}
-};
+}
 
 // Генерация токена
 const generateAccessToken = (userId) => {
-	const payload = { id: userId };
+	const payload = { id: userId }
 
 	return jwt.sign(payload, process.env.JWT_TOKEN_SECRET, {
-		expiresIn: "1year",
-		algorithm: "HS256",
-	});
-};
+		expiresIn: '1year',
+		algorithm: 'HS256',
+	})
+}
 
-router.post("/login", async (req, res) => {
-	const authorization = req.header("Authorization") || null;
-	let refererUserId = req.header("RefererUserId") || null;
+router.post('/login', async (req, res) => {
+	const authorization = req.header('Authorization') || null
+	let refererUserId = req.header('RefererUserId') || null
 
 	if (!authorization) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Не получен authorization",
-		});
+			msg: 'Не получен authorization',
+		})
 	}
 
 	try {
 		axios({
-			method: "GET",
-			url: "https://login.yandex.ru/info?format=json",
+			method: 'GET',
+			url: 'https://login.yandex.ru/info?format=json',
 			headers: {
 				Authorization: authorization,
 			},
 		})
 			.then(async (response) => {
-				const { data } = response;
+				const { data } = response
 
-				if (!data.id) return res.status(400).json(data);
+				if (!data.id) return res.status(400).json(data)
 
 				const {
 					id,
@@ -87,19 +87,17 @@ router.post("/login", async (req, res) => {
 					default_phone,
 					is_avatar_empty,
 					default_avatar_id,
-				} = data;
+				} = data
 
-				const defaultEmail = default_email.toLowerCase();
+				const defaultEmail = default_email.toLowerCase()
 
 				// Поиск пользователя в БД
-				let user = await User.findOne({ initial_id: id });
+				let user = await User.findOne({ initial_id: id })
 
 				// Если пользователя нет в БД, создаем нового
 				if (!user) {
 					// Скачать аватар с поставщика регистрации
-					const avatar = !is_avatar_empty
-						? await downloadAvatar(res, default_avatar_id)
-						: null;
+					const avatar = !is_avatar_empty ? await downloadAvatar(res, default_avatar_id) : null
 
 					user = await new User({
 						initial_id: id,
@@ -121,7 +119,7 @@ router.post("/login", async (req, res) => {
 						displayName: display_name,
 						phone: default_phone?.number,
 						lastVisitAt: Date.now(),
-					}).save();
+					}).save()
 
 					if (refererUserId) {
 						// Поиск пользователя в БД, который пригласил на регистрацию
@@ -129,20 +127,20 @@ router.post("/login", async (req, res) => {
 							{ _id: refererUserId },
 							{
 								$addToSet: {
-									"referral.userIds": user._id,
+									'referral.userIds': user._id,
 								},
-							},
-						);
+							}
+						)
 						// Привязать пользователя к рефереру
 						if (refererUser) {
-							await User.updateOne({ _id: user._id }, { $set: { refererUserId } });
+							await User.updateOne({ _id: user._id }, { $set: { refererUserId } })
 						}
 					}
 				}
 
 				// Генерируем токен
-				const userId = user._id;
-				const token = await generateAccessToken(userId);
+				const userId = user._id
+				const token = await generateAccessToken(userId)
 
 				await User.updateOne(
 					{ _id: userId },
@@ -161,59 +159,59 @@ router.post("/login", async (req, res) => {
 								createdAt: Date.now(),
 							},
 						},
-					},
-				);
+					}
+				)
 
 				// Логирование на создание запроса авторизации
 				await new AuthLog({
 					token,
 					userId,
-					type: "LOGIN",
-				}).save();
+					type: 'LOGIN',
+				}).save()
 
-				const hostname = process.env.HOSTNAME;
+				const hostname = process.env.HOSTNAME
 				const isLocalhost =
-					hostname === "localhost" && !req.headers.origin.endsWith("ngrok-free.app");
+					hostname === 'localhost' && !req.headers.origin.endsWith('ngrok-free.app')
 
-				res.cookie("token", token, {
-					path: "/",
-					priority: "high",
+				res.cookie('token', token, {
+					path: '/',
+					priority: 'high',
 					domain: hostname,
 					maxAge: 31536000000,
 					secure: !isLocalhost,
-					sameSite: isLocalhost ? "lax" : "none",
-				});
+					sameSite: isLocalhost ? 'lax' : 'none',
+				})
 
-				return res.status(200).json({ token });
+				return res.status(200).json({ token })
 			})
 			.catch((err) => {
-				return resError({ res, msg: err });
-			});
+				return resError({ res, msg: err })
+			})
 	} catch (error) {
-		return res.json(error);
+		return res.json(error)
 	}
-});
+})
 
 /*
  * Выход из сессии
  */
 
-router.post("/logout", verify.token, async (req, res) => {
-	const { token } = req.body;
+router.post('/logout', verify.token, async (req, res) => {
+	const { token } = req.body
 
 	if (!token) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Не получен токен",
-		});
+			msg: 'Не получен токен',
+		})
 	}
 
 	if (req.user.token === token) {
-		res.cookie("token", "", {
+		res.cookie('token', '', {
 			maxAge: -1,
 			domain: process.env.HOSTNAME,
-		});
+		})
 	}
 
 	const isLogout = await User.findOne({
@@ -221,22 +219,22 @@ router.post("/logout", verify.token, async (req, res) => {
 		sessions: {
 			$elemMatch: { token },
 		},
-	});
+	})
 
 	if (!isLogout) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Сессия уже разрушена",
-		});
+			msg: 'Сессия уже разрушена',
+		})
 	}
 
 	// Логирование на выход из сессии
 	new AuthLog({
 		token,
-		type: "LOGOUT",
+		type: 'LOGOUT',
 		userId: req.user._id,
-	}).save();
+	}).save()
 
 	await User.updateOne(
 		{ _id: req.user._id },
@@ -244,9 +242,9 @@ router.post("/logout", verify.token, async (req, res) => {
 			$pull: {
 				sessions: { token },
 			},
-		},
-	);
-	return resSuccess({ res });
-});
+		}
+	)
+	return resSuccess({ res })
+})
 
-module.exports = router;
+module.exports = router
