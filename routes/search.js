@@ -1,25 +1,25 @@
-const express = require("express");
-const router = express.Router();
-const Movie = require("../models/movie");
-const verify = require("../middlewares/verify");
-const resError = require("../helpers/resError");
-const searchLog = require("../models/searchLog");
-const movieOperations = require("../helpers/movieOperations");
-const getSearchQuery = require("../middlewares/getSearchQuery");
+const express = require('express')
+const router = express.Router()
+const Movie = require('../models/movie')
+const verify = require('../middlewares/verify')
+const resError = require('../helpers/resError')
+const searchLog = require('../models/searchLog')
+const movieOperations = require('../helpers/movieOperations')
+const getSearchQuery = require('../middlewares/getSearchQuery')
 
 /*
  * Поиск фильмов, сериалов и всего их персонала сьемочной группы
  */
 
 // Часто ищут
-router.get("/oftenSeek", async (req, res) => {
-	const skip = +req.query.skip || 0;
-	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 20);
+router.get('/oftenSeek', async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 20)
 
 	const mainAgregation = [
 		{
 			$group: {
-				_id: "$query",
+				_id: '$query',
 				count: { $sum: 1 },
 			},
 		},
@@ -38,28 +38,28 @@ router.get("/oftenSeek", async (req, res) => {
 		},
 		{
 			$lookup: {
-				from: "movies",
-				let: { searchValue: "$_id" },
+				from: 'movies',
+				let: { searchValue: '$_id' },
 				pipeline: [
 					{
 						$match: {
 							$expr: {
 								$and: [
-									{ $ne: ["$publishedAt", null] },
+									{ $ne: ['$publishedAt', null] },
 									{
 										$or: [
 											{
 												$regexMatch: {
-													input: "$name",
-													regex: "$$searchValue",
-													options: "i",
+													input: '$name',
+													regex: '$$searchValue',
+													options: 'i',
 												},
 											},
 											{
 												$regexMatch: {
-													input: "$origName",
-													regex: "$$searchValue",
-													options: "i",
+													input: '$origName',
+													regex: '$$searchValue',
+													options: 'i',
 												},
 											},
 										],
@@ -74,9 +74,9 @@ router.get("/oftenSeek", async (req, res) => {
 							categoryAlias: true,
 							series: {
 								$cond: {
-									if: { $eq: ["$categoryAlias", "serials"] },
-									then: "$series",
-									else: "$$REMOVE",
+									if: { $eq: ['$categoryAlias', 'serials'] },
+									then: '$series',
+									else: '$$REMOVE',
 								},
 							},
 							name: true,
@@ -92,30 +92,30 @@ router.get("/oftenSeek", async (req, res) => {
 								$switch: {
 									branches: [
 										{
-											case: { $eq: ["$categoryAlias", "films"] },
+											case: { $eq: ['$categoryAlias', 'films'] },
 											then: {
 												$sum: {
 													$map: {
-														input: "$films",
-														as: "item",
-														in: "$$item.duration",
+														input: '$films',
+														as: 'item',
+														in: '$$item.duration',
 													},
 												},
 											},
 										},
 										{
-											case: { $eq: ["$categoryAlias", "serials"] },
+											case: { $eq: ['$categoryAlias', 'serials'] },
 											then: {
 												$sum: {
 													$map: {
-														input: "$series",
-														as: "seasons",
+														input: '$series',
+														as: 'seasons',
 														in: {
 															$sum: {
 																$map: {
-																	input: "$$seasons",
-																	as: "item",
-																	in: "$$item.duration",
+																	input: '$$seasons',
+																	as: 'item',
+																	in: '$$item.duration',
 																},
 															},
 														},
@@ -127,34 +127,34 @@ router.get("/oftenSeek", async (req, res) => {
 									default: 0,
 								},
 							},
-							url: { $concat: ["/p/", "$alias"] },
+							url: { $concat: ['/p/', '$alias'] },
 						},
 					},
 				],
-				as: "movie",
+				as: 'movie',
 			},
 		},
-		{ $unwind: "$movie" },
+		{ $unwind: '$movie' },
 		{
 			$group: {
-				_id: "$movie._id",
-				name: { $first: "$movie.name" },
-				origName: { $first: "$movie.origName" },
-				poster: { $first: "$movie.poster" },
-				generalCount: { $sum: "$count" },
-				dateReleased: { $first: "$movie.dateReleased" },
-				duration: { $first: "$movie.duration" },
-				trailer: { $first: "$movie.trailer" },
-				shortDesc: { $first: "$movie.shortDesc" },
-				ageLevel: { $first: "$movie.ageLevel" },
-				rating: { $first: "$movie.rating" },
-				badge: { $first: "$movie.badge" },
-				url: { $first: "$movie.url" },
-				categoryAlias: { $first: "$movie.categoryAlias" },
-				series: { $first: "$movie.series" },
+				_id: '$movie._id',
+				name: { $first: '$movie.name' },
+				origName: { $first: '$movie.origName' },
+				poster: { $first: '$movie.poster' },
+				generalCount: { $sum: '$count' },
+				dateReleased: { $first: '$movie.dateReleased' },
+				duration: { $first: '$movie.duration' },
+				trailer: { $first: '$movie.trailer' },
+				shortDesc: { $first: '$movie.shortDesc' },
+				ageLevel: { $first: '$movie.ageLevel' },
+				rating: { $first: '$movie.rating' },
+				badge: { $first: '$movie.badge' },
+				url: { $first: '$movie.url' },
+				categoryAlias: { $first: '$movie.categoryAlias' },
+				series: { $first: '$movie.series' },
 			},
 		},
-	];
+	]
 
 	try {
 		const result = await searchLog.aggregate([
@@ -183,26 +183,26 @@ router.get("/oftenSeek", async (req, res) => {
 				},
 			},
 			{ $limit: 1 },
-			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 			{
 				$project: {
-					totalSize: { $cond: ["$totalSize.count", "$totalSize.count", 0] },
-					items: "$items",
+					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+					items: '$items',
 				},
 			},
-		]);
+		])
 
-		return res.status(200).json(result[0]);
+		return res.status(200).json(result[0])
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
-router.get("/", getSearchQuery, async (req, res) => {
-	const skip = +(req.query.skip ?? 0);
-	const query = req.searchQuery?.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-	const RegExpQuery = new RegExp(query?.replace(/[eё]/gi, "[её]"), "i");
-	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
+router.get('/', getSearchQuery, async (req, res) => {
+	const skip = +(req.query.skip ?? 0)
+	const query = req.searchQuery?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+	const RegExpQuery = new RegExp(query?.replace(/[eё]/gi, '[её]'), 'i')
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	const aggregationForTotalSize = {
 		$or: [
@@ -218,22 +218,22 @@ router.get("/", getSearchQuery, async (req, res) => {
 			},
 		],
 		publishedAt: { $ne: null },
-	};
+	}
 
 	if (!req.searchQuery || !req.searchQuery.length) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Пустая строка поиска",
-		});
+			msg: 'Пустая строка поиска',
+		})
 	}
 
 	if (req.searchQuery.length > 250) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Превышена длина поля поиска",
-		});
+			msg: 'Превышена длина поля поиска',
+		})
 	}
 
 	try {
@@ -267,46 +267,46 @@ router.get("/", getSearchQuery, async (req, res) => {
 				},
 			},
 			{ $limit: 1 },
-			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 			{
 				$project: {
-					totalSize: { $cond: ["$totalSize.count", "$totalSize.count", 0] },
-					items: "$items",
+					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+					items: '$items',
 				},
 			},
-		]);
-		return res.status(200).json(result[0]);
+		])
+		return res.status(200).json(result[0])
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 // Добавление записи просмотра страницы в логи
 // Из-за обнаружения ботов, логгирование должно быть отдельным запросом
-router.post("/addLog", getSearchQuery, async (req, res) => {
-	const query = req.searchQuery;
+router.post('/addLog', getSearchQuery, async (req, res) => {
+	const query = req.searchQuery
 
 	if (!req.searchQuery || !req.searchQuery.length) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Пустая строка поиска",
-		});
+			msg: 'Пустая строка поиска',
+		})
 	}
 
 	if (req.searchQuery.length > 250) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Превышена длина поля поиска",
-		});
+			msg: 'Превышена длина поля поиска',
+		})
 	}
 
-	if (req.useragent.isBot) return resError({ res, msg: "Обнаружен бот" });
+	if (req.useragent.isBot) return resError({ res, msg: 'Обнаружен бот' })
 
 	// Получение userId от авторизованных пользователей
-	await verify.token(req);
-	const user = req.user ? { userId: req.user._id } : {};
+	await verify.token(req)
+	const user = req.user ? { userId: req.user._id } : {}
 
 	try {
 		searchLog.create({
@@ -322,12 +322,12 @@ router.post("/addLog", getSearchQuery, async (req, res) => {
 				platform: req.useragent.platform,
 			},
 			...user,
-		});
+		})
 
-		return res.status(200).json();
+		return res.status(200).json()
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
-module.exports = router;
+module.exports = router

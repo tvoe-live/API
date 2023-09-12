@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
 /*
  * Журнал пользователей об активации промокодов
@@ -11,7 +11,7 @@ const promocodesLogSchema = new mongoose.Schema(
 	},
 	{
 		timestamps: true,
-	},
-);
+	}
+)
 
-module.exports = mongoose.model("PromocodesLog", promocodesLogSchema);
+module.exports = mongoose.model('PromocodesLog', promocodesLogSchema)

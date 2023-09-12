@@ -1,23 +1,23 @@
-const express = require("express");
-const router = express.Router();
-const mongoose = require("mongoose");
-const User = require("../../models/user");
-const Tariff = require("../../models/tariff");
-const verify = require("../../middlewares/verify");
-const resError = require("../../helpers/resError");
-const PaymentLog = require("../../models/paymentLog");
-const resSuccess = require("../../helpers/resSuccess");
-const getSearchQuery = require("../../middlewares/getSearchQuery");
-const isValidObjectId = require("../../helpers/isValidObjectId");
+const express = require('express')
+const router = express.Router()
+const mongoose = require('mongoose')
+const User = require('../../models/user')
+const Tariff = require('../../models/tariff')
+const verify = require('../../middlewares/verify')
+const resError = require('../../helpers/resError')
+const PaymentLog = require('../../models/paymentLog')
+const resSuccess = require('../../helpers/resSuccess')
+const getSearchQuery = require('../../middlewares/getSearchQuery')
+const isValidObjectId = require('../../helpers/isValidObjectId')
 
 /*
  * Админ-панель > Пользователи
  */
 
 // Получение списка пользователей
-router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
-	const skip = +req.query.skip || 0;
-	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
+router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	const searchMatch = req.RegExpQuery && {
 		$or: [
@@ -27,7 +27,7 @@ router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 			{ email: req.RegExpQuery },
 			{ firstname: req.RegExpQuery },
 		],
-	};
+	}
 
 	try {
 		const result = await User.aggregate([
@@ -70,28 +70,28 @@ router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 				},
 			},
 			{ $limit: 1 },
-			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 			{
 				$project: {
-					totalSize: { $cond: ["$totalSize.count", "$totalSize.count", 0] },
-					items: "$items",
+					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+					items: '$items',
 				},
 			},
-		]);
+		])
 
-		return res.status(200).json(result[0]);
+		return res.status(200).json(result[0])
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 // Получение пользователя
-router.get("/profile", verify.token, verify.isAdmin, async (req, res) => {
+router.get('/profile', verify.token, verify.isAdmin, async (req, res) => {
 	try {
-		const { id } = req.query;
-		const userId = mongoose.Types.ObjectId(id);
+		const { id } = req.query
+		const userId = mongoose.Types.ObjectId(id)
 
-		if (!id) return resError({ res, msg: "Не получен ID" });
+		if (!id) return resError({ res, msg: 'Не получен ID' })
 
 		let tariffs = await Tariff.aggregate([
 			{
@@ -105,7 +105,7 @@ router.get("/profile", verify.token, verify.isAdmin, async (req, res) => {
 				},
 			},
 			{ $limit: 5 },
-		]);
+		])
 
 		const user = await User.findOne(
 			{ _id: userId },
@@ -116,22 +116,22 @@ router.get("/profile", verify.token, verify.isAdmin, async (req, res) => {
 				deleted: true,
 				firstname: true,
 				subscribe: true,
-			},
-		);
+			}
+		)
 
 		return res.status(200).json({
 			user,
 			tariffs,
-		});
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
-router.patch("/profile", verify.token, verify.isAdmin, async (req, res) => {
+router.patch('/profile', verify.token, verify.isAdmin, async (req, res) => {
 	try {
-		const { _id, role, tariffId } = req.body;
-		const userId = mongoose.Types.ObjectId(_id);
+		const { _id, role, tariffId } = req.body
+		const userId = mongoose.Types.ObjectId(_id)
 
 		const user = await User.findOne(
 			{ _id: userId },
@@ -142,16 +142,16 @@ router.patch("/profile", verify.token, verify.isAdmin, async (req, res) => {
 				deleted: true,
 				firstname: true,
 				subscribe: true,
-			},
-		);
+			}
+		)
 
-		if (tariffId === "null") {
-			await User.updateOne({ _id: userId }, { $unset: { subscribe: null } });
+		if (tariffId === 'null') {
+			await User.updateOne({ _id: userId }, { $unset: { subscribe: null } })
 		}
 
 		if (
 			tariffId &&
-			tariffId !== "null" &&
+			tariffId !== 'null' &&
 			(!user.subscribe || tariffId !== user.subscribe.tariffId)
 		) {
 			const tariffs = await Tariff.find(
@@ -160,30 +160,30 @@ router.patch("/profile", verify.token, verify.isAdmin, async (req, res) => {
 					_id: true,
 					price: true,
 					duration: true,
-				},
-			);
-			const selectedTariff = tariffs.find((tariff) => tariff._id.toString() === tariffId);
+				}
+			)
+			const selectedTariff = tariffs.find((tariff) => tariff._id.toString() === tariffId)
 
 			if (!selectedTariff) {
 				return resError({
 					res,
 					alert: true,
-					msg: "Тарифа не существует",
-				});
+					msg: 'Тарифа не существует',
+				})
 			}
 
 			if (!user.subscribe || (user.subscribe && tariffId != user.subscribe.tariffId)) {
-				const tariffDuration = Number(selectedTariff.duration);
-				const startAt = new Date();
-				const finishAt = new Date(startAt.getTime() + tariffDuration);
+				const tariffDuration = Number(selectedTariff.duration)
+				const startAt = new Date()
+				const finishAt = new Date(startAt.getTime() + tariffDuration)
 
 				const paymentLog = await new PaymentLog({
 					startAt,
 					finishAt,
 					userId: userId,
-					type: "issued-by-admin",
+					type: 'issued-by-admin',
 					tariffId: selectedTariff._id,
-				}).save();
+				}).save()
 
 				// Обновить время подписки пользователю и
 				// Запретить использовать бесплатный тариф
@@ -198,8 +198,8 @@ router.patch("/profile", verify.token, verify.isAdmin, async (req, res) => {
 							},
 							allowTrialTariff: false,
 						},
-					},
-				);
+					}
+				)
 			}
 		}
 
@@ -208,16 +208,16 @@ router.patch("/profile", verify.token, verify.isAdmin, async (req, res) => {
 			{
 				$set: { role },
 				$inc: { __v: 1 },
-			},
-		);
+			}
+		)
 
 		return resSuccess({
 			res,
-			msg: "Профиль обновлен",
-		});
+			msg: 'Профиль обновлен',
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
-module.exports = router;
+module.exports = router

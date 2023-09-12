@@ -1,33 +1,33 @@
-const express = require("express");
-const router = express.Router();
-const mongoose = require("mongoose");
-const Tariff = require("../../models/tariff");
-const verify = require("../../middlewares/verify");
-const resError = require("../../helpers/resError");
-const PaymentLog = require("../../models/paymentLog");
+const express = require('express')
+const router = express.Router()
+const mongoose = require('mongoose')
+const Tariff = require('../../models/tariff')
+const verify = require('../../middlewares/verify')
+const resError = require('../../helpers/resError')
+const PaymentLog = require('../../models/paymentLog')
 
 /*
  * Профиль > Подписка
  */
 
-router.get("/", verify.token, async (req, res) => {
-	const cursorId = mongoose.Types.ObjectId(req.query.cursorId);
-	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
+router.get('/', verify.token, async (req, res) => {
+	const cursorId = mongoose.Types.ObjectId(req.query.cursorId)
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	const cursorMatch = req.query.cursorId
 		? {
 				_id: { $lt: cursorId },
 		  }
-		: null;
+		: null
 
 	const searchMatch = {
 		userId: req.user._id,
 		startAt: { $ne: null },
 		finishAt: { $ne: null },
 		status: {
-			$in: ["success", "CONFIRMED"],
+			$in: ['success', 'CONFIRMED'],
 		},
-	};
+	}
 
 	try {
 		let tariffs = await Tariff.aggregate([
@@ -37,7 +37,7 @@ router.get("/", verify.token, async (req, res) => {
 				},
 			},
 			{ $limit: 4 },
-		]);
+		])
 
 		const result = await PaymentLog.aggregate([
 			{
@@ -45,12 +45,12 @@ router.get("/", verify.token, async (req, res) => {
 					tariffs: [
 						{
 							$lookup: {
-								from: "tariffs",
+								from: 'tariffs',
 								pipeline: [],
-								as: "tariffs",
+								as: 'tariffs',
 							},
 						},
-						{ $unwind: "$tariffs" },
+						{ $unwind: '$tariffs' },
 						{
 							$project: {
 								tariffs: true,
@@ -84,13 +84,13 @@ router.get("/", verify.token, async (req, res) => {
 						},
 						{
 							$lookup: {
-								from: "tariffs",
-								localField: "tariffId",
-								foreignField: "_id",
-								as: "tariff",
+								from: 'tariffs',
+								localField: 'tariffId',
+								foreignField: '_id',
+								as: 'tariff',
 							},
 						},
-						{ $unwind: "$tariff" },
+						{ $unwind: '$tariff' },
 						{
 							$project: {
 								type: true,
@@ -102,7 +102,7 @@ router.get("/", verify.token, async (req, res) => {
 									name: true,
 								},
 								amount: {
-									$cond: ["$withdrawAmount", "$withdrawAmount", "$amount"],
+									$cond: ['$withdrawAmount', '$withdrawAmount', '$amount'],
 								},
 							},
 						},
@@ -112,24 +112,24 @@ router.get("/", verify.token, async (req, res) => {
 				},
 			},
 			{ $limit: 1 },
-			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 			{
 				$project: {
-					last: "$last",
-					totalSize: { $cond: ["$totalSize.count", "$totalSize.count", 0] },
-					items: "$items",
+					last: '$last',
+					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+					items: '$items',
 				},
 			},
-		]);
+		])
 
 		return res.status(200).json({
 			currentSubscribe: req.user.subscribe,
 			tariffs,
 			...result[0],
-		});
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
-module.exports = router;
+module.exports = router

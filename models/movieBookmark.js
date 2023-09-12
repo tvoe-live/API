@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
 /*
  * Журнал пользователей "Буду смотреть"
@@ -12,7 +12,7 @@ const movieBookmarkSchema = new mongoose.Schema(
 	},
 	{
 		timestamps: true,
-	},
-);
+	}
+)
 
-module.exports = mongoose.model("MovieBookmark", movieBookmarkSchema);
+module.exports = mongoose.model('MovieBookmark', movieBookmarkSchema)

@@ -6,15 +6,15 @@ const {
 	S3_UPLOAD_REGION,
 	S3_UPLOAD_BUCKET,
 	S3_UPLOAD_ENDPOINT,
-} = process.env;
-const sharp = require("sharp");
-const mongoose = require("mongoose");
-const resError = require("./resError");
-const { Upload } = require("@aws-sdk/lib-storage");
-const customS3Client = require("./customS3Client");
+} = process.env
+const sharp = require('sharp')
+const mongoose = require('mongoose')
+const resError = require('./resError')
+const { Upload } = require('@aws-sdk/lib-storage')
+const customS3Client = require('./customS3Client')
 
 // Получение уникального ID от базы данных
-const getObjectId = () => new mongoose.Types.ObjectId();
+const getObjectId = () => new mongoose.Types.ObjectId()
 
 /*
  * Загрузка картинок на диск сервера
@@ -25,20 +25,20 @@ const uploadImageOnDisk = async ({
 	width,
 	height,
 	buffer,
-	type = "jpg",
-	fit = "cover",
+	type = 'jpg',
+	fit = 'cover',
 }) => {
 	if (!path && !buffer)
 		return resError({
 			res,
 			alert: true,
-			msg: "Фаил не получен",
-		});
+			msg: 'Фаил не получен',
+		})
 
 	try {
-		const id = getObjectId();
-		const name = `${getObjectId()}.${type}`;
-		const src = `${IMAGES_DIR}/${name}`;
+		const id = getObjectId()
+		const name = `${getObjectId()}.${type}`
+		const src = `${IMAGES_DIR}/${name}`
 
 		// Конвертирование в JPEG с сжатием без потерь
 		await sharp(path || buffer)
@@ -48,34 +48,34 @@ const uploadImageOnDisk = async ({
 				height,
 			})
 			.toFormat(type)
-			.toFile(STATIC_DIR + src);
+			.toFile(STATIC_DIR + src)
 
 		return {
 			fileId: id,
 			fileSrc: src,
 			fileName: name,
-		};
+		}
 	} catch (err) {
-		console.log(err);
+		console.log(err)
 	}
-};
+}
 
 /*
  * Загрузка картинок в S3
  */
-const uploadImageToS3 = async ({ res, width, height, buffer, type = "jpg", fit = "cover" }) => {
+const uploadImageToS3 = async ({ res, width, height, buffer, type = 'jpg', fit = 'cover' }) => {
 	if (!buffer)
 		return resError({
 			res,
 			alert: true,
-			msg: "Фаил не получен",
-		});
+			msg: 'Фаил не получен',
+		})
 
 	try {
-		const id = getObjectId();
-		const mimeType = `image/${type}`;
-		const name = `${getObjectId()}.${type}`;
-		const src = `${IMAGES_DIR}/${name}`;
+		const id = getObjectId()
+		const mimeType = `image/${type}`
+		const name = `${getObjectId()}.${type}`
+		const src = `${IMAGES_DIR}/${name}`
 
 		// Конвертирование в JPEG с сжатием без потерь
 		const file = await sharp(buffer)
@@ -85,14 +85,14 @@ const uploadImageToS3 = async ({ res, width, height, buffer, type = "jpg", fit =
 				height,
 			})
 			.toFormat(type)
-			.toBuffer();
+			.toBuffer()
 
 		const params = {
 			Body: file,
 			Key: src,
 			ContentType: mimeType,
 			Bucket: S3_UPLOAD_BUCKET,
-		};
+		}
 
 		const parallelUploads3 = new Upload({
 			client: customS3Client({
@@ -107,21 +107,21 @@ const uploadImageToS3 = async ({ res, width, height, buffer, type = "jpg", fit =
 			params,
 			isMultiPart: false,
 			partSize: 1024 ** 3,
-		});
+		})
 
-		await parallelUploads3.done();
+		await parallelUploads3.done()
 
 		return {
 			fileId: id,
 			fileSrc: src,
 			fileName: name,
-		};
+		}
 	} catch (err) {
-		console.log(err);
+		console.log(err)
 	}
-};
+}
 
 module.exports = {
 	uploadImageToS3,
 	uploadImageOnDisk,
-};
+}

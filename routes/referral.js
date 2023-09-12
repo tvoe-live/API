@@ -1,11 +1,11 @@
-const express = require("express");
-const router = express.Router();
-const User = require("../models/user");
-const verify = require("../middlewares/verify");
-const resError = require("../helpers/resError");
-const resSuccess = require("../helpers/resSuccess");
-const { CLIENT_URL, REFERRAL_PERCENT_BONUSE } = process.env;
-const ReferralWithdrawalLog = require("../models/referralWithdrawalLog");
+const express = require('express')
+const router = express.Router()
+const User = require('../models/user')
+const verify = require('../middlewares/verify')
+const resError = require('../helpers/resError')
+const resSuccess = require('../helpers/resSuccess')
+const { CLIENT_URL, REFERRAL_PERCENT_BONUSE } = process.env
+const ReferralWithdrawalLog = require('../models/referralWithdrawalLog')
 
 /*
  * Реферальная программа
@@ -14,33 +14,33 @@ const ReferralWithdrawalLog = require("../models/referralWithdrawalLog");
 /*
  * Получение общих данных
  */
-router.get("/", verify.token, async (req, res) => {
-	const link = `${CLIENT_URL}/?r=${req.user._id}`; // Реферальная ссылка
-	const referralPercentBonuse = +REFERRAL_PERCENT_BONUSE; // Бонус в процентах от реферала
+router.get('/', verify.token, async (req, res) => {
+	const link = `${CLIENT_URL}/?r=${req.user._id}` // Реферальная ссылка
+	const referralPercentBonuse = +REFERRAL_PERCENT_BONUSE // Бонус в процентах от реферала
 
-	const balance = req.user.referral.balance; // Текущий баланс с подписок рефералов
-	const card = req.user.referral.card; // Данные карты для вывода баланса
+	const balance = req.user.referral.balance // Текущий баланс с подписок рефералов
+	const card = req.user.referral.card // Данные карты для вывода баланса
 
 	return res.status(200).json({
 		link,
 		referralPercentBonuse,
 		balance,
 		card,
-	});
-});
+	})
+})
 
 /*
  * Список "Мои рефералы"
  */
-router.get("/invitedReferrals", verify.token, async (req, res) => {
-	const skip = +req.query.skip || 0;
-	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
+router.get('/invitedReferrals', verify.token, async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	const searchMatch = {
 		_id: {
 			$in: req.user.referral.userIds || [],
 		},
-	};
+	}
 
 	try {
 		const result = await User.aggregate([
@@ -51,13 +51,13 @@ router.get("/invitedReferrals", verify.token, async (req, res) => {
 						{ $match: searchMatch },
 						{
 							$lookup: {
-								from: "paymentlogs",
-								localField: "_id",
-								foreignField: "userId",
+								from: 'paymentlogs',
+								localField: '_id',
+								foreignField: 'userId',
 								pipeline: [
 									{
 										$match: {
-											type: "paid",
+											type: 'paid',
 										},
 									},
 									{
@@ -67,10 +67,10 @@ router.get("/invitedReferrals", verify.token, async (req, res) => {
 									},
 									{ $sort: { _id: 1 } },
 								],
-								as: "payment",
+								as: 'payment',
 							},
 						},
-						{ $unwind: { path: "$payment", preserveNullAndEmptyArrays: true } },
+						{ $unwind: { path: '$payment', preserveNullAndEmptyArrays: true } },
 						{
 							$group: {
 								_id: null,
@@ -84,13 +84,13 @@ router.get("/invitedReferrals", verify.token, async (req, res) => {
 						{ $match: searchMatch },
 						{
 							$lookup: {
-								from: "paymentlogs",
-								localField: "_id",
-								foreignField: "userId",
+								from: 'paymentlogs',
+								localField: '_id',
+								foreignField: 'userId',
 								pipeline: [
 									{
 										$match: {
-											type: "paid",
+											type: 'paid',
 										},
 									},
 									{
@@ -99,25 +99,22 @@ router.get("/invitedReferrals", verify.token, async (req, res) => {
 											status: true,
 											createdAt: true,
 											bonuseAmount: {
-												$multiply: [
-													"$amount",
-													+REFERRAL_PERCENT_BONUSE / 100,
-												],
+												$multiply: ['$amount', +REFERRAL_PERCENT_BONUSE / 100],
 											},
 										},
 									},
 									{ $sort: { createdAt: -1 } },
 								],
-								as: "payment",
+								as: 'payment',
 							},
 						},
-						{ $unwind: { path: "$payment", preserveNullAndEmptyArrays: true } },
+						{ $unwind: { path: '$payment', preserveNullAndEmptyArrays: true } },
 						{
 							$project: {
 								_id: false,
 								user: {
-									avatar: "$avatar",
-									firstname: "$firstname",
+									avatar: '$avatar',
+									firstname: '$firstname',
 								},
 								payment: true,
 							},
@@ -129,27 +126,27 @@ router.get("/invitedReferrals", verify.token, async (req, res) => {
 				},
 			},
 			{ $limit: 1 },
-			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 			{
 				$project: {
-					totalSize: { $cond: ["$totalSize.count", "$totalSize.count", 0] },
-					items: "$items",
+					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+					items: '$items',
 				},
 			},
-		]);
+		])
 
-		return res.status(200).json(result[0]);
+		return res.status(200).json(result[0])
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 /*
  * Список "История выводов"
  */
-router.get("/withdrawalOfMoney", verify.token, async (req, res) => {
-	const skip = +req.query.skip || 0;
-	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
+router.get('/withdrawalOfMoney', verify.token, async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	try {
 		const result = await ReferralWithdrawalLog.aggregate([
@@ -185,10 +182,7 @@ router.get("/withdrawalOfMoney", verify.token, async (req, res) => {
 								createdAt: true,
 								card: {
 									number: {
-										$concat: [
-											"**** **** **** ",
-											{ $substrBytes: ["$card.number", 12, 16] },
-										],
+										$concat: ['**** **** **** ', { $substrBytes: ['$card.number', 12, 16] }],
 									},
 								},
 								status: true,
@@ -201,52 +195,52 @@ router.get("/withdrawalOfMoney", verify.token, async (req, res) => {
 				},
 			},
 			{ $limit: 1 },
-			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 			{
 				$project: {
-					totalSize: { $cond: ["$totalSize.count", "$totalSize.count", 0] },
-					items: "$items",
+					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+					items: '$items',
 				},
 			},
-		]);
+		])
 
-		return res.status(200).json(result[0]);
+		return res.status(200).json(result[0])
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 /*
  * Изменить данные карты
  */
-router.patch("/changeCard", verify.token, async (req, res) => {
-	let { number, cardholder } = req.body;
+router.patch('/changeCard', verify.token, async (req, res) => {
+	let { number, cardholder } = req.body
 
 	if (!number || !cardholder) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Недостаточно данных",
-		});
+			msg: 'Недостаточно данных',
+		})
 	}
 
-	number = number.toString();
-	cardholder = cardholder.toString();
+	number = number.toString()
+	cardholder = cardholder.toString()
 
 	if (number.length !== 16) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Недопустимая длина поля: Номер карты",
-		});
+			msg: 'Недопустимая длина поля: Номер карты',
+		})
 	}
 
 	if (cardholder.length > 150) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Превышена длина поля: ФИО",
-		});
+			msg: 'Превышена длина поля: ФИО',
+		})
 	}
 
 	try {
@@ -254,68 +248,68 @@ router.patch("/changeCard", verify.token, async (req, res) => {
 			{ _id: req.user._id },
 			{
 				$set: {
-					"referral.card": {
+					'referral.card': {
 						number,
 						cardholder,
 					},
 				},
-			},
-		);
+			}
+		)
 
 		return resSuccess({
 			res,
 			alert: true,
-			msg: "Карта обновлена",
-		});
+			msg: 'Карта обновлена',
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 /*
  * Удалить данные карты
  */
-router.delete("/deleteCard", verify.token, async (req, res) => {
+router.delete('/deleteCard', verify.token, async (req, res) => {
 	try {
 		await User.updateOne(
 			{ _id: req.user._id },
 			{
 				$set: {
-					"referral.card": null,
+					'referral.card': null,
 				},
-			},
-		);
+			}
+		)
 
 		return resSuccess({
 			res,
 			alert: true,
-			msg: "Данные карты удалены",
-		});
+			msg: 'Данные карты удалены',
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 /*
  * Создание заявки на вывод c обнулением баланса
  */
-router.post("/withdrawBalance", verify.token, async (req, res) => {
-	const { card, balance } = req.user.referral;
+router.post('/withdrawBalance', verify.token, async (req, res) => {
+	const { card, balance } = req.user.referral
 
 	if (!card || card.number?.length !== 16) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Требуется добавить карту",
-		});
+			msg: 'Требуется добавить карту',
+		})
 	}
 
 	if (!balance || +balance <= 0) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Недостаточно средств для вывода",
-		});
+			msg: 'Недостаточно средств для вывода',
+		})
 	}
 
 	try {
@@ -323,26 +317,26 @@ router.post("/withdrawBalance", verify.token, async (req, res) => {
 			userId: req.user._id,
 			amount: +balance,
 			card: req.user.referral.card,
-			status: "pending",
-		}).save();
+			status: 'pending',
+		}).save()
 
 		await User.updateOne(
 			{ _id: req.user._id },
 			{
 				$set: {
-					"referral.balance": 0,
+					'referral.balance': 0,
 				},
-			},
-		);
+			}
+		)
 
 		return resSuccess({
 			res,
 			alert: true,
-			msg: "Создана заявка на вывод средств",
-		});
+			msg: 'Создана заявка на вывод средств',
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
-module.exports = router;
+module.exports = router

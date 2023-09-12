@@ -1,18 +1,18 @@
-const express = require("express");
-const router = express.Router();
-const Movie = require("../../models/movie");
-const MoviePageLog = require("../../models/moviePageLog");
-const verify = require("../../middlewares/verify");
-const resError = require("../../helpers/resError");
-const movieOperations = require("../../helpers/movieOperations");
+const express = require('express')
+const router = express.Router()
+const Movie = require('../../models/movie')
+const MoviePageLog = require('../../models/moviePageLog')
+const verify = require('../../middlewares/verify')
+const resError = require('../../helpers/resError')
+const movieOperations = require('../../helpers/movieOperations')
 
 /*
  * Профиль > История просмотров
  */
 
-router.get("/", verify.token, async (req, res) => {
-	const skip = +req.query.skip || 0;
-	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
+router.get('/', verify.token, async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	const agregationListForTotalSize = [
 		{
@@ -22,61 +22,61 @@ router.get("/", verify.token, async (req, res) => {
 		},
 		{
 			$lookup: {
-				from: "movies",
-				localField: "movieId",
-				foreignField: "_id",
+				from: 'movies',
+				localField: 'movieId',
+				foreignField: '_id',
 				pipeline: [{ $project: { persons: false } }],
-				as: "movie",
+				as: 'movie',
 			},
 		},
-		{ $unwind: "$movie" },
+		{ $unwind: '$movie' },
 		{
 			$group: {
-				_id: "$movie._id",
-				name: { $first: "$movie.name" },
-				rating: { $first: "$movie.rating" },
-				ageLevel: { $first: "$movie.ageLevel" },
-				trailer: { $first: "$movie.trailer" },
-				categoryAlias: { $first: "$movie.categoryAlias" },
-				series: { $first: "$movie.series" },
-				films: { $first: "$movie.films" },
-				poster: { $first: "$movie.poster" },
-				updatedAt: { $max: "$updatedAt" },
-				alias: { $first: "$movie.alias" },
-				dateReleased: { $first: "$movie.dateReleased" },
+				_id: '$movie._id',
+				name: { $first: '$movie.name' },
+				rating: { $first: '$movie.rating' },
+				ageLevel: { $first: '$movie.ageLevel' },
+				trailer: { $first: '$movie.trailer' },
+				categoryAlias: { $first: '$movie.categoryAlias' },
+				series: { $first: '$movie.series' },
+				films: { $first: '$movie.films' },
+				poster: { $first: '$movie.poster' },
+				updatedAt: { $max: '$updatedAt' },
+				alias: { $first: '$movie.alias' },
+				dateReleased: { $first: '$movie.dateReleased' },
 			},
 		},
 		{
 			$addFields: {
-				url: { $concat: ["/p/", "$alias"] },
+				url: { $concat: ['/p/', '$alias'] },
 				duration: {
 					$switch: {
 						branches: [
 							{
-								case: { $eq: ["$categoryAlias", "films"] },
+								case: { $eq: ['$categoryAlias', 'films'] },
 								then: {
 									$sum: {
 										$map: {
-											input: "$films",
-											as: "item",
-											in: "$$item.duration",
+											input: '$films',
+											as: 'item',
+											in: '$$item.duration',
 										},
 									},
 								},
 							},
 							{
-								case: { $eq: ["$categoryAlias", "serials"] },
+								case: { $eq: ['$categoryAlias', 'serials'] },
 								then: {
 									$sum: {
 										$map: {
-											input: "$series",
-											as: "seasons",
+											input: '$series',
+											as: 'seasons',
 											in: {
 												$sum: {
 													$map: {
-														input: "$$seasons",
-														as: "item",
-														in: "$$item.duration",
+														input: '$$seasons',
+														as: 'item',
+														in: '$$item.duration',
 													},
 												},
 											},
@@ -105,14 +105,14 @@ router.get("/", verify.token, async (req, res) => {
 				updatedAt: true,
 				series: {
 					$cond: {
-						if: { $eq: ["$categoryAlias", "serials"] },
-						then: "$series",
-						else: "$$REMOVE",
+						if: { $eq: ['$categoryAlias', 'serials'] },
+						then: '$series',
+						else: '$$REMOVE',
 					},
 				},
 			},
 		},
-	];
+	]
 
 	try {
 		MoviePageLog.aggregate(
@@ -138,21 +138,21 @@ router.get("/", verify.token, async (req, res) => {
 						],
 					},
 				},
-				{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+				{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 				{
 					$project: {
-						totalSize: { $cond: ["$totalSize.count", "$totalSize.count", 0] },
-						items: "$items",
+						totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+						items: '$items',
 					},
 				},
 			],
 			(err, result) => {
-				return res.status(200).json(result[0]);
-			},
-		);
+				return res.status(200).json(result[0])
+			}
+		)
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
-module.exports = router;
+module.exports = router

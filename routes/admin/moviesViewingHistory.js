@@ -1,22 +1,22 @@
-const express = require("express");
-const router = express.Router();
-const verify = require("../../middlewares/verify");
-const resError = require("../../helpers/resError");
-const MoviePageLog = require("../../models/moviePageLog");
-const getSearchQuery = require("../../middlewares/getSearchQuery");
+const express = require('express')
+const router = express.Router()
+const verify = require('../../middlewares/verify')
+const resError = require('../../helpers/resError')
+const MoviePageLog = require('../../models/moviePageLog')
+const getSearchQuery = require('../../middlewares/getSearchQuery')
 
 /*
  * Админ-панель > История просмотров
  */
 
 // Получение списка пользователей
-router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
-	const skip = +req.query.skip || 0;
-	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
+router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	const searchMoviesMatch = req.RegExpQuery && {
 		name: req.RegExpQuery,
-	};
+	}
 
 	try {
 		const result = await MoviePageLog.aggregate([
@@ -26,14 +26,14 @@ router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 					totalSize: [
 						{
 							$lookup: {
-								from: "movies",
-								localField: "movieId",
-								foreignField: "_id",
+								from: 'movies',
+								localField: 'movieId',
+								foreignField: '_id',
 								pipeline: [{ $project: { _id: true } }],
-								as: "movie",
+								as: 'movie',
 							},
 						},
-						{ $unwind: { path: "$movie" } },
+						{ $unwind: { path: '$movie' } },
 						{
 							$group: {
 								_id: null,
@@ -47,9 +47,9 @@ router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 					items: [
 						{
 							$lookup: {
-								from: "movies",
-								localField: "movieId",
-								foreignField: "_id",
+								from: 'movies',
+								localField: 'movieId',
+								foreignField: '_id',
 								pipeline: [
 									{
 										$match: {
@@ -66,15 +66,15 @@ router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 										},
 									},
 								],
-								as: "movie",
+								as: 'movie',
 							},
 						},
-						{ $unwind: { path: "$movie" } },
+						{ $unwind: { path: '$movie' } },
 						{
 							$lookup: {
-								from: "users",
-								localField: "userId",
-								foreignField: "_id",
+								from: 'users',
+								localField: 'userId',
+								foreignField: '_id',
 								pipeline: [
 									{
 										$project: {
@@ -86,10 +86,10 @@ router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 										},
 									},
 								],
-								as: "user",
+								as: 'user',
 							},
 						},
-						{ $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+						{ $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
 						{
 							$project: {
 								__v: false,
@@ -105,19 +105,19 @@ router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 				},
 			},
 			{ $limit: 1 },
-			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 			{
 				$project: {
-					totalSize: { $cond: ["$totalSize.count", "$totalSize.count", 0] },
-					items: "$items",
+					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+					items: '$items',
 				},
 			},
-		]);
+		])
 
-		return res.status(200).json(result[0]);
+		return res.status(200).json(result[0])
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
-module.exports = router;
+module.exports = router

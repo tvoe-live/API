@@ -1,18 +1,18 @@
-const express = require("express");
-const router = express.Router();
-const verify = require("../../middlewares/verify");
-const resError = require("../../helpers/resError");
-const Notification = require("../../models/notification");
-const User = require("../../models/user");
-const NotificationReadLog = require("../../models/notificationReadLog");
-const resSuccess = require("../../helpers/resSuccess");
-const multer = require("multer");
-const mongoose = require("mongoose");
-const { uploadImageToS3 } = require("../../helpers/uploadImage");
+const express = require('express')
+const router = express.Router()
+const verify = require('../../middlewares/verify')
+const resError = require('../../helpers/resError')
+const Notification = require('../../models/notification')
+const User = require('../../models/user')
+const NotificationReadLog = require('../../models/notificationReadLog')
+const resSuccess = require('../../helpers/resSuccess')
+const multer = require('multer')
+const mongoose = require('mongoose')
+const { uploadImageToS3 } = require('../../helpers/uploadImage')
 
 // Загрузка картинки в буффер
-const memoryStorage = multer.memoryStorage();
-const uploadMemoryStorage = multer({ storage: memoryStorage });
+const memoryStorage = multer.memoryStorage()
+const uploadMemoryStorage = multer({ storage: memoryStorage })
 
 /*
  * Уведомления
@@ -21,9 +21,9 @@ const uploadMemoryStorage = multer({ storage: memoryStorage });
 /*
  * Список уведомлений для пользователя
  */
-router.get("/", verify.token, async (req, res) => {
-	const skip = +req.query.skip || 0;
-	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20);
+router.get('/', verify.token, async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
 
 	const lookupAndMatch = [
 		{
@@ -45,9 +45,9 @@ router.get("/", verify.token, async (req, res) => {
 		},
 		{
 			$lookup: {
-				from: "notificationreadlogs",
-				localField: "_id",
-				foreignField: "notificationId",
+				from: 'notificationreadlogs',
+				localField: '_id',
+				foreignField: 'notificationId',
 				pipeline: [
 					{
 						$match: {
@@ -55,17 +55,17 @@ router.get("/", verify.token, async (req, res) => {
 						},
 					},
 				],
-				as: "notificationReadLog",
+				as: 'notificationReadLog',
 			},
 		},
 		{
 			$match: {
 				$expr: {
-					$and: [{ $gte: [new Date(), "$willPublishedAt"] }, { $ne: ["$deleted", true] }],
+					$and: [{ $gte: [new Date(), '$willPublishedAt'] }, { $ne: ['$deleted', true] }],
 				},
 			},
 		},
-	];
+	]
 
 	try {
 		Notification.aggregate(
@@ -87,13 +87,13 @@ router.get("/", verify.token, async (req, res) => {
 							...lookupAndMatch,
 							{
 								$project: {
-									title: "$title",
-									description: "$description",
-									type: "$type",
-									willPublishedAt: "$willPublishedAt",
+									title: '$title',
+									description: '$description',
+									type: '$type',
+									willPublishedAt: '$willPublishedAt',
 									isReaded: {
 										$cond: {
-											if: { $eq: [{ $size: "$notificationReadLog" }, 0] },
+											if: { $eq: [{ $size: '$notificationReadLog' }, 0] },
 											then: false,
 											else: true,
 										},
@@ -106,54 +106,54 @@ router.get("/", verify.token, async (req, res) => {
 						],
 					},
 				},
-				{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+				{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 				{
 					$project: {
-						totalSize: { $cond: ["$totalSize.count", "$totalSize.count", 0] },
-						items: "$items",
+						totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+						items: '$items',
 					},
 				},
 			],
 			async (err, result) => {
-				return res.status(200).json(result[0]);
-			},
-		);
+				return res.status(200).json(result[0])
+			}
+		)
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 /*
  * Пометить уведомления прочитанными
  */
-router.patch("/markAsRead", verify.token, async (req, res) => {
+router.patch('/markAsRead', verify.token, async (req, res) => {
 	const NotificationReadLogForInsert = req.body.ids.map((notificationId) => ({
 		notificationId: mongoose.Types.ObjectId(notificationId),
 		userId: mongoose.Types.ObjectId(req.user._id),
-	}));
+	}))
 
 	try {
-		await NotificationReadLog.insertMany(NotificationReadLogForInsert);
+		await NotificationReadLog.insertMany(NotificationReadLogForInsert)
 
 		return resSuccess({
 			res,
 			alert: true,
-			msg: "Успешно обновлено",
-		});
+			msg: 'Успешно обновлено',
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
-router.patch("/settings", verify.token, async (req, res) => {
+router.patch('/settings', verify.token, async (req, res) => {
 	const notificationTypes = [
-		"SERVICE_NEWS", // Новости сервиса - уведомления о технических работах на сайте и новинках обновленного сервиса
-		"GIFTS_AND_PROMOTIONS", // Подарки и акции - бонусы для пользователей
-		"PROFILE", // Профиль - напоминание об окончании подписки и индивидуальные предложения
-		"CINEMA_NEWS", // Новинки кинематографа
-		"SERVICE_NOVELTIES", // Новинки на сервисе
-		"FAVOTITES_AND_BOOKMARKS_NEWS", // Новинки из раздела "избранное" и "буду смотреть"
-	];
+		'SERVICE_NEWS', // Новости сервиса - уведомления о технических работах на сайте и новинках обновленного сервиса
+		'GIFTS_AND_PROMOTIONS', // Подарки и акции - бонусы для пользователей
+		'PROFILE', // Профиль - напоминание об окончании подписки и индивидуальные предложения
+		'CINEMA_NEWS', // Новинки кинематографа
+		'SERVICE_NOVELTIES', // Новинки на сервисе
+		'FAVOTITES_AND_BOOKMARKS_NEWS', // Новинки из раздела "избранное" и "буду смотреть"
+	]
 
 	Object.keys(req.body).forEach((notificationType) => {
 		if (!notificationTypes.includes(notificationType)) {
@@ -161,73 +161,69 @@ router.patch("/settings", verify.token, async (req, res) => {
 				res,
 				alert: true,
 				msg: `${notificationType} - не валидное значение. Возможные варианты: ${notificationTypes}`,
-			});
+			})
 		}
-	});
+	})
 
 	const turnOn = Object.entries(req.body)
 		.filter((arr) => arr[1])
-		.map((arr) => arr[0]);
+		.map((arr) => arr[0])
 	const turnOff = Object.entries(req.body)
 		.filter((arr) => !arr[1])
-		.map((arr) => arr[0]);
+		.map((arr) => arr[0])
 
 	try {
-		const user = await User.findOne({ _id: req.user.id });
+		const user = await User.findOne({ _id: req.user.id })
 
-		let newDisabledNotifications = Array.from(
-			new Set([...user.disabledNotifications, ...turnOff]),
-		);
-		newDisabledNotifications = newDisabledNotifications.filter(
-			(kind) => !turnOn.includes(kind),
-		);
+		let newDisabledNotifications = Array.from(new Set([...user.disabledNotifications, ...turnOff]))
+		newDisabledNotifications = newDisabledNotifications.filter((kind) => !turnOn.includes(kind))
 
-		user.disabledNotifications = newDisabledNotifications;
-		user.save();
+		user.disabledNotifications = newDisabledNotifications
+		user.save()
 
 		return resSuccess({
 			res,
 			alert: true,
-			msg: "Успешно обновлено",
-		});
+			msg: 'Успешно обновлено',
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 /*
  * Создать уведомления
  */
 
 router.post(
-	"/",
+	'/',
 	verify.token,
 	verify.isManager,
-	uploadMemoryStorage.single("file"),
+	uploadMemoryStorage.single('file'),
 	async (req, res) => {
-		const buffer = req?.file?.buffer;
+		const buffer = req?.file?.buffer
 
-		const { title, description, type, willPublishedAt, link, receiversIds } = req.body;
+		const { title, description, type, willPublishedAt, link, receiversIds } = req.body
 
-		if (!title) return resError({ res, msg: "Не передан title" });
-		if (!type) return resError({ res, msg: "Не передан type" });
+		if (!title) return resError({ res, msg: 'Не передан title' })
+		if (!type) return resError({ res, msg: 'Не передан type' })
 		if (!willPublishedAt)
 			return resError({
 				res,
-				msg: "Не передана дата и время публикации - параметр willPublishedAt",
-			});
+				msg: 'Не передана дата и время публикации - параметр willPublishedAt',
+			})
 
-		let fileIdForDB;
-		let fileSrcForDB;
+		let fileIdForDB
+		let fileSrcForDB
 
 		if (buffer) {
 			const { fileId, fileSrc } = await uploadImageToS3({
 				res,
 				buffer,
-			});
+			})
 
-			fileIdForDB = fileId;
-			fileSrcForDB = fileSrc;
+			fileIdForDB = fileId
+			fileSrcForDB = fileSrc
 		}
 
 		try {
@@ -242,7 +238,7 @@ router.post(
 					_id: fileIdForDB,
 					src: fileSrcForDB,
 				},
-			});
+			})
 
 			return res.status(200).json({
 				success: true,
@@ -254,103 +250,103 @@ router.post(
 				receiversIds,
 				willPublishedAt,
 				img: response.img,
-			});
+			})
 		} catch (err) {
-			return resError({ res, msg: err });
+			return resError({ res, msg: err })
 		}
-	},
-);
+	}
+)
 
 /*
  * Изменить уведомление
  */
-router.patch("/", verify.token, uploadMemoryStorage.single("file"), async (req, res) => {
-	const buffer = req.file?.buffer;
-	const { title, description, _id, type, willPublishedAt, link, receiversIds } = req.body;
+router.patch('/', verify.token, uploadMemoryStorage.single('file'), async (req, res) => {
+	const buffer = req.file?.buffer
+	const { title, description, _id, type, willPublishedAt, link, receiversIds } = req.body
 
 	try {
-		const notification = await Notification.findOne({ _id });
+		const notification = await Notification.findOne({ _id })
 
 		if (!notification) {
-			return resError({ res, msg: "Уведомление с указанным _id не найдено" });
+			return resError({ res, msg: 'Уведомление с указанным _id не найдено' })
 		}
 
 		if (buffer) {
-			const pathToFileIng = notification?.src;
+			const pathToFileIng = notification?.src
 			// Удаление файла картинки
-			if (pathToFileIng) await deleteFileFromS3(pathToFileIng);
+			if (pathToFileIng) await deleteFileFromS3(pathToFileIng)
 
 			const { fileId, fileSrc } = await uploadImageToS3({
 				res,
 				buffer,
-			});
+			})
 
 			notification.img = {
 				_id: fileId,
 				src: fileSrc,
-			};
+			}
 		}
 
-		if (title) notification.title = title;
-		if (description) notification.description = description;
-		if (type) notification.type = type;
-		if (willPublishedAt) notification.willPublishedAt = willPublishedAt;
-		if (link) notification.link = link;
-		if (receiversIds) notification.receiversIds = receiversIds;
+		if (title) notification.title = title
+		if (description) notification.description = description
+		if (type) notification.type = type
+		if (willPublishedAt) notification.willPublishedAt = willPublishedAt
+		if (link) notification.link = link
+		if (receiversIds) notification.receiversIds = receiversIds
 
-		notification.save();
+		notification.save()
 
 		return resSuccess({
 			res,
 			alert: true,
-			msg: "Уведомление обновлено",
-		});
+			msg: 'Уведомление обновлено',
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 /*
  * Удалить уведомления
  */
-router.delete("/", verify.token, verify.isManager, async (req, res) => {
-	const { _id } = req.body;
+router.delete('/', verify.token, verify.isManager, async (req, res) => {
+	const { _id } = req.body
 
-	if (!_id) return resError({ res, msg: "Не передан _id" });
+	if (!_id) return resError({ res, msg: 'Не передан _id' })
 
 	try {
-		const notification = await Notification.findOne({ _id });
+		const notification = await Notification.findOne({ _id })
 
 		if (!notification) {
-			return resError({ res, msg: "Уведомление с указанным _id не найдено" });
+			return resError({ res, msg: 'Уведомление с указанным _id не найдено' })
 		}
 
-		const pathToFileIng = notification?.src;
+		const pathToFileIng = notification?.src
 		// Удаление файла картинки
-		if (pathToFileIng) await deleteFileFromS3(pathToFileIng);
+		if (pathToFileIng) await deleteFileFromS3(pathToFileIng)
 
 		// Удаление записи из БД
 		// notification.delete()
-		notification.deleted = true;
-		notification.save();
+		notification.deleted = true
+		notification.save()
 
 		return resSuccess({
 			res,
 			_id,
 			alert: true,
-			msg: "Успешно удалено",
-		});
+			msg: 'Успешно удалено',
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 /*
  *  Количество просмотров у одного уведомления
  */
-router.get("/count", verify.token, verify.isManager, async (req, res) => {
-	const id = req.query.id;
-	if (!id) return resError({ res, msg: "Не передан id" });
+router.get('/count', verify.token, verify.isManager, async (req, res) => {
+	const id = req.query.id
+	if (!id) return resError({ res, msg: 'Не передан id' })
 
 	try {
 		const result = await NotificationReadLog.aggregate([
@@ -373,36 +369,36 @@ router.get("/count", verify.token, verify.isManager, async (req, res) => {
 				},
 			},
 			{ $limit: 1 },
-			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 			{
 				$project: {
-					totalSize: { $cond: ["$totalSize.count", "$totalSize.count", 0] },
+					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
 					id: id,
 				},
 			},
-		]);
+		])
 
-		return res.status(200).json(result[0]);
+		return res.status(200).json(result[0])
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 /*
  *  Количество просмотров у всех уведомлений
  */
-router.get("/countAll", verify.token, verify.isManager, async (req, res) => {
-	const skip = +req.query.skip || 0;
-	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20);
+router.get('/countAll', verify.token, verify.isManager, async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
 
 	const lookup = {
 		$lookup: {
-			from: "notificationreadlogs",
-			localField: "_id",
-			foreignField: "notificationId",
-			as: "NotificationReadLog",
+			from: 'notificationreadlogs',
+			localField: '_id',
+			foreignField: 'notificationId',
+			as: 'NotificationReadLog',
 		},
-	};
+	}
 
 	try {
 		Notification.aggregate(
@@ -430,7 +426,7 @@ router.get("/countAll", verify.token, verify.isManager, async (req, res) => {
 									description: true,
 									type: true,
 									img: true,
-									watchingAmount: { $size: "$NotificationReadLog" },
+									watchingAmount: { $size: '$NotificationReadLog' },
 								},
 							},
 							{ $skip: skip },
@@ -439,21 +435,21 @@ router.get("/countAll", verify.token, verify.isManager, async (req, res) => {
 					},
 				},
 				{ $limit: 1 },
-				{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+				{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 				{
 					$project: {
-						totalSize: { $cond: ["$totalSize.count", "$totalSize.count", 0] },
-						items: "$items",
+						totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+						items: '$items',
 					},
 				},
 			],
 			async (err, result) => {
-				return res.status(200).json(result[0]);
-			},
-		);
+				return res.status(200).json(result[0])
+			}
+		)
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
-module.exports = router;
+module.exports = router

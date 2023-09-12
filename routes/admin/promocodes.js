@@ -1,13 +1,13 @@
-const express = require("express");
-const router = express.Router();
-const verify = require("../../middlewares/verify");
-const resError = require("../../helpers/resError");
-const Promocode = require("../../models/promocode");
-const PromocodesLog = require("../../models/promocodeLog");
+const express = require('express')
+const router = express.Router()
+const verify = require('../../middlewares/verify')
+const resError = require('../../helpers/resError')
+const Promocode = require('../../models/promocode')
+const PromocodesLog = require('../../models/promocodeLog')
 
-const resSuccess = require("../../helpers/resSuccess");
-const getBoolean = require("../../helpers/getBoolean");
-const mongoose = require("mongoose");
+const resSuccess = require('../../helpers/resSuccess')
+const getBoolean = require('../../helpers/getBoolean')
+const mongoose = require('mongoose')
 
 /*
  * Промокоды
@@ -16,11 +16,11 @@ const mongoose = require("mongoose");
 /*
  * Список всех промокодов
  */
-router.get("/", verify.token, verify.isAdmin, async (req, res) => {
-	const skip = +req.query.skip || 0;
-	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20);
+router.get('/', verify.token, verify.isAdmin, async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
 
-	const isActive = getBoolean(req.query.isActive);
+	const isActive = getBoolean(req.query.isActive)
 
 	const match = {
 		$match: {
@@ -30,7 +30,7 @@ router.get("/", verify.token, verify.isAdmin, async (req, res) => {
 				{ deleted: { $ne: true } },
 			],
 		},
-	};
+	}
 
 	try {
 		Promocode.aggregate(
@@ -62,43 +62,43 @@ router.get("/", verify.token, verify.isAdmin, async (req, res) => {
 						],
 					},
 				},
-				{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+				{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 				{
 					$project: {
-						totalSize: { $cond: ["$totalSize.count", "$totalSize.count", 0] },
-						items: "$items",
+						totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+						items: '$items',
 					},
 				},
 			],
 			async (err, result) => {
-				return res.status(200).json(result[0]);
-			},
-		);
+				return res.status(200).json(result[0])
+			}
+		)
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 /*
  * Создать промокод
  */
 
-router.post("/", verify.token, verify.isAdmin, async (req, res) => {
-	const { title, value, type, startAt, finishAt } = req.body;
+router.post('/', verify.token, verify.isAdmin, async (req, res) => {
+	const { title, value, type, startAt, finishAt } = req.body
 
-	if (!title) return resError({ res, msg: "Не передан title" });
-	if (!value) return resError({ res, msg: "Не передан value" });
-	if (!type) return resError({ res, msg: "Не передан type" });
+	if (!title) return resError({ res, msg: 'Не передан title' })
+	if (!value) return resError({ res, msg: 'Не передан value' })
+	if (!type) return resError({ res, msg: 'Не передан type' })
 	if (!startAt)
 		return resError({
 			res,
-			msg: "Не передана дата и время начала действия промокода - параметр startAt",
-		});
+			msg: 'Не передана дата и время начала действия промокода - параметр startAt',
+		})
 	if (!finishAt)
 		return resError({
 			res,
-			msg: "Не передана дата и время начала действия промокода - параметр finishAt",
-		});
+			msg: 'Не передана дата и время начала действия промокода - параметр finishAt',
+		})
 
 	try {
 		const response = await Promocode.create({
@@ -107,7 +107,7 @@ router.post("/", verify.token, verify.isAdmin, async (req, res) => {
 			type,
 			startAt: new Date(startAt),
 			finishAt: new Date(finishAt),
-		});
+		})
 
 		return res.status(200).json({
 			success: true,
@@ -115,79 +115,79 @@ router.post("/", verify.token, verify.isAdmin, async (req, res) => {
 			type,
 			startAt,
 			finishAt,
-		});
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 /*
  * Изменить промокод
  */
-router.patch("/", verify.token, verify.isAdmin, async (req, res) => {
-	const { _id, title, value, type, startAt, finishAt } = req.body;
+router.patch('/', verify.token, verify.isAdmin, async (req, res) => {
+	const { _id, title, value, type, startAt, finishAt } = req.body
 
 	try {
-		const promocode = await Promocode.findOne({ _id });
+		const promocode = await Promocode.findOne({ _id })
 
 		if (!promocode) {
-			return resError({ res, msg: "Промокода с указанным _id не найдено" });
+			return resError({ res, msg: 'Промокода с указанным _id не найдено' })
 		}
 
-		if (title) promocode.title = title;
-		if (value) promocode.value = value;
-		if (type) promocode.type = type;
-		if (startAt) promocode.startAt = new Date(startAt);
-		if (finishAt) promocode.finishAt = new Date(finishAt);
+		if (title) promocode.title = title
+		if (value) promocode.value = value
+		if (type) promocode.type = type
+		if (startAt) promocode.startAt = new Date(startAt)
+		if (finishAt) promocode.finishAt = new Date(finishAt)
 
-		promocode.save();
+		promocode.save()
 
 		return resSuccess({
 			res,
 			alert: true,
-			msg: "Промокод обновлен",
-		});
+			msg: 'Промокод обновлен',
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 /*
  * Удалить промокод
  */
-router.delete("/", verify.token, verify.isAdmin, async (req, res) => {
-	const { _id } = req.body;
+router.delete('/', verify.token, verify.isAdmin, async (req, res) => {
+	const { _id } = req.body
 
-	if (!_id) return resError({ res, msg: "Не передан _id" });
+	if (!_id) return resError({ res, msg: 'Не передан _id' })
 
 	try {
-		const promocode = await Promocode.findOne({ _id });
+		const promocode = await Promocode.findOne({ _id })
 
 		if (!promocode) {
-			return resError({ res, msg: "Промокода с указанным _id не найдено" });
+			return resError({ res, msg: 'Промокода с указанным _id не найдено' })
 		}
 
-		promocode.deleted = true;
-		promocode.save();
+		promocode.deleted = true
+		promocode.save()
 
 		return resSuccess({
 			res,
 			_id,
 			alert: true,
-			msg: "Успешно удалено",
-		});
+			msg: 'Успешно удалено',
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 /*
  *  Количество активаций у одного промокода
  */
-router.get("/count", verify.token, verify.isAdmin, async (req, res) => {
-	const { _id } = req.query;
+router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
+	const { _id } = req.query
 
-	if (!_id) return resError({ res, msg: "Не передан _id" });
+	if (!_id) return resError({ res, msg: 'Не передан _id' })
 
 	try {
 		const result = await PromocodesLog.aggregate([
@@ -210,36 +210,36 @@ router.get("/count", verify.token, verify.isAdmin, async (req, res) => {
 				},
 			},
 			{ $limit: 1 },
-			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 			{
 				$project: {
-					totalSize: { $cond: ["$totalSize.count", "$totalSize.count", 0] },
+					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
 					id: _id,
 				},
 			},
-		]);
+		])
 
-		return res.status(200).json(result[0]);
+		return res.status(200).json(result[0])
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 /*
  *  Количество активаций у всех промокодов
  */
-router.get("/countAll", verify.token, verify.isAdmin, async (req, res) => {
-	const skip = +req.query.skip || 0;
-	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20);
+router.get('/countAll', verify.token, verify.isAdmin, async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
 
 	const lookup = {
 		$lookup: {
-			from: "promocodeslogs",
-			localField: "_id",
-			foreignField: "promocodeId",
-			as: "PromocodesLog",
+			from: 'promocodeslogs',
+			localField: '_id',
+			foreignField: 'promocodeId',
+			as: 'PromocodesLog',
 		},
-	};
+	}
 
 	try {
 		Promocode.aggregate(
@@ -268,7 +268,7 @@ router.get("/countAll", verify.token, verify.isAdmin, async (req, res) => {
 									type: true,
 									startAt: true,
 									finishAt: true,
-									activationAmount: { $size: "$PromocodesLog" },
+									activationAmount: { $size: '$PromocodesLog' },
 								},
 							},
 							{ $skip: skip },
@@ -277,21 +277,21 @@ router.get("/countAll", verify.token, verify.isAdmin, async (req, res) => {
 					},
 				},
 				{ $limit: 1 },
-				{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+				{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 				{
 					$project: {
-						totalSize: { $cond: ["$totalSize.count", "$totalSize.count", 0] },
-						items: "$items",
+						totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+						items: '$items',
 					},
 				},
 			],
 			async (err, result) => {
-				return res.status(200).json(result[0]);
-			},
-		);
+				return res.status(200).json(result[0])
+			}
+		)
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
-module.exports = router;
+module.exports = router

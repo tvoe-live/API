@@ -4,17 +4,17 @@ const {
 	PAYMENT_TERMINAL_KEY,
 	REFERRAL_PERCENT_BONUSE,
 	PAYMENT_TERMINAL_PASSWORD,
-} = process.env;
-const express = require("express");
-const router = express.Router();
-const axios = require("axios");
-const crypto = require("crypto");
-const mongoose = require("mongoose");
-const User = require("../models/user");
-const Tariff = require("../models/tariff");
-const verify = require("../middlewares/verify");
-const resError = require("../helpers/resError");
-const PaymentLog = require("../models/paymentLog");
+} = process.env
+const express = require('express')
+const router = express.Router()
+const axios = require('axios')
+const crypto = require('crypto')
+const mongoose = require('mongoose')
+const User = require('../models/user')
+const Tariff = require('../models/tariff')
+const verify = require('../middlewares/verify')
+const resError = require('../helpers/resError')
+const PaymentLog = require('../models/paymentLog')
 
 /*
  * Тарифы, создание и обработка платежей
@@ -26,18 +26,18 @@ const getToken = (params) => {
 		.sort() // Отсортировать массив по алфавиту по ключу
 		.map(
 			(
-				key, // Привести все значения строку и удалить пробелы
-			) => params[key].toString().replace(/\s+/g, ""),
+				key // Привести все значения строку и удалить пробелы
+			) => params[key].toString().replace(/\s+/g, '')
 		)
-		.join(""); // Конкетировать каждое значение
+		.join('') // Конкетировать каждое значение
 
 	// Токен SHA-256 из конкетированных данных терминала
-	const token = crypto.createHash("sha256").update(concatStr).digest("hex");
+	const token = crypto.createHash('sha256').update(concatStr).digest('hex')
 
-	return token;
-};
+	return token
+}
 
-router.get("/tariffs", async (req, res) => {
+router.get('/tariffs', async (req, res) => {
 	try {
 		let tariffsResult = await Tariff.aggregate([
 			{
@@ -51,64 +51,63 @@ router.get("/tariffs", async (req, res) => {
 				},
 			},
 			{ $limit: 4 },
-		]);
+		])
 
 		// Получение данных пользователя, если он авторизован
-		await verify.token(req);
+		await verify.token(req)
 
 		// Добавление информации о запрете использований
 		if (req.user) {
 			const subscribeTariff = req.user.subscribe
 				? tariffsResult.find(
-						(tariff) =>
-							tariff._id.toString() === req.user.subscribe.tariffId.toString(),
+						(tariff) => tariff._id.toString() === req.user.subscribe.tariffId.toString()
 				  )
-				: null;
+				: null
 
 			tariffsResult = tariffsResult.map((tariff) => {
-				let allowSubscribe = true;
-				let finishOfSubscriptionIn;
+				let allowSubscribe = true
+				let finishOfSubscriptionIn
 
 				if (subscribeTariff) {
 					// Запретить докупать текущий или менее по длительности тарифы
-					if (+tariff.duration <= +subscribeTariff.duration) allowSubscribe = false;
+					if (+tariff.duration <= +subscribeTariff.duration) allowSubscribe = false
 					// Обозначить дату конца активированного тарифа
 					if (tariff._id === subscribeTariff._id)
-						finishOfSubscriptionIn = req.user.subscribe.finishAt;
+						finishOfSubscriptionIn = req.user.subscribe.finishAt
 				} else {
 					// Разрешить пробный бесплатный тариф, если еще не использовались тарифы
-					if (tariff.price === 0 && !req.user.allowTrialTariff) allowSubscribe = false;
+					if (tariff.price === 0 && !req.user.allowTrialTariff) allowSubscribe = false
 				}
 
 				return {
 					...tariff,
 					allowSubscribe,
 					finishOfSubscriptionIn,
-				};
-			});
+				}
+			})
 		}
 
-		return res.status(200).json(tariffsResult);
+		return res.status(200).json(tariffsResult)
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 /*
  * Создание платежа (Tinkoff)
  */
-router.post("/createPayment", verify.token, async (req, res) => {
-	const { selectedTariffId } = req.body;
+router.post('/createPayment', verify.token, async (req, res) => {
+	const { selectedTariffId } = req.body
 
-	const successURL = new URL(`${CLIENT_URL}/payment/status`);
-	const failURL = new URL(`${CLIENT_URL}/payment/status`);
+	const successURL = new URL(`${CLIENT_URL}/payment/status`)
+	const failURL = new URL(`${CLIENT_URL}/payment/status`)
 
 	if (!selectedTariffId) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Требуется выбрать тариф",
-		});
+			msg: 'Требуется выбрать тариф',
+		})
 	}
 
 	const tariffs = await Tariff.find(
@@ -118,19 +117,19 @@ router.post("/createPayment", verify.token, async (req, res) => {
 			name: true,
 			price: true,
 			duration: true,
-		},
-	);
-	const selectedTariff = tariffs.find((tariff) => tariff._id.toString() === selectedTariffId);
+		}
+	)
+	const selectedTariff = tariffs.find((tariff) => tariff._id.toString() === selectedTariffId)
 	const subscribeTariff = req.user.subscribe
 		? tariffs.find((tariff) => tariff._id.toString() === req.user.subscribe.tariffId.toString())
-		: null;
+		: null
 
 	if (!selectedTariff) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Тарифа не существует",
-		});
+			msg: 'Тарифа не существует',
+		})
 	}
 
 	// Если оформлена подписка, можно только увеличить тариф большей длительности
@@ -139,8 +138,8 @@ router.post("/createPayment", verify.token, async (req, res) => {
 			return resError({
 				res,
 				alert: true,
-				msg: "Подписку можно только расширить",
-			});
+				msg: 'Подписку можно только расширить',
+			})
 		}
 	}
 
@@ -150,24 +149,24 @@ router.post("/createPayment", verify.token, async (req, res) => {
 			return resError({
 				res,
 				alert: true,
-				msg: "Тариф уже был использован",
-			});
+				msg: 'Тариф уже был использован',
+			})
 		}
 
-		const tariffDuration = Number(selectedTariff.duration);
-		const startAt = new Date();
-		const finishAt = new Date(startAt.getTime() + tariffDuration);
+		const tariffDuration = Number(selectedTariff.duration)
+		const startAt = new Date()
+		const finishAt = new Date(startAt.getTime() + tariffDuration)
 
 		const paymentLog = await new PaymentLog({
 			startAt,
 			finishAt,
-			type: "trial",
+			type: 'trial',
 			userId: req.user._id,
 			tariffId: selectedTariff._id,
-		}).save();
+		}).save()
 
 		// В url успешной страницы передать id созданного лога
-		successURL.searchParams.set("id", paymentLog._id);
+		successURL.searchParams.set('id', paymentLog._id)
 
 		// Обновить время подписки пользователю и
 		// запретить использовать беспользовать бесплатный тариф
@@ -182,22 +181,22 @@ router.post("/createPayment", verify.token, async (req, res) => {
 					},
 					allowTrialTariff: false,
 				},
-			},
-		);
+			}
+		)
 
-		return res.status(200).json({ urlOfRedirectToPay: successURL });
+		return res.status(200).json({ urlOfRedirectToPay: successURL })
 	}
 
 	// Создание лога о платеже
 	const paymentLog = await new PaymentLog({
-		type: "paid",
+		type: 'paid',
 		userId: req.user._id,
 		tariffId: selectedTariff._id,
-	}).save();
+	}).save()
 
 	// В url успешной страницы передать id созданного лога
-	successURL.searchParams.set("id", paymentLog._id);
-	failURL.searchParams.set("id", paymentLog._id);
+	successURL.searchParams.set('id', paymentLog._id)
+	failURL.searchParams.set('id', paymentLog._id)
 
 	// Параметры терминала
 	const terminalParams = {
@@ -214,8 +213,8 @@ router.post("/createPayment", verify.token, async (req, res) => {
 		Description: `Подписка на ${selectedTariff.name}`, // Описание заказа (для СБП)
 		//CustomerKey:
 		//Recurrent:
-		PayType: "O", // Тип проведения платежа ("O" - одностадийная оплата)
-		Language: "ru", // Язык платежной формы
+		PayType: 'O', // Тип проведения платежа ("O" - одностадийная оплата)
+		Language: 'ru', // Язык платежной формы
 		Receipt: {
 			Items: [
 				{
@@ -223,64 +222,64 @@ router.post("/createPayment", verify.token, async (req, res) => {
 					Price: selectedTariff.price * 100, // Цена в копейках
 					Quantity: 1, // Количество или вес товара
 					Amount: selectedTariff.price * 100, // Стоимость товара в копейках. Произведение Quantity и Price
-					PaymentMethod: "lfull_prepayment", // Признак способа расчёта (предоплата 100%)
-					PaymentObject: "commodity", // Признак предмета расчёта (товар)
-					Tax: "vat20", // Ставка НДС (ставка 20%)
+					PaymentMethod: 'lfull_prepayment', // Признак способа расчёта (предоплата 100%)
+					PaymentObject: 'commodity', // Признак предмета расчёта (товар)
+					Tax: 'vat20', // Ставка НДС (ставка 20%)
 					//Ean13: '', // Штрих-код (от Атол)
 					//ShopCode: '' // Код магазина
 				},
 			],
-			FfdVersion: "1.05", // Версия ФФД
-			Email: req.user.email || "support@tvoe.team",
-			Phone: req.user.phone || "+74956635979",
-			Taxation: "usn_income", // Упрощенная СН (доходы)
+			FfdVersion: '1.05', // Версия ФФД
+			Email: req.user.email || 'support@tvoe.team',
+			Phone: req.user.phone || '+74956635979',
+			Taxation: 'usn_income', // Упрощенная СН (доходы)
 		},
-	};
+	}
 
 	// Получить токен для проверки подлинности запросов
-	const token = getToken(terminalParams);
+	const token = getToken(terminalParams)
 
 	// Добавить токен в платежный лог
-	await PaymentLog.updateOne({ _id: paymentLog._id }, { $set: { token } });
+	await PaymentLog.updateOne({ _id: paymentLog._id }, { $set: { token } })
 
 	// Формирование платежа
 	const { data: initPaymentData } = await axios({
-		method: "POST",
+		method: 'POST',
 		url: `https://securepay.tinkoff.ru/v2/Init`,
 		headers: {
-			"Content-Type": "application/json",
+			'Content-Type': 'application/json',
 		},
 		data: {
 			...terminalParams,
 			DATA: {
 				account: req.user._id,
-				DefaultCard: "none",
-				TinkoffPayWeb: "true",
-				YandexPayWeb: "true",
-				Device: req.useragent.isDesktop ? "Desktop" : "Mobile",
+				DefaultCard: 'none',
+				TinkoffPayWeb: 'true',
+				YandexPayWeb: 'true',
+				Device: req.useragent.isDesktop ? 'Desktop' : 'Mobile',
 				DeviceOs: req.useragent.os,
-				DeviceWebView: "true",
+				DeviceWebView: 'true',
 				DeviceBrowser: req.useragent.browser,
-				NotificationEnableSource: "TinkoffPay",
-				QR: "true",
+				NotificationEnableSource: 'TinkoffPay',
+				QR: 'true',
 			},
 			token: token,
 		},
-	});
+	})
 
-	return res.status(200).json({ urlOfRedirectToPay: initPaymentData.PaymentURL });
-});
+	return res.status(200).json({ urlOfRedirectToPay: initPaymentData.PaymentURL })
+})
 
 /*
  * Обработка уведомления от платежной системы о совершении платежа (Tinkoff)
  */
-router.post("/notification", async (req, res) => {
+router.post('/notification', async (req, res) => {
 	const body = {
 		...req.body,
 		Password: PAYMENT_TERMINAL_PASSWORD,
-	};
+	}
 
-	delete body.Token;
+	delete body.Token
 
 	let {
 		Pan: pan,
@@ -296,30 +295,30 @@ router.post("/notification", async (req, res) => {
 		PaymentId: paymentId,
 		ErrorCode: errorCode,
 		TerminalKey: terminalKey,
-	} = body;
+	} = body
 
 	// Получить токен для проверки подлинности запросов
-	const token = getToken(body);
+	const token = getToken(body)
 	// Проверка токена
-	if (token !== req.body.Token) return resError({ res, msg: "Неверные данные" });
+	if (token !== req.body.Token) return resError({ res, msg: 'Неверные данные' })
 
-	amount = amount / 100; // Перевести с копеек в рубли
+	amount = amount / 100 // Перевести с копеек в рубли
 
-	const paymentLogId = mongoose.Types.ObjectId(orderId); // ID платежа в эквайринге и в БД
-	const paymentLog = await PaymentLog.findOne({ _id: paymentLogId }); // Нахождение платежа в БД по ID
+	const paymentLogId = mongoose.Types.ObjectId(orderId) // ID платежа в эквайринге и в БД
+	const paymentLog = await PaymentLog.findOne({ _id: paymentLogId }) // Нахождение платежа в БД по ID
 
-	const user = await User.findOne({ _id: paymentLog.userId }); // Нахождение пользователя платежа
-	const tariff = await Tariff.findOne({ _id: paymentLog.tariffId }); // Нахождение оплаченого тарифа
-	const tariffDuration = Number(tariff.duration); // Длительность тарифа
+	const user = await User.findOne({ _id: paymentLog.userId }) // Нахождение пользователя платежа
+	const tariff = await Tariff.findOne({ _id: paymentLog.tariffId }) // Нахождение оплаченого тарифа
+	const tariffDuration = Number(tariff.duration) // Длительность тарифа
 
 	// Дата начала использования тарифа для пользователя
-	const startAt = user && user.subscribe ? new Date(user.subscribe.startAt) : new Date();
+	const startAt = user && user.subscribe ? new Date(user.subscribe.startAt) : new Date()
 
 	// Дата начала использования тарифа после окончания подписки
-	const paymentStartAt = user && user.subscribe ? new Date(user.subscribe.finishAt) : new Date();
+	const paymentStartAt = user && user.subscribe ? new Date(user.subscribe.finishAt) : new Date()
 
 	// Дата окончания использования тарифа для пользователя
-	const finishAt = new Date(paymentStartAt.getTime() + tariffDuration);
+	const finishAt = new Date(paymentStartAt.getTime() + tariffDuration)
 
 	// Обновить платежный лог
 	await PaymentLog.updateOne(
@@ -340,35 +339,32 @@ router.post("/notification", async (req, res) => {
 				paymentId,
 				errorCode,
 				terminalKey,
-				amount:
-					status === "REFUNDED" || status === "PARTIAL_REFUNDED"
-						? paymentLog.amount
-						: amount,
-				refundedAmount: status === "REFUNDED" || status === "PARTIAL_REFUNDED" ? amount : 0,
+				amount: status === 'REFUNDED' || status === 'PARTIAL_REFUNDED' ? paymentLog.amount : amount,
+				refundedAmount: status === 'REFUNDED' || status === 'PARTIAL_REFUNDED' ? amount : 0,
 			},
 			$unset: { token: null },
 			$inc: { __v: 1 },
-		},
-	);
+		}
+	)
 
 	// Начислить рефереру долю с первой подписки пользователя
 	const shareWithReferrer = async ({ userId, amount, refererUserId }) => {
-		if (!userId || !amount || !refererUserId) return;
+		if (!userId || !amount || !refererUserId) return
 
-		const addToBalance = amount * (REFERRAL_PERCENT_BONUSE / 100);
+		const addToBalance = amount * (REFERRAL_PERCENT_BONUSE / 100)
 
 		await User.updateOne(
 			{ _id: refererUserId },
 			{
 				$inc: {
-					"referral.balance": addToBalance,
+					'referral.balance': addToBalance,
 				},
-			},
-		);
-	};
+			}
+		)
+	}
 
 	switch (status) {
-		case "CONFIRMED": // Операция подтверждена
+		case 'CONFIRMED': // Операция подтверждена
 			// Обновить время подписки пользователю
 			await User.updateOne(
 				{ _id: user._id },
@@ -381,25 +377,25 @@ router.post("/notification", async (req, res) => {
 						},
 						allowTrialTariff: false,
 					},
-				},
-			);
+				}
+			)
 
 			await shareWithReferrer({
 				amount,
 				userId: user._id,
 				refererUserId: user.refererUserId,
-			});
+			})
 
-			break;
-		case "REFUNDED": // Произведён возврат
-		case "PARTIAL_REFUNDED": // Произведён частичный возврат
+			break
+		case 'REFUNDED': // Произведён возврат
+		case 'PARTIAL_REFUNDED': // Произведён частичный возврат
 			// Проверить доступен ли еще предыдущий тариф
 			const lastActivePayment = await PaymentLog.findOne({
 				userId: user._id,
-				type: "paid",
-				$or: [{ status: "success" }, { status: "CONFIRMED" }],
+				type: 'paid',
+				$or: [{ status: 'success' }, { status: 'CONFIRMED' }],
 				finishAt: { $gt: new Date() },
-			}).sort({ _id: -1 });
+			}).sort({ _id: -1 })
 
 			if (!!lastActivePayment) {
 				// Обновить время подписки пользователю, если есть предыдущий активный тариф
@@ -413,40 +409,40 @@ router.post("/notification", async (req, res) => {
 								tariffId: lastActivePayment.tariffId,
 							},
 						},
-					},
-				);
+					}
+				)
 			} else {
 				await User.updateOne(
 					{ _id: user._id },
 					{ $unset: { subscribe: null } },
-					{ timestamps: false },
-				);
+					{ timestamps: false }
+				)
 			}
 
 			await shareWithReferrer({
 				amount: -amount,
 				userId: user._id,
 				refererUserId: user.refererUserId,
-			});
+			})
 
-			break;
-		case "AUTHORIZED": // Деньги захолдированы на карте клиента. Ожидается подтверждение операции
-		case "PARTIAL_REVERSED": // Частичная отмена
-		case "REVERSED": // Операция отменена
-		case "REJECTED": // Списание денежных средств закончилась ошибкой
-		case "3DS_CHECKING": // Автоматическое закрытие сессии, которая превысила срок пребывания в статусе 3DS_CHECKING (более 36 часов)
+			break
+		case 'AUTHORIZED': // Деньги захолдированы на карте клиента. Ожидается подтверждение операции
+		case 'PARTIAL_REVERSED': // Частичная отмена
+		case 'REVERSED': // Операция отменена
+		case 'REJECTED': // Списание денежных средств закончилась ошибкой
+		case '3DS_CHECKING': // Автоматическое закрытие сессии, которая превысила срок пребывания в статусе 3DS_CHECKING (более 36 часов)
 		default:
-			break;
+			break
 	}
 
-	return res.status(200).send("OK");
-});
+	return res.status(200).send('OK')
+})
 
 /*
  * Показать пользователю страницу об успешном или неуспешном совершении платежа
  */
-router.get("/status", async (req, res) => {
-	const { id } = req.query;
+router.get('/status', async (req, res) => {
+	const { id } = req.query
 
 	try {
 		const paymentLog = await PaymentLog.findOne(
@@ -455,14 +451,14 @@ router.get("/status", async (req, res) => {
 				type: true,
 				status: true,
 				finishAt: true,
-			},
-		);
+			}
+		)
 
-		return res.status(200).json(paymentLog);
+		return res.status(200).json(paymentLog)
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 // /*
 //  * Создание платежа (Yoomoney)
@@ -664,4 +660,4 @@ router.get("/status", async (req, res) => {
 // 	return res.status(200).send('ok');
 // });
 
-module.exports = router;
+module.exports = router

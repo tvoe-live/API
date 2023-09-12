@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
 /*
  *  Возврат денежных средств
@@ -12,9 +12,9 @@ const withdrawalLogSchema = new mongoose.Schema(
 			// Статус операции
 			type: String,
 			enum: [
-				"WAITING", // Операция в режиме ожидания
-				"CANCELLED", // В операции отказано
-				"SUCCESS", // Операция успешно проведена
+				'WAITING', // Операция в режиме ожидания
+				'CANCELLED', // В операции отказано
+				'SUCCESS', // Операция успешно проведена
 			],
 		},
 		reason: {
@@ -25,15 +25,11 @@ const withdrawalLogSchema = new mongoose.Schema(
 				required: true,
 				validate: {
 					validator: function (arrReasons) {
-						const validValues = [
-							"NOT_ENOUGH_CONTENT",
-							"BAD_QUALITY_VIDEO",
-							"BAD_SOUND",
-						];
+						const validValues = ['NOT_ENOUGH_CONTENT', 'BAD_QUALITY_VIDEO', 'BAD_SOUND']
 						for (let i = 0; i < arrReasons.length; i++) {
-							if (!validValues.includes(arrReasons[i])) return false;
+							if (!validValues.includes(arrReasons[i])) return false
 						}
-						return true;
+						return true
 					},
 					message: (props) =>
 						`<${props.value}> - не валидное значение! Возможные варианты: NOT_ENOUGH_CONTENT, BAD_QUALITY_VIDEO, BAD_SOUND`,
@@ -43,7 +39,7 @@ const withdrawalLogSchema = new mongoose.Schema(
 	},
 	{
 		timestamps: true,
-	},
-);
+	}
+)
 
-module.exports = mongoose.model("WithdrawalLog", withdrawalLogSchema);
+module.exports = mongoose.model('WithdrawalLog', withdrawalLogSchema)

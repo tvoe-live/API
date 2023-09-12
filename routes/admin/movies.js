@@ -1,12 +1,12 @@
-const express = require("express");
-const router = express.Router();
-const mongoose = require("mongoose");
-const Movie = require("../../models/movie");
-const verify = require("../../middlewares/verify");
-const resError = require("../../helpers/resError");
-const resSuccess = require("../../helpers/resSuccess");
-const getSearchQuery = require("../../middlewares/getSearchQuery");
-const schedule = require("node-schedule");
+const express = require('express')
+const router = express.Router()
+const mongoose = require('mongoose')
+const Movie = require('../../models/movie')
+const verify = require('../../middlewares/verify')
+const resError = require('../../helpers/resError')
+const resSuccess = require('../../helpers/resSuccess')
+const getSearchQuery = require('../../middlewares/getSearchQuery')
+const schedule = require('node-schedule')
 
 /*
  * Админ-панель > Фильмы и сериалы
@@ -15,13 +15,13 @@ const schedule = require("node-schedule");
 /*
  * Получение списка записей
  */
-router.get("/", verify.token, verify.isManager, getSearchQuery, async (req, res) => {
-	const skip = +req.query.skip || 0;
-	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
+router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	const searchMatch = req.RegExpQuery && {
 		name: req.RegExpQuery,
-	};
+	}
 
 	try {
 		const result = await Movie.aggregate([
@@ -92,48 +92,48 @@ router.get("/", verify.token, verify.isManager, getSearchQuery, async (req, res)
 				},
 			},
 			{ $limit: 1 },
-			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
-			{ $unwind: { path: "$totalSizePublished", preserveNullAndEmptyArrays: true } },
-			{ $unwind: { path: "$totalSizeUnpublished", preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$totalSizePublished', preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$totalSizeUnpublished', preserveNullAndEmptyArrays: true } },
 			{
 				$project: {
-					totalSize: { $cond: ["$totalSize.count", "$totalSize.count", 0] },
+					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
 					totalSizePublished: {
-						$cond: ["$totalSizePublished.count", "$totalSizePublished.count", 0],
+						$cond: ['$totalSizePublished.count', '$totalSizePublished.count', 0],
 					},
 					totalSizeUnpublished: {
-						$cond: ["$totalSizeUnpublished.count", "$totalSizeUnpublished.count", 0],
+						$cond: ['$totalSizeUnpublished.count', '$totalSizeUnpublished.count', 0],
 					},
-					items: "$items",
+					items: '$items',
 				},
 			},
-		]);
+		])
 
-		return res.status(200).json(result[0]);
+		return res.status(200).json(result[0])
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 /*
  * Получение одной записи
  */
-router.get("/movie", verify.token, verify.isManager, async (req, res) => {
-	const { _id } = req.query;
+router.get('/movie', verify.token, verify.isManager, async (req, res) => {
+	const { _id } = req.query
 
 	try {
-		const movie = await Movie.findOne({ _id });
+		const movie = await Movie.findOne({ _id })
 
-		return res.status(200).json(movie);
+		return res.status(200).json(movie)
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 /*
  * Добавление / редактирование записей
  */
-router.post("/", verify.token, verify.isManager, async (req, res) => {
+router.post('/', verify.token, verify.isManager, async (req, res) => {
 	const {
 		_id,
 		name,
@@ -148,7 +148,7 @@ router.post("/", verify.token, verify.isManager, async (req, res) => {
 		categoryAlias,
 		genresAliases,
 		persons,
-	} = req.body;
+	} = req.body
 
 	let data = {
 		name,
@@ -163,10 +163,10 @@ router.post("/", verify.token, verify.isManager, async (req, res) => {
 		categoryAlias,
 		genresAliases,
 		persons,
-	};
+	}
 
 	try {
-		let movie;
+		let movie
 
 		if (_id) {
 			// При изменении бейджа поднять медиа страницу во всех списках
@@ -177,12 +177,12 @@ router.post("/", verify.token, verify.isManager, async (req, res) => {
 						$set: {
 							raisedUpAt: new Date(),
 						},
-					},
-				);
+					}
+				)
 
 				schedule.scheduleJob(new Date(badge.finishAt), async function () {
-					await Movie.updateOne({ _id }, { $set: { badge: {} } });
-				});
+					await Movie.updateOne({ _id }, { $set: { badge: {} } })
+				})
 			}
 
 			if (categoryAlias) {
@@ -192,47 +192,47 @@ router.post("/", verify.token, verify.isManager, async (req, res) => {
 						films: true,
 						series: true,
 						categoryAlias: true,
-					},
-				);
+					}
+				)
 
-				if (categoryAlias === "serials" && movie.films && movie.films.length) {
+				if (categoryAlias === 'serials' && movie.films && movie.films.length) {
 					return resError({
 						res,
 						alert: true,
-						msg: "Необходимо удалить фильм",
-					});
+						msg: 'Необходимо удалить фильм',
+					})
 				}
 
-				if (categoryAlias === "films" && movie.series && movie.series.length) {
+				if (categoryAlias === 'films' && movie.series && movie.series.length) {
 					return resError({
 						res,
 						alert: true,
-						msg: "Необходимо удалить серии",
-					});
+						msg: 'Необходимо удалить серии',
+					})
 				}
 			}
 
 			if (alias) {
-				const existMovie = await Movie.findOne({ _id: { $ne: _id }, alias });
+				const existMovie = await Movie.findOne({ _id: { $ne: _id }, alias })
 				if (existMovie) {
 					return resError({
 						res,
 						alert: true,
-						msg: "Фильм с таким alias уже существует",
-					});
+						msg: 'Фильм с таким alias уже существует',
+					})
 				}
 			}
 
-			movie = await Movie.findOneAndUpdate({ _id }, { $set: data }, { new: true });
+			movie = await Movie.findOneAndUpdate({ _id }, { $set: data }, { new: true })
 		} else {
 			if (alias) {
-				const existMovie = await Movie.findOne({ alias });
+				const existMovie = await Movie.findOne({ alias })
 				if (existMovie) {
 					return resError({
 						res,
 						alert: true,
-						msg: "Фильм с таким alias уже существует",
-					});
+						msg: 'Фильм с таким alias уже существует',
+					})
 				}
 			}
 
@@ -240,7 +240,7 @@ router.post("/", verify.token, verify.isManager, async (req, res) => {
 				...data,
 				raisedUpAt: new Date(),
 				creatorUserId: req.user._id,
-			});
+			})
 		}
 
 		return resSuccess({
@@ -248,29 +248,29 @@ router.post("/", verify.token, verify.isManager, async (req, res) => {
 			...data,
 			alert: true,
 			_id: movie._id,
-			msg: "Успешно сохранено",
-		});
+			msg: 'Успешно сохранено',
+		})
 	} catch (error) {
-		return res.json(error);
+		return res.json(error)
 	}
-});
+})
 
 /*
  * Опубликовать / снять с публикации запись
  */
-router.put("/publish", verify.token, verify.isManager, async (req, res) => {
-	const { _id } = req.body;
+router.put('/publish', verify.token, verify.isManager, async (req, res) => {
+	const { _id } = req.body
 
 	if (!_id) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Не получен _id",
-		});
+			msg: 'Не получен _id',
+		})
 	}
 
 	try {
-		const movie = await Movie.findOne({ _id });
+		const movie = await Movie.findOne({ _id })
 
 		if (!movie.publishedAt) {
 			// Снять фильм с публикации можно всегда. Опубликовать фильм - только если заполнены обязательные поля
@@ -279,96 +279,96 @@ router.put("/publish", verify.token, verify.isManager, async (req, res) => {
 				return resError({
 					res,
 					alert: true,
-					msg: "Необходимо название",
-				});
+					msg: 'Необходимо название',
+				})
 			}
 
 			if (!movie.alias) {
 				return resError({
 					res,
 					alert: true,
-					msg: "Необходим ЧПУ-адрес",
-				});
+					msg: 'Необходим ЧПУ-адрес',
+				})
 			}
 
 			if (!movie.categoryAlias) {
 				return resError({
 					res,
 					alert: true,
-					msg: "Необходима категория",
-				});
+					msg: 'Необходима категория',
+				})
 			}
 
 			if (!movie.genresAliases || !movie.genresAliases.length) {
 				return resError({
 					res,
 					alert: true,
-					msg: "Необходимы жанры",
-				});
+					msg: 'Необходимы жанры',
+				})
 			}
 
 			const existMovies = await Movie.find({
 				alias: movie.alias,
 				publishedAt: { $ne: null },
-			});
+			})
 			if (existMovies.length) {
 				return resError({
 					res,
 					alert: true,
 					msg: `Фильм с ЧПУ-адресом ${movie.alias} уже существует`,
-				});
+				})
 			}
 		}
 
 		const set = {
 			publishedAt: !movie.publishedAt ? new Date() : null,
-		};
+		}
 
-		await Movie.updateOne({ _id }, { $set: set });
+		await Movie.updateOne({ _id }, { $set: set })
 
 		return resSuccess({
 			_id,
 			res,
 			...set,
 			alert: true,
-			msg: "Успешно опубликовано",
-		});
+			msg: 'Успешно опубликовано',
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 /*
  * Поднять медиа страницу во всех списках
  */
-router.put("/raiseUp", verify.token, verify.isManager, async (req, res) => {
+router.put('/raiseUp', verify.token, verify.isManager, async (req, res) => {
 	try {
-		const { _id } = req.body;
+		const { _id } = req.body
 
 		if (!_id) {
 			return resError({
 				res,
 				alert: true,
-				msg: "Не получен _id",
-			});
+				msg: 'Не получен _id',
+			})
 		}
 
 		const set = {
 			raisedUpAt: new Date(),
-		};
+		}
 
-		await Movie.updateOne({ _id }, { $set: set });
+		await Movie.updateOne({ _id }, { $set: set })
 
 		return resSuccess({
 			_id,
 			res,
 			...set,
 			alert: true,
-			msg: "Успешное поднятие",
-		});
+			msg: 'Успешное поднятие',
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
-module.exports = router;
+module.exports = router

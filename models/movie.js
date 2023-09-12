@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
 /*
  * Структура видео на странице фильма / сериала
@@ -20,7 +20,7 @@ const videoSchema = {
 	status: String, // uploading - загрузка, removing - удаление, ready - готово
 	uploaded: Number, // Сколько файлов загружено
 	total: Number, // Всего файлов нужно загрузить
-};
+}
 
 /*
  * Структура страницы фильма / сериала
@@ -78,9 +78,9 @@ const movieSchema = new mongoose.Schema(
 		creatorUserId: mongoose.Schema.Types.ObjectId, // ID создателя
 	},
 	{
-		typeKey: "$type",
+		typeKey: '$type',
 		timestamps: true,
-	},
-);
+	}
+)
 
-module.exports = mongoose.model("Movie", movieSchema);
+module.exports = mongoose.model('Movie', movieSchema)

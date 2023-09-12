@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
 /*
  * Журнал пользователей о прочтении уведомлений
@@ -11,7 +11,7 @@ const notificationReadLogSchema = new mongoose.Schema(
 	},
 	{
 		timestamps: true,
-	},
-);
+	}
+)
 
-module.exports = mongoose.model("NotificationReadLog", notificationReadLogSchema);
+module.exports = mongoose.model('NotificationReadLog', notificationReadLogSchema)

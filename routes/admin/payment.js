@@ -1,21 +1,21 @@
-const express = require("express");
-const router = express.Router();
-const mongoose = require("mongoose");
-const Tariff = require("../../models/tariff");
-const verify = require("../../middlewares/verify");
-const resError = require("../../helpers/resError");
-const PaymentLog = require("../../models/paymentLog");
-const getSearchQuery = require("../../middlewares/getSearchQuery");
-const isValidObjectId = require("../../helpers/isValidObjectId");
+const express = require('express')
+const router = express.Router()
+const mongoose = require('mongoose')
+const Tariff = require('../../models/tariff')
+const verify = require('../../middlewares/verify')
+const resError = require('../../helpers/resError')
+const PaymentLog = require('../../models/paymentLog')
+const getSearchQuery = require('../../middlewares/getSearchQuery')
+const isValidObjectId = require('../../helpers/isValidObjectId')
 
 /*
  * Админ-панель > История пополнений
  */
 
 // Получение списка пользователей
-router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
-	const skip = +req.query.skip || 0;
-	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
+router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	const searchMatch = req.RegExpQuery && {
 		$or: [
@@ -25,16 +25,16 @@ router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 			{ email: req.RegExpQuery },
 			{ firstname: req.RegExpQuery },
 		],
-	};
+	}
 
 	try {
 		let tariffsStats = await Tariff.aggregate([
 			// Действующие подписок
 			{
 				$lookup: {
-					from: "paymentlogs",
-					localField: "_id",
-					foreignField: "tariffId",
+					from: 'paymentlogs',
+					localField: '_id',
+					foreignField: 'tariffId',
 					pipeline: [
 						{
 							$match: {
@@ -50,15 +50,15 @@ router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 						{ $project: { _id: false } },
 						{ $limit: 1 },
 					],
-					as: "activeSubscriptions",
+					as: 'activeSubscriptions',
 				},
 			},
 			// Активаций подписок
 			{
 				$lookup: {
-					from: "paymentlogs",
-					localField: "_id",
-					foreignField: "tariffId",
+					from: 'paymentlogs',
+					localField: '_id',
+					foreignField: 'tariffId',
 					pipeline: [
 						{
 							$match: {
@@ -74,19 +74,19 @@ router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 						{ $project: { _id: false } },
 						{ $limit: 1 },
 					],
-					as: "activationsSubscriptions",
+					as: 'activationsSubscriptions',
 				},
 			},
 			// Сумма всех пополнений
 			{
 				$lookup: {
-					from: "paymentlogs",
-					localField: "_id",
-					foreignField: "tariffId",
+					from: 'paymentlogs',
+					localField: '_id',
+					foreignField: 'tariffId',
 					pipeline: [
 						{
 							$match: {
-								$or: [{ status: "success" }, { status: "CONFIRMED" }],
+								$or: [{ status: 'success' }, { status: 'CONFIRMED' }],
 							},
 						},
 						{
@@ -94,11 +94,7 @@ router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 								_id: null,
 								count: {
 									$sum: {
-										$cond: [
-											"$withdrawAmount" > 0,
-											"$withdrawAmount",
-											"$amount",
-										],
+										$cond: ['$withdrawAmount' > 0, '$withdrawAmount', '$amount'],
 									},
 								},
 							},
@@ -106,32 +102,28 @@ router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 						{ $project: { _id: false } },
 						{ $limit: 1 },
 					],
-					as: "totalAmount",
+					as: 'totalAmount',
 				},
 			},
-			{ $unwind: { path: "$totalAmount", preserveNullAndEmptyArrays: true } },
-			{ $unwind: { path: "$activeSubscriptions", preserveNullAndEmptyArrays: true } },
-			{ $unwind: { path: "$activationsSubscriptions", preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$totalAmount', preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$activeSubscriptions', preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$activationsSubscriptions', preserveNullAndEmptyArrays: true } },
 			{
 				$project: {
 					name: true,
 					duration: true,
-					totalAmount: { $cond: ["$totalAmount.count", "$totalAmount.count", 0] },
+					totalAmount: { $cond: ['$totalAmount.count', '$totalAmount.count', 0] },
 					activeSubscriptions: {
-						$cond: ["$activeSubscriptions.count", "$activeSubscriptions.count", 0],
+						$cond: ['$activeSubscriptions.count', '$activeSubscriptions.count', 0],
 					},
 					activationsSubscriptions: {
-						$cond: [
-							"$activationsSubscriptions.count",
-							"$activationsSubscriptions.count",
-							0,
-						],
+						$cond: ['$activationsSubscriptions.count', '$activationsSubscriptions.count', 0],
 					},
 				},
 			},
 			{ $sort: { duration: 1 } },
 			{ $limit: 5 },
-		]);
+		])
 
 		const result = await PaymentLog.aggregate([
 			{
@@ -140,7 +132,7 @@ router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 					totalSize: [
 						{
 							$match: {
-								$or: [{ status: "success" }, { status: "CONFIRMED" }],
+								$or: [{ status: 'success' }, { status: 'CONFIRMED' }],
 							},
 						},
 						{
@@ -156,14 +148,14 @@ router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 					items: [
 						{
 							$match: {
-								$or: [{ status: "success" }, { status: "CONFIRMED" }],
+								$or: [{ status: 'success' }, { status: 'CONFIRMED' }],
 							},
 						},
 						{
 							$lookup: {
-								from: "tariffs",
-								localField: "tariffId",
-								foreignField: "_id",
+								from: 'tariffs',
+								localField: 'tariffId',
+								foreignField: '_id',
 								pipeline: [
 									{
 										$project: {
@@ -172,15 +164,15 @@ router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 										},
 									},
 								],
-								as: "tariff",
+								as: 'tariff',
 							},
 						},
-						{ $unwind: { path: "$tariff" } },
+						{ $unwind: { path: '$tariff' } },
 						{
 							$lookup: {
-								from: "users",
-								localField: "userId",
-								foreignField: "_id",
+								from: 'users',
+								localField: 'userId',
+								foreignField: '_id',
 								pipeline: [
 									{
 										$match: {
@@ -197,10 +189,10 @@ router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 										},
 									},
 								],
-								as: "user",
+								as: 'user',
 							},
 						},
-						{ $unwind: { path: "$user" } },
+						{ $unwind: { path: '$user' } },
 						{
 							$project: {
 								user: true,
@@ -209,7 +201,7 @@ router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 								finishAt: true,
 								updatedAt: true,
 								amount: {
-									$cond: ["$withdrawAmount", "$withdrawAmount", "$amount"],
+									$cond: ['$withdrawAmount', '$withdrawAmount', '$amount'],
 								},
 							},
 						},
@@ -220,24 +212,24 @@ router.get("/", verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 				},
 			},
 			{ $limit: 1 },
-			{ $unwind: { path: "$totalAmount", preserveNullAndEmptyArrays: true } },
-			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$totalAmount', preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 			{
 				$project: {
-					totalAmount: { $cond: ["$totalAmount.count", "$totalAmount.count", 0] },
-					totalSize: { $cond: ["$totalSize.count", "$totalSize.count", 0] },
-					items: "$items",
+					totalAmount: { $cond: ['$totalAmount.count', '$totalAmount.count', 0] },
+					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+					items: '$items',
 				},
 			},
-		]);
+		])
 
 		return res.status(200).json({
 			tariffsStats,
 			...result[0],
-		});
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
-module.exports = router;
+module.exports = router

@@ -5,26 +5,26 @@ const movieOperations = ({
 	limit = 10000,
 	skip = 0,
 }) => {
-	const match = { publishedAt: { $ne: null } };
+	const match = { publishedAt: { $ne: null } }
 	const lookupFromCategories = {
-		from: "categories",
-		localField: "categoryAlias",
-		foreignField: "alias",
-		let: { genresAliases: "$genresAliases" },
+		from: 'categories',
+		localField: 'categoryAlias',
+		foreignField: 'alias',
+		let: { genresAliases: '$genresAliases' },
 		pipeline: [
 			{
 				$project: {
 					_id: false,
 					genres: {
 						$map: {
-							input: "$$genresAliases",
-							as: "this",
+							input: '$$genresAliases',
+							as: 'this',
 							in: {
 								$first: {
 									$filter: {
-										input: "$genres",
-										as: "genres",
-										cond: { $eq: ["$$genres.alias", "$$this"] },
+										input: '$genres',
+										as: 'genres',
+										cond: { $eq: ['$$genres.alias', '$$this'] },
 									},
 								},
 							},
@@ -33,8 +33,8 @@ const movieOperations = ({
 				},
 			},
 		],
-		as: "category",
-	};
+		as: 'category',
+	}
 	const project = {
 		_id: true,
 		name: true,
@@ -46,39 +46,39 @@ const movieOperations = ({
 		trailer: true,
 		series: {
 			$cond: {
-				if: { $eq: ["$categoryAlias", "serials"] },
-				then: "$series",
-				else: "$$REMOVE",
+				if: { $eq: ['$categoryAlias', 'serials'] },
+				then: '$series',
+				else: '$$REMOVE',
 			},
 		},
 		duration: {
 			$switch: {
 				branches: [
 					{
-						case: { $eq: ["$categoryAlias", "films"] },
+						case: { $eq: ['$categoryAlias', 'films'] },
 						then: {
 							$sum: {
 								$map: {
-									input: "$films",
-									as: "item",
-									in: "$$item.duration",
+									input: '$films',
+									as: 'item',
+									in: '$$item.duration',
 								},
 							},
 						},
 					},
 					{
-						case: { $eq: ["$categoryAlias", "serials"] },
+						case: { $eq: ['$categoryAlias', 'serials'] },
 						then: {
 							$sum: {
 								$map: {
-									input: "$series",
-									as: "seasons",
+									input: '$series',
+									as: 'seasons',
 									in: {
 										$sum: {
 											$map: {
-												input: "$$seasons",
-												as: "item",
-												in: "$$item.duration",
+												input: '$$seasons',
+												as: 'item',
+												in: '$$item.duration',
 											},
 										},
 									},
@@ -90,8 +90,8 @@ const movieOperations = ({
 				default: 0,
 			},
 		},
-		url: { $concat: ["/p/", "$alias"] },
-	};
+		url: { $concat: ['/p/', '$alias'] },
+	}
 
 	return [
 		{
@@ -101,9 +101,9 @@ const movieOperations = ({
 			},
 		},
 		{ $lookup: lookupFromCategories },
-		{ $unwind: "$category" },
+		{ $unwind: '$category' },
 		{ $sort: sort },
-		{ $addFields: { genres: "$category.genres" } },
+		{ $addFields: { genres: '$category.genres' } },
 		{
 			$project: {
 				...project,
@@ -112,7 +112,7 @@ const movieOperations = ({
 		},
 		{ $skip: skip },
 		{ $limit: limit },
-	];
-};
+	]
+}
 
-module.exports = movieOperations;
+module.exports = movieOperations

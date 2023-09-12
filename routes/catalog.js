@@ -1,104 +1,104 @@
-const express = require("express");
-const router = express.Router();
-const Movie = require("../models/movie");
-const resError = require("../helpers/resError");
-const movieOperations = require("../helpers/movieOperations");
-const getCatalogPages = require("../helpers/getCatalogPages");
+const express = require('express')
+const router = express.Router()
+const Movie = require('../models/movie')
+const resError = require('../helpers/resError')
+const movieOperations = require('../helpers/movieOperations')
+const getCatalogPages = require('../helpers/getCatalogPages')
 
 /*
  * Фильмы / сериалы с фильтром
  */
 
 // Страницы для рендеринга при сборке
-router.get("/pages", async (req, res) => {
-	const { categoryAlias, showGenreName } = req.query;
+router.get('/pages', async (req, res) => {
+	const { categoryAlias, showGenreName } = req.query
 
 	try {
 		const result = await getCatalogPages({
 			categoryAlias,
 			showGenreName,
-		});
+		})
 
-		return res.status(200).json(result);
+		return res.status(200).json(result)
 	} catch (error) {
-		return res.json(error);
+		return res.json(error)
 	}
-});
+})
 
 // Каталог в фильмах и сериалах
-router.get("/", async (req, res) => {
-	const { sort, rating, genreAlias, dateReleased, categoryAlias } = req.query;
+router.get('/', async (req, res) => {
+	const { sort, rating, genreAlias, dateReleased, categoryAlias } = req.query
 
-	let sortParams = { raisedUpAt: -1, createdAt: -1 }; // Параметры сортировки
+	let sortParams = { raisedUpAt: -1, createdAt: -1 } // Параметры сортировки
 
-	const skip = +req.query.skip || 0;
-	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
-	if (!categoryAlias) return resError({ res, msg: "Ожидается categoryAlias" });
+	if (!categoryAlias) return resError({ res, msg: 'Ожидается categoryAlias' })
 
 	// Установление сортировки списка
 	if (sort)
 		switch (sort) {
-			case "new":
-				sortParams = { dateReleased: -1 };
-				break;
-			case "rating":
-				sortParams = { rating: -1, raisedUpAt: -1, createdAt: -1 };
-				break;
+			case 'new':
+				sortParams = { dateReleased: -1 }
+				break
+			case 'rating':
+				sortParams = { rating: -1, raisedUpAt: -1, createdAt: -1 }
+				break
 			default:
-				return resError({ res, msg: "Неверный sort" });
+				return resError({ res, msg: 'Неверный sort' })
 		}
 
 	try {
-		const pages = await getCatalogPages({ categoryAlias });
+		const pages = await getCatalogPages({ categoryAlias })
 		const page = pages.find(
 			(page) =>
 				(rating ? +page.rating === +rating : true) &&
 				(genreAlias ? page.genreAlias === genreAlias : true) &&
 				(dateReleased ? page.dateReleased === dateReleased : true) &&
-				(categoryAlias !== "collections" ? page.categoryAlias === categoryAlias : true),
-		);
+				(categoryAlias !== 'collections' ? page.categoryAlias === categoryAlias : true)
+		)
 
-		if (!page) return resError({ res, msg: "Страницы не существует" });
+		if (!page) return resError({ res, msg: 'Страницы не существует' })
 
-		delete page.genreName;
+		delete page.genreName
 
 		// Объединение жанров из фильмов и сериалов
-		if (page.categoryAlias === "collections") {
-			page.categoryAlias = { $in: ["films", "serials"] };
+		if (page.categoryAlias === 'collections') {
+			page.categoryAlias = { $in: ['films', 'serials'] }
 		}
 
 		// Переименовать поле genreAlias в genresAliases для поиска в бд
-		if (page.genreAlias) page.genresAliases = page.genreAlias;
-		delete page.genreAlias;
+		if (page.genreAlias) page.genresAliases = page.genreAlias
+		delete page.genreAlias
 
 		// Привести в вид поиска по строке /dateReleased/
 		if (page.dateReleased) {
-			page.dateReleased = new RegExp(page.dateReleased);
-			if (!rating) delete page.rating;
+			page.dateReleased = new RegExp(page.dateReleased)
+			if (!rating) delete page.rating
 		}
 
-		if (rating) page.rating = { $gte: +rating }; // Поиск по рейтингу >=
+		if (rating) page.rating = { $gte: +rating } // Поиск по рейтингу >=
 
 		const lookupFromCategories = {
-			from: "categories",
-			localField: "categoryAlias",
-			foreignField: "alias",
-			let: { genresAliases: "$genresAliases" },
+			from: 'categories',
+			localField: 'categoryAlias',
+			foreignField: 'alias',
+			let: { genresAliases: '$genresAliases' },
 			pipeline: [
 				{
 					$project: {
 						_id: false,
 						genres: {
 							$map: {
-								input: "$$genresAliases",
-								as: "this",
+								input: '$$genresAliases',
+								as: 'this',
 								in: {
 									$first: {
 										$filter: {
-											input: "$genres",
-											as: "genres",
-											cond: { $eq: ["$$genres.alias", "$$this"] },
+											input: '$genres',
+											as: 'genres',
+											cond: { $eq: ['$$genres.alias', '$$this'] },
 										},
 									},
 								},
@@ -107,8 +107,8 @@ router.get("/", async (req, res) => {
 					},
 				},
 			],
-			as: "category",
-		};
+			as: 'category',
+		}
 
 		const result = await Movie.aggregate([
 			{
@@ -122,7 +122,7 @@ router.get("/", async (req, res) => {
 							},
 						},
 						{ $lookup: lookupFromCategories },
-						{ $unwind: "$category" },
+						{ $unwind: '$category' },
 						{
 							$group: {
 								_id: null,
@@ -138,8 +138,8 @@ router.get("/", async (req, res) => {
 							addToMatch: page,
 							addToProject: {
 								poster: { src: true },
-								genreNames: "$genres.name",
-								...(categoryAlias === "serials" ? { series: true } : []),
+								genreNames: '$genres.name',
+								...(categoryAlias === 'serials' ? { series: true } : []),
 							},
 							sort: sortParams,
 						}),
@@ -149,19 +149,19 @@ router.get("/", async (req, res) => {
 				},
 			},
 			{ $limit: 1 },
-			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 			{
 				$project: {
-					totalSize: { $cond: ["$totalSize.count", "$totalSize.count", 0] },
-					items: "$items",
+					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+					items: '$items',
 				},
 			},
-		]);
+		])
 
-		return res.status(200).json(result[0]);
+		return res.status(200).json(result[0])
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
-module.exports = router;
+module.exports = router

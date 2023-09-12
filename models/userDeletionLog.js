@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
 /*
  * Журнал удалений аккаунтов
@@ -17,16 +17,16 @@ const userDeletionLogSchema = new mongoose.Schema(
 				validate: {
 					validator: function (arrReasons) {
 						const validValues = [
-							"NOT_ENOUGH_CONTENT", // Не достаточно контента
-							"BAD_QUALITY_VIDEO", // Плохое качество видео
-							"BAD_SOUND", // Плохой звук
-							"NOT_MATCH_TARIFF", // Нет подходящего тарифа
-							"HIGH_COST_SUBSCRIBTION", // Высокая стоимость подписки
-						];
+							'NOT_ENOUGH_CONTENT', // Не достаточно контента
+							'BAD_QUALITY_VIDEO', // Плохое качество видео
+							'BAD_SOUND', // Плохой звук
+							'NOT_MATCH_TARIFF', // Нет подходящего тарифа
+							'HIGH_COST_SUBSCRIBTION', // Высокая стоимость подписки
+						]
 						for (let i = 0; i < arrReasons.length; i++) {
-							if (!validValues.includes(arrReasons[i])) return false;
+							if (!validValues.includes(arrReasons[i])) return false
 						}
-						return true;
+						return true
 					},
 					message: (props) =>
 						`<${props.value}> - не валидное значение! Возможные варианты: 'NOT_ENOUGH_CONTENT', 'BAD_QUALITY_VIDEO', 'BAD_SOUND', 'NOT_MATCH_TARIFF', 'HIGH_COST_SUBSCRIBTION'`,
@@ -37,16 +37,16 @@ const userDeletionLogSchema = new mongoose.Schema(
 			// Статус возврата
 			type: String,
 			enum: [
-				"CONFIRMED", // Операция подтверждена
-				"REJECTED", // Операция отклонена
-				"WAITING", // Операция в режиме ожидания
+				'CONFIRMED', // Операция подтверждена
+				'REJECTED', // Операция отклонена
+				'WAITING', // Операция в режиме ожидания
 			],
 		},
 		refundAmount: Number, //Cумма денег для возврата пользователю ( если значение isRefund = true)
 	},
 	{
 		timestamps: true,
-	},
-);
+	}
+)
 
-module.exports = mongoose.model("UserDeletionLog", userDeletionLogSchema);
+module.exports = mongoose.model('UserDeletionLog', userDeletionLogSchema)

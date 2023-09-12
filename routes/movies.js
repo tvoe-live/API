@@ -1,37 +1,37 @@
-const express = require("express");
-const router = express.Router();
-const Movie = require("../models/movie");
-const resError = require("../helpers/resError");
-const verify = require("../middlewares/verify");
-const MovieRating = require("../models/movieRating");
-const MoviePageLog = require("../models/moviePageLog");
-const MovieFavorite = require("../models/movieFavorite");
-const MovieBookmark = require("../models/movieBookmark");
-const movieOperations = require("../helpers/movieOperations");
-const resSuccess = require("../helpers/resSuccess");
+const express = require('express')
+const router = express.Router()
+const Movie = require('../models/movie')
+const resError = require('../helpers/resError')
+const verify = require('../middlewares/verify')
+const MovieRating = require('../models/movieRating')
+const MoviePageLog = require('../models/moviePageLog')
+const MovieFavorite = require('../models/movieFavorite')
+const MovieBookmark = require('../models/movieBookmark')
+const movieOperations = require('../helpers/movieOperations')
+const resSuccess = require('../helpers/resSuccess')
 
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
 /*
  * Фильмы и сериалы
  */
 
-router.get("/", async (req, res) => {
-	const skip = +req.query.skip || 0;
-	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
+router.get('/', async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	const agregationListForTotalSize = [
 		{ $match: { publishedAt: { $ne: null } } },
 		{
 			$lookup: {
-				from: "categories",
-				localField: "categoryAlias",
-				foreignField: "alias",
-				as: "category",
+				from: 'categories',
+				localField: 'categoryAlias',
+				foreignField: 'alias',
+				as: 'category',
 			},
 		},
-		{ $unwind: "$category" },
-	];
+		{ $unwind: '$category' },
+	]
 
 	try {
 		Movie.aggregate(
@@ -65,35 +65,34 @@ router.get("/", async (req, res) => {
 						],
 					},
 				},
-				{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+				{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 				{
 					$project: {
-						totalSize: { $cond: ["$totalSize.count", "$totalSize.count", 0] },
-						items: "$items",
+						totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+						items: '$items',
 					},
 				},
 			],
 			(err, result) => {
-				return res.status(200).json(result[0]);
-			},
-		);
+				return res.status(200).json(result[0])
+			}
+		)
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 // Получение одной записи
-router.get("/movie", async (req, res) => {
-	const skipMovieRatings = +req.query.skipMovieRatings || 0;
-	const limitMovieRatings = +(req.query.limitMovieRatings > 0 &&
-	req.query.limitMovieRatings <= 100
+router.get('/movie', async (req, res) => {
+	const skipMovieRatings = +req.query.skipMovieRatings || 0
+	const limitMovieRatings = +(req.query.limitMovieRatings > 0 && req.query.limitMovieRatings <= 100
 		? req.query.limitMovieRatings
-		: 100);
+		: 100)
 
-	const { _id, alias } = req.query;
-	const find = _id ? { _id: mongoose.Types.ObjectId(_id) } : { alias };
+	const { _id, alias } = req.query
+	const find = _id ? { _id: mongoose.Types.ObjectId(_id) } : { alias }
 
-	if (!find) return resError({ res, msg: "Ожидается Id или Alias" });
+	if (!find) return resError({ res, msg: 'Ожидается Id или Alias' })
 
 	const videoParams = {
 		_id: true,
@@ -105,7 +104,7 @@ router.get("/movie", async (req, res) => {
 		audio: true,
 		subtitles: true,
 		status: true,
-	};
+	}
 
 	try {
 		Movie.aggregate(
@@ -122,9 +121,9 @@ router.get("/movie", async (req, res) => {
 							}),
 							{
 								$lookup: {
-									from: "movieratings",
-									localField: "_id",
-									foreignField: "movieId",
+									from: 'movieratings',
+									localField: '_id',
+									foreignField: 'movieId',
 									pipeline: [
 										{
 											$match: {
@@ -132,10 +131,10 @@ router.get("/movie", async (req, res) => {
 											},
 										},
 									],
-									as: "reviews",
+									as: 'reviews',
 								},
 							},
-							{ $unwind: "$reviews" },
+							{ $unwind: '$reviews' },
 							{
 								$group: {
 									_id: null,
@@ -163,7 +162,7 @@ router.get("/movie", async (req, res) => {
 									logo: { src: true },
 									cover: { src: true },
 									poster: { src: true },
-									genreNames: "$genres.name",
+									genreNames: '$genres.name',
 									persons: {
 										name: true,
 										type: true,
@@ -176,9 +175,9 @@ router.get("/movie", async (req, res) => {
 							}),
 							{
 								$lookup: {
-									from: "movieratings",
-									localField: "_id",
-									foreignField: "movieId",
+									from: 'movieratings',
+									localField: '_id',
+									foreignField: 'movieId',
 									pipeline: [
 										{
 											$match: {
@@ -196,9 +195,9 @@ router.get("/movie", async (req, res) => {
 										},
 										{
 											$lookup: {
-												from: "users",
-												localField: "userId",
-												foreignField: "_id",
+												from: 'users',
+												localField: 'userId',
+												foreignField: '_id',
 												pipeline: [
 													{
 														$project: {
@@ -209,7 +208,7 @@ router.get("/movie", async (req, res) => {
 														},
 													},
 												],
-												as: "user",
+												as: 'user',
 											},
 										},
 										{
@@ -218,21 +217,21 @@ router.get("/movie", async (req, res) => {
 												movieId: false,
 											},
 										},
-										{ $unwind: "$user" },
+										{ $unwind: '$user' },
 										{ $sort: { updatedAt: -1 } },
 										{ $skip: skipMovieRatings },
 										{ $limit: limitMovieRatings },
 									],
-									as: "reviews",
+									as: 'reviews',
 								},
 							},
 							{
 								$lookup: {
-									from: "movies",
+									from: 'movies',
 									let: {
-										selectedMovieGenresAliases: "$genresAliases",
-										selectedMovieId: "$_id",
-										selectedMovieCategoryAlias: "$categoryAlias",
+										selectedMovieGenresAliases: '$genresAliases',
+										selectedMovieId: '$_id',
+										selectedMovieCategoryAlias: '$categoryAlias',
 									},
 									pipeline: [
 										{
@@ -240,12 +239,9 @@ router.get("/movie", async (req, res) => {
 												publishedAt: { $ne: null },
 												$expr: {
 													$and: [
-														{ $ne: ["$_id", "$$selectedMovieId"] },
+														{ $ne: ['$_id', '$$selectedMovieId'] },
 														{
-															$eq: [
-																"$categoryAlias",
-																"$$selectedMovieCategoryAlias",
-															],
+															$eq: ['$categoryAlias', '$$selectedMovieCategoryAlias'],
 														},
 														{
 															$gte: [
@@ -253,8 +249,8 @@ router.get("/movie", async (req, res) => {
 																	$size: [
 																		{
 																			$setIntersection: [
-																				"$genresAliases",
-																				"$$selectedMovieGenresAliases",
+																				'$genresAliases',
+																				'$$selectedMovieGenresAliases',
 																			],
 																		},
 																	],
@@ -274,7 +270,7 @@ router.get("/movie", async (req, res) => {
 												genresAliases: true,
 												logo: { src: true },
 												poster: { src: true },
-												genreNames: "$genres.name",
+												genreNames: '$genres.name',
 											},
 										}),
 										{
@@ -294,10 +290,7 @@ router.get("/movie", async (req, res) => {
 												genresMatchAmount: {
 													$size: [
 														{
-															$setIntersection: [
-																"$genresAliases",
-																"$$selectedMovieGenresAliases",
-															],
+															$setIntersection: ['$genresAliases', '$$selectedMovieGenresAliases'],
 														},
 													],
 												},
@@ -313,58 +306,58 @@ router.get("/movie", async (req, res) => {
 											},
 										},
 									],
-									as: "similarItems",
+									as: 'similarItems',
 								},
 							},
 						],
 					},
 				},
 				{ $limit: 1 },
-				{ $unwind: { path: "$totalSizeReview", preserveNullAndEmptyArrays: true } },
+				{ $unwind: { path: '$totalSizeReview', preserveNullAndEmptyArrays: true } },
 				{
 					$project: {
 						totalSizeReview: {
-							$cond: ["$totalSizeReview.count", "$totalSizeReview.count", 0],
+							$cond: ['$totalSizeReview.count', '$totalSizeReview.count', 0],
 						},
-						item: "$item",
+						item: '$item',
 					},
 				},
 			],
 			async (err, result) => {
-				if (err) return resError({ res, msg: err });
-				if (!result[0]) return resError({ res, msg: "Не найдено" });
+				if (err) return resError({ res, msg: err })
+				if (!result[0]) return resError({ res, msg: 'Не найдено' })
 
-				const data = result[0].item[0];
+				const data = result[0].item[0]
 				data.reviews = {
 					items: data.reviews,
 					totalSize: result[0].totalSizeReview,
-				};
-
-				switch (data.categoryAlias) {
-					case "films":
-						data.sources = data.films[0] || null;
-						break;
-					case "serials":
-						data.sources = data.series || null;
-						break;
-					default:
-						break;
 				}
 
-				delete data.films;
-				delete data.series;
+				switch (data.categoryAlias) {
+					case 'films':
+						data.sources = data.films[0] || null
+						break
+					case 'serials':
+						data.sources = data.series || null
+						break
+					default:
+						break
+				}
 
-				return res.status(200).json(data);
-			},
-		);
+				delete data.films
+				delete data.series
+
+				return res.status(200).json(data)
+			}
+		)
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 // Получить рейтинг и комментарий поставленный пользователем
-router.get("/rating", verify.token, async (req, res) => {
-	const { movieId } = req.query;
+router.get('/rating', verify.token, async (req, res) => {
+	const { movieId } = req.query
 
 	const rating = await MovieRating.findOne(
 		{
@@ -375,65 +368,59 @@ router.get("/rating", verify.token, async (req, res) => {
 			_id: false,
 			rating: true,
 			review: true,
-		},
-	);
+		}
+	)
 
-	return res.status(200).json(rating);
-});
+	return res.status(200).json(rating)
+})
 
 // Отправка рейтинга и комментария
-router.post("/rating", verify.token, async (req, res) => {
-	let { movieId, rating, review } = req.body;
+router.post('/rating', verify.token, async (req, res) => {
+	let { movieId, rating, review } = req.body
 
 	if (!movieId) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Ожидается ID",
-		});
+			msg: 'Ожидается ID',
+		})
 	}
 
-	movieId = mongoose.Types.ObjectId(movieId);
+	movieId = mongoose.Types.ObjectId(movieId)
 
-	if (typeof rating === "undefined" && typeof review === "undefined") {
+	if (typeof rating === 'undefined' && typeof review === 'undefined') {
 		return resError({
 			res,
 			alert: true,
-			msg: "Ожидается rating и/или review",
-		});
+			msg: 'Ожидается rating и/или review',
+		})
 	}
 
-	if (
-		rating === null ||
-		rating < 1 ||
-		rating > 10 ||
-		typeof rating === "string" ||
-		rating === 0
-	) {
+	if (rating === null || rating < 1 || rating > 10 || typeof rating === 'string' || rating === 0) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Оценка должна быть от 1 до 10",
-		});
+			msg: 'Оценка должна быть от 1 до 10',
+		})
 	}
 
 	if (review && review.length > 500) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Длина комментария не должна превышать 500",
-		});
+			msg: 'Длина комментария не должна превышать 500',
+		})
 	}
 
 	try {
-		const movie = await Movie.findOne({ _id: movieId }, { _id: true });
+		const movie = await Movie.findOne({ _id: movieId }, { _id: true })
 
 		if (!movie) {
 			return resError({
 				res,
 				alert: true,
-				msg: "Страница не найдена",
-			});
+				msg: 'Страница не найдена',
+			})
 		}
 
 		const userRating = await MovieRating.findOneAndUpdate(
@@ -447,8 +434,8 @@ router.post("/rating", verify.token, async (req, res) => {
 					review,
 				},
 				$inc: { __v: 1 },
-			},
-		);
+			}
+		)
 
 		if (!userRating && !!rating) {
 			await MovieRating.create({
@@ -456,7 +443,7 @@ router.post("/rating", verify.token, async (req, res) => {
 				review,
 				movieId,
 				userId: req.user._id,
-			});
+			})
 		}
 
 		// Получить все оценки фильма
@@ -469,7 +456,7 @@ router.post("/rating", verify.token, async (req, res) => {
 			{
 				$group: {
 					_id: null,
-					avg: { $avg: "$rating" },
+					avg: { $avg: '$rating' },
 				},
 			},
 			{
@@ -478,37 +465,37 @@ router.post("/rating", verify.token, async (req, res) => {
 					avg: true,
 				},
 			},
-		]);
+		])
 
-		const newMovieRating = movieRatingLogs[0].avg;
+		const newMovieRating = movieRatingLogs[0].avg
 
 		// Обновить среднюю оценку фильма
-		await Movie.updateOne({ _id: movieId }, { $set: { rating: newMovieRating } });
+		await Movie.updateOne({ _id: movieId }, { $set: { rating: newMovieRating } })
 
 		return res.status(200).json({
 			success: true,
 			movieId,
 			rating,
 			review,
-		});
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 // Удаление рейтинга и комментария
-router.delete("/rating", verify.token, async (req, res) => {
-	let { movieId } = req.body;
+router.delete('/rating', verify.token, async (req, res) => {
+	let { movieId } = req.body
 
 	if (!movieId) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Ожидается Id",
-		});
+			msg: 'Ожидается Id',
+		})
 	}
 
-	movieId = mongoose.Types.ObjectId(movieId);
+	movieId = mongoose.Types.ObjectId(movieId)
 
 	try {
 		// Обнуление записи из БД
@@ -523,8 +510,8 @@ router.delete("/rating", verify.token, async (req, res) => {
 					review: null,
 				},
 				$inc: { __v: 1 },
-			},
-		);
+			}
+		)
 
 		// Получить все оценки фильма
 		const movieRatingLogs = await MovieRating.aggregate([
@@ -536,7 +523,7 @@ router.delete("/rating", verify.token, async (req, res) => {
 			{
 				$group: {
 					_id: null,
-					avg: { $avg: "$rating" },
+					avg: { $avg: '$rating' },
 				},
 			},
 			{
@@ -545,36 +532,36 @@ router.delete("/rating", verify.token, async (req, res) => {
 					avg: true,
 				},
 			},
-		]);
+		])
 
-		const newMovieRating = movieRatingLogs[0]?.avg || null;
+		const newMovieRating = movieRatingLogs[0]?.avg || null
 
 		// Обновить среднюю оценку фильма
-		await Movie.updateOne({ _id: movieId }, { $set: { rating: newMovieRating } });
+		await Movie.updateOne({ _id: movieId }, { $set: { rating: newMovieRating } })
 
 		return resSuccess({
 			res,
 			movieId,
 			alert: true,
-			msg: "Успешно удалено",
-		});
+			msg: 'Успешно удалено',
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 // Получение статуса на избранное
-router.get("/favorite", verify.token, async (req, res) => {
-	const { movieId } = req.query;
+router.get('/favorite', verify.token, async (req, res) => {
+	const { movieId } = req.query
 
-	const movie = await Movie.findOne({ _id: movieId }, { _id: true });
+	const movie = await Movie.findOne({ _id: movieId }, { _id: true })
 
 	if (!movie) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Страница не найдена",
-		});
+			msg: 'Страница не найдена',
+		})
 	}
 
 	const userFavorite = await MovieFavorite.findOne(
@@ -585,41 +572,41 @@ router.get("/favorite", verify.token, async (req, res) => {
 		{
 			_id: false,
 			isFavorite: true,
-		},
-	);
+		}
+	)
 
-	const isFavorite = userFavorite ? userFavorite.isFavorite : false;
+	const isFavorite = userFavorite ? userFavorite.isFavorite : false
 
 	return res.status(200).json({
 		movieId,
 		isFavorite,
-	});
-});
+	})
+})
 
 // Добавление / удаление из избранного
-router.post("/favorite", verify.token, async (req, res) => {
-	const { movieId } = req.body;
+router.post('/favorite', verify.token, async (req, res) => {
+	const { movieId } = req.body
 
 	if (!movieId) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Ожидается ID",
-		});
+			msg: 'Ожидается ID',
+		})
 	}
 
 	try {
-		const movie = await Movie.findOne({ _id: movieId }, { _id: true });
+		const movie = await Movie.findOne({ _id: movieId }, { _id: true })
 
 		if (!movie) {
 			return resError({
 				res,
 				alert: true,
-				msg: "Страница не найдена",
-			});
+				msg: 'Страница не найдена',
+			})
 		}
 
-		let isFavorite;
+		let isFavorite
 
 		const userFavorite = await MovieFavorite.findOne(
 			{
@@ -629,51 +616,51 @@ router.post("/favorite", verify.token, async (req, res) => {
 			{
 				_id: true,
 				isFavorite: true,
-			},
-		);
+			}
+		)
 
 		if (userFavorite) {
-			isFavorite = !userFavorite.isFavorite;
+			isFavorite = !userFavorite.isFavorite
 
 			await MovieFavorite.updateOne(
 				{ _id: userFavorite._id },
 				{
 					$set: { isFavorite },
 					$inc: { __v: 1 },
-				},
-			);
+				}
+			)
 		} else {
-			isFavorite = true;
+			isFavorite = true
 
 			await MovieFavorite.create({
 				movieId,
 				isFavorite,
 				userId: req.user._id,
-			});
+			})
 		}
 
 		return res.status(200).json({
 			success: true,
 			movieId,
 			isFavorite,
-		});
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 // Получение статуса на закладки
-router.get("/bookmark", verify.token, async (req, res) => {
-	const { movieId } = req.query;
+router.get('/bookmark', verify.token, async (req, res) => {
+	const { movieId } = req.query
 
-	const movie = await Movie.findOne({ _id: movieId }, { _id: true });
+	const movie = await Movie.findOne({ _id: movieId }, { _id: true })
 
 	if (!movie) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Страница не найдена",
-		});
+			msg: 'Страница не найдена',
+		})
 	}
 
 	const userBookmark = await MovieBookmark.findOne(
@@ -684,41 +671,41 @@ router.get("/bookmark", verify.token, async (req, res) => {
 		{
 			_id: false,
 			isBookmark: true,
-		},
-	);
+		}
+	)
 
-	const isBookmark = userBookmark ? userBookmark.isBookmark : false;
+	const isBookmark = userBookmark ? userBookmark.isBookmark : false
 
 	return res.status(200).json({
 		movieId,
 		isBookmark,
-	});
-});
+	})
+})
 
 // Добавление / удаление из закладок
-router.post("/bookmark", verify.token, async (req, res) => {
-	const { movieId } = req.body;
+router.post('/bookmark', verify.token, async (req, res) => {
+	const { movieId } = req.body
 
 	if (!movieId) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Ожидается ID",
-		});
+			msg: 'Ожидается ID',
+		})
 	}
 
 	try {
-		const movie = await Movie.findOne({ _id: movieId }, { _id: true });
+		const movie = await Movie.findOne({ _id: movieId }, { _id: true })
 
 		if (!movie) {
 			return resError({
 				res,
 				alert: true,
-				msg: "Страница не найдена",
-			});
+				msg: 'Страница не найдена',
+			})
 		}
 
-		let isBookmark;
+		let isBookmark
 
 		const userBookmark = await MovieBookmark.findOne(
 			{
@@ -728,48 +715,48 @@ router.post("/bookmark", verify.token, async (req, res) => {
 			{
 				_id: true,
 				isBookmark: true,
-			},
-		);
+			}
+		)
 
 		if (userBookmark) {
-			isBookmark = !userBookmark.isBookmark;
+			isBookmark = !userBookmark.isBookmark
 			await MovieBookmark.updateOne(
 				{ _id: userBookmark._id },
 				{
 					$set: { isBookmark },
 					$inc: { __v: 1 },
-				},
-			);
+				}
+			)
 		} else {
-			isBookmark = true;
+			isBookmark = true
 
 			await MovieBookmark.create({
 				movieId,
 				isBookmark,
 				userId: req.user._id,
-			});
+			})
 		}
 
 		return res.status(200).json({
 			success: true,
 			movieId,
 			isBookmark,
-		});
+		})
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 // Получение логов просмотра фильма / серий сериала
-router.get("/logs", verify.token, async (req, res) => {
-	const { movieId } = req.query;
+router.get('/logs', verify.token, async (req, res) => {
+	const { movieId } = req.query
 
 	if (!movieId) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Не передан movieId",
-		});
+			msg: 'Не передан movieId',
+		})
 	}
 
 	try {
@@ -783,35 +770,35 @@ router.get("/logs", verify.token, async (req, res) => {
 				videoId: true,
 				endTime: true,
 				updatedAt: true,
-			},
-		).sort({ updatedAt: -1 });
+			}
+		).sort({ updatedAt: -1 })
 
-		return res.status(200).json(logs);
+		return res.status(200).json(logs)
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
 // Добавление записи просмотра фильма / серий сериала в логи
-router.post("/addLog", verify.token, async (req, res) => {
-	const { movieId, referer, videoId, endTime, startTime, action } = req.body;
+router.post('/addLog', verify.token, async (req, res) => {
+	const { movieId, referer, videoId, endTime, startTime, action } = req.body
 
 	// action == 'new': открытие видео
 	// action == 'exit': закрытие видео
 	// action == 'watch': просмотр видео (раз в минуту)
 
-	if (!movieId) return resError({ res, msg: "Не передан movieId" });
-	if (!videoId) return resError({ res, msg: "Не передан videoId" });
-	if (req.useragent.isBot) return resError({ res, msg: "Обнаружен бот" });
+	if (!movieId) return resError({ res, msg: 'Не передан movieId' })
+	if (!videoId) return resError({ res, msg: 'Не передан videoId' })
+	if (req.useragent.isBot) return resError({ res, msg: 'Обнаружен бот' })
 
-	const movie = await Movie.findOne({ _id: movieId }, { _id: true });
+	const movie = await Movie.findOne({ _id: movieId }, { _id: true })
 
 	if (!movie) {
 		return resError({
 			res,
 			alert: true,
-			msg: "Страница не найдена",
-		});
+			msg: 'Страница не найдена',
+		})
 	}
 
 	const logExists = await MoviePageLog.findOne(
@@ -819,8 +806,8 @@ router.post("/addLog", verify.token, async (req, res) => {
 			videoId,
 			userId: req.user._id,
 		},
-		{ _id: true },
-	);
+		{ _id: true }
+	)
 
 	const device = {
 		ip: req.ip,
@@ -831,7 +818,7 @@ router.post("/addLog", verify.token, async (req, res) => {
 		browser: req.useragent.browser,
 		version: req.useragent.version,
 		platform: req.useragent.platform,
-	};
+	}
 
 	try {
 		if (logExists) {
@@ -847,8 +834,8 @@ router.post("/addLog", verify.token, async (req, res) => {
 						startTime,
 					},
 					$inc: { __v: 1 },
-				},
-			);
+				}
+			)
 		} else {
 			MoviePageLog.create({
 				device,
@@ -858,13 +845,13 @@ router.post("/addLog", verify.token, async (req, res) => {
 				endTime,
 				startTime,
 				userId: req.user._id,
-			});
+			})
 		}
 
-		return res.status(200).json();
+		return res.status(200).json()
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
-module.exports = router;
+module.exports = router

@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
 /*
  * Список тарифов
@@ -14,7 +14,7 @@ const tariffSchema = new mongoose.Schema(
 	},
 	{
 		versionKey: false,
-	},
-);
+	}
+)
 
-module.exports = mongoose.model("Tariff", tariffSchema);
+module.exports = mongoose.model('Tariff', tariffSchema)

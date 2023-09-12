@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
 /*
  * Журнал пользователей "Избранное"
@@ -12,7 +12,7 @@ const movieFavoriteSchema = new mongoose.Schema(
 	},
 	{
 		timestamps: true,
-	},
-);
+	}
+)
 
-module.exports = mongoose.model("MovieFavorite", movieFavoriteSchema);
+module.exports = mongoose.model('MovieFavorite', movieFavoriteSchema)

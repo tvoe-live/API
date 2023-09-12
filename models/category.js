@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
 /*
  * Категории с жанрами
@@ -30,7 +30,7 @@ const categorySchema = new mongoose.Schema(
 	},
 	{
 		versionKey: false,
-	},
-);
+	}
+)
 
-module.exports = mongoose.model("Category", categorySchema);
+module.exports = mongoose.model('Category', categorySchema)

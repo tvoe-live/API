@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
 /*
  * Лог вывода баланса в реферальной программе
@@ -18,7 +18,7 @@ const referralWithdrawalLogSchema = new mongoose.Schema(
 	},
 	{
 		timestamps: true,
-	},
-);
+	}
+)
 
-module.exports = mongoose.model("ReferralWithdrawalLog", referralWithdrawalLogSchema);
+module.exports = mongoose.model('ReferralWithdrawalLog', referralWithdrawalLogSchema)

@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
 /*
  * Журнал пользователей просмотра видео (не трейлеров)
@@ -16,7 +16,7 @@ const moviePageLogSchema = new mongoose.Schema(
 	},
 	{
 		timestamps: true,
-	},
-);
+	}
+)
 
-module.exports = mongoose.model("MoviePageLog", moviePageLogSchema);
+module.exports = mongoose.model('MoviePageLog', moviePageLogSchema)

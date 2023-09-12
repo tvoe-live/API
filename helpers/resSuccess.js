@@ -1,8 +1,8 @@
 const resSuccess = ({ res, ...params }) => {
 	return res.status(200).json({
-		type: "success",
+		type: 'success',
 		...params,
-	});
-};
+	})
+}
 
-module.exports = resSuccess;
+module.exports = resSuccess

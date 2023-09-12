@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
 /*
  * Журнал всех операций с платежной системой
@@ -13,9 +13,9 @@ const paymentLogSchema = new mongoose.Schema(
 			// Тип платежного лога
 			type: String,
 			enum: [
-				"trial", // Пробная подписка
-				"paid", // Оплачен пользователем
-				"issued-by-admin", // Выдан администратором
+				'trial', // Пробная подписка
+				'paid', // Оплачен пользователем
+				'issued-by-admin', // Выдан администратором
 			],
 		},
 		startAt: Date, // Дата начала действия тарифа
@@ -31,14 +31,14 @@ const paymentLogSchema = new mongoose.Schema(
 			// Статус платежа
 			type: String,
 			enum: [
-				"AUTHORIZED", // Деньги захолдированы на карте клиента. Ожидается подтверждение операции
-				"CONFIRMED", // Операция подтверждена
-				"PARTIAL_REVERSED", // Частичная отмена
-				"REVERSED", // Операция отменена
-				"PARTIAL_REFUNDED", // Произведён частичный возврат
-				"REFUNDED", // Произведён возврат
-				"REJECTED", // Списание денежных средств закончилась ошибкой
-				"3DS_CHECKING", // Автоматическое закрытие сессии, которая превысила срок пребывания в статусе 3DS_CHECKING (более 36 часов)
+				'AUTHORIZED', // Деньги захолдированы на карте клиента. Ожидается подтверждение операции
+				'CONFIRMED', // Операция подтверждена
+				'PARTIAL_REVERSED', // Частичная отмена
+				'REVERSED', // Операция отменена
+				'PARTIAL_REFUNDED', // Произведён частичный возврат
+				'REFUNDED', // Произведён возврат
+				'REJECTED', // Списание денежных средств закончилась ошибкой
+				'3DS_CHECKING', // Автоматическое закрытие сессии, которая превысила срок пребывания в статусе 3DS_CHECKING (более 36 часов)
 			],
 		},
 		paymentId: String, // Уникальный идентификатор транзакции в системе Тинькофф Кассы
@@ -53,7 +53,7 @@ const paymentLogSchema = new mongoose.Schema(
 	},
 	{
 		timestamps: true,
-	},
-);
+	}
+)
 
-module.exports = mongoose.model("PaymentLog", paymentLogSchema);
+module.exports = mongoose.model('PaymentLog', paymentLogSchema)

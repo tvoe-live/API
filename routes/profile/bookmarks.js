@@ -1,24 +1,24 @@
-const express = require("express");
-const router = express.Router();
-const Movie = require("../../models/movie");
-const verify = require("../../middlewares/verify");
-const resError = require("../../helpers/resError");
-const movieOperations = require("../../helpers/movieOperations");
+const express = require('express')
+const router = express.Router()
+const Movie = require('../../models/movie')
+const verify = require('../../middlewares/verify')
+const resError = require('../../helpers/resError')
+const movieOperations = require('../../helpers/movieOperations')
 
 /*
  * Профиль > Закладки
  */
 
-router.get("/", verify.token, async (req, res) => {
-	const skip = +req.query.skip || 0;
-	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
+router.get('/', verify.token, async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	const lookup = [
 		{
 			$lookup: {
-				from: "moviebookmarks",
-				localField: "_id",
-				foreignField: "movieId",
+				from: 'moviebookmarks',
+				localField: '_id',
+				foreignField: 'movieId',
 				pipeline: [
 					{
 						$match: {
@@ -28,11 +28,11 @@ router.get("/", verify.token, async (req, res) => {
 					},
 					{ $sort: { updatedAt: -1 } },
 				],
-				as: "bookmark",
+				as: 'bookmark',
 			},
 		},
-		{ $unwind: "$bookmark" },
-	];
+		{ $unwind: '$bookmark' },
+	]
 
 	try {
 		Movie.aggregate(
@@ -55,7 +55,7 @@ router.get("/", verify.token, async (req, res) => {
 							...movieOperations({
 								addToProject: {
 									poster: { src: true },
-									addedToBookmarkAt: "$bookmark.updatedAt",
+									addedToBookmarkAt: '$bookmark.updatedAt',
 								},
 								skip,
 								limit,
@@ -64,21 +64,21 @@ router.get("/", verify.token, async (req, res) => {
 						],
 					},
 				},
-				{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
+				{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 				{
 					$project: {
-						totalSize: { $cond: ["$totalSize.count", "$totalSize.count", 0] },
-						items: "$items",
+						totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+						items: '$items',
 					},
 				},
 			],
 			(err, result) => {
-				return res.status(200).json(result[0]);
-			},
-		);
+				return res.status(200).json(result[0])
+			}
+		)
 	} catch (err) {
-		return resError({ res, msg: err });
+		return resError({ res, msg: err })
 	}
-});
+})
 
-module.exports = router;
+module.exports = router
