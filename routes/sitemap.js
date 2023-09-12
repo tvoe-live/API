@@ -16,6 +16,7 @@ router.get("/", async (req, res) => {
 		const sitemapUrls = [];
 
 		let x = 5;
+		let y = 9999;
 
 		const movies = await Movie.aggregate([
 			{ $match: { publishedAt: { $ne: null } } },
