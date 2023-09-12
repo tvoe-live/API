@@ -17,7 +17,6 @@ const mongoose = require("mongoose");
  * Список всех промокодов
  */
 router.get("/", verify.token, verify.isAdmin, async (req, res) => {
-	console.log("I am here");
 	const skip = +req.query.skip || 0;
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20);
 
@@ -72,7 +71,6 @@ router.get("/", verify.token, verify.isAdmin, async (req, res) => {
 				},
 			],
 			async (err, result) => {
-				console.log("result:", result);
 				return res.status(200).json(result[0]);
 			},
 		);
