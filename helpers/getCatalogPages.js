@@ -1,5 +1,5 @@
-const Movie = require('../models/movie');
-const movieOperations = require('../helpers/movieOperations');
+const Movie = require("../models/movie");
+const movieOperations = require("../helpers/movieOperations");
 
 /*
  * Список всех страниц фильмов и сериалос с жанрами и годами
@@ -7,7 +7,7 @@ const movieOperations = require('../helpers/movieOperations');
 
 const getCatalogPages = async ({ categoryAlias, showGenreName }) => {
 	const projectGenreName = showGenreName ? { genreName: true } : {};
-	const addToMatch = categoryAlias && categoryAlias !== 'collections' ? { categoryAlias } : {};
+	const addToMatch = categoryAlias && categoryAlias !== "collections" ? { categoryAlias } : {};
 
 	const resultPages = await Movie.aggregate([
 		...movieOperations({
@@ -19,116 +19,146 @@ const getCatalogPages = async ({ categoryAlias, showGenreName }) => {
 			},
 		}),
 		{ $unwind: { path: "$genres" } },
-		{ $group: {
+		{
+			$group: {
 				_id: {
 					genreAlias: "$genres.alias",
 					categoryAlias: "$categoryAlias",
-					dateReleased: { $substr: [ "$dateReleased", 0, 4 ] },
+					dateReleased: { $substr: ["$dateReleased", 0, 4] },
 				},
-				rating: { 
-					$addToSet: "$rating"
+				rating: {
+					$addToSet: "$rating",
 				},
 				genreName: {
-					$addToSet: "$genres.name"
-				}
-		} },
+					$addToSet: "$genres.name",
+				},
+			},
+		},
 		{ $unwind: { path: "$rating", preserveNullAndEmptyArrays: true } },
 		{ $unwind: { path: "$genreName" } },
-		{ $project: {
-			_id: false,
-			...projectGenreName,
-			rating: "$rating",
-			//rating: { $round: [ "$rating", 0 ] },
-			genreAlias: "$_id.genreAlias",
-			dateReleased: "$_id.dateReleased",
-			categoryAlias: "$_id.categoryAlias",
-		} },
-		{ $sort: {
-			genreAlias: 1,
-			dateReleased: 1,
-			categoryAlias: 1,
-		} },
+		{
+			$project: {
+				_id: false,
+				...projectGenreName,
+				rating: "$rating",
+				//rating: { $round: [ "$rating", 0 ] },
+				genreAlias: "$_id.genreAlias",
+				dateReleased: "$_id.dateReleased",
+				categoryAlias: "$_id.categoryAlias",
+			},
+		},
+		{
+			$sort: {
+				genreAlias: 1,
+				dateReleased: 1,
+				categoryAlias: 1,
+			},
+		},
 	]);
 
 	// Страницы двух категорий: фильмы и сериалы
-	const categoryPages = categoryAlias ? [
-		{ categoryAlias },
-	] : [
-		{ categoryAlias: 'films' },
-		{ categoryAlias: 'serials' }
-	];
+	const categoryPages = categoryAlias
+		? [{ categoryAlias }]
+		: [{ categoryAlias: "films" }, { categoryAlias: "serials" }];
 
 	// Страницы с категорией, жанром и годом
-	const categoryAndGenresAndDates = resultPages
-					.filter(page =>
-						page.rating !== null && 
-						page.genreAlias !== "" && 
-						page.dateReleased !== "" &&
-						page.categoryAlias !== "");
+	const categoryAndGenresAndDates = resultPages.filter(
+		(page) =>
+			page.rating !== null &&
+			page.genreAlias !== "" &&
+			page.dateReleased !== "" &&
+			page.categoryAlias !== "",
+	);
 
 	// Страницы с объединением жанров из фильмов и сериалов
 	const collectionAndGenres = categoryAndGenresAndDates
-								.map(page => ({
-									genreName: page.genreName,
-									genreAlias: page.genreAlias,
-									categoryAlias: 'collections'
-								}))
-								.filter((value, index, self) => // Фильтрация на уникальность
-									index === self.findIndex((t) => (
-										t.genreAlias === value.genreAlias && 
-										t.categoryAlias === 'collections'
-									))
-								);
-	
+		.map((page) => ({
+			genreName: page.genreName,
+			genreAlias: page.genreAlias,
+			categoryAlias: "collections",
+		}))
+		.filter(
+			(
+				value,
+				index,
+				self, // Фильтрация на уникальность
+			) =>
+				index ===
+				self.findIndex(
+					(t) => t.genreAlias === value.genreAlias && t.categoryAlias === "collections",
+				),
+		);
+
 	// Страницы с категорией и жанром
 	const categoryAndGenres = categoryAndGenresAndDates
-								.map(page => ({
-									genreName: page.genreName,
-									genreAlias: page.genreAlias,
-									categoryAlias: page.categoryAlias
-								}))
-								.filter((value, index, self) => // Фильтрация на уникальность
-									index === self.findIndex((t) => (
-										t.genreAlias === value.genreAlias && 
-										t.categoryAlias === value.categoryAlias
-									))
-								);
+		.map((page) => ({
+			genreName: page.genreName,
+			genreAlias: page.genreAlias,
+			categoryAlias: page.categoryAlias,
+		}))
+		.filter(
+			(
+				value,
+				index,
+				self, // Фильтрация на уникальность
+			) =>
+				index ===
+				self.findIndex(
+					(t) =>
+						t.genreAlias === value.genreAlias &&
+						t.categoryAlias === value.categoryAlias,
+				),
+		);
 
 	// Страницы с категорией и годом
 	const categoryAndDates = categoryAndGenresAndDates
-								.map(page => ({
-									dateReleased: page.dateReleased,
-									categoryAlias: page.categoryAlias
-								}))
-								.filter((value, index, self) => // Фильтрация на уникальность
-									index === self.findIndex((t) => (
-										t.categoryAlias === value.categoryAlias && 
-										t.dateReleased === value.dateReleased
-									))
-								);
+		.map((page) => ({
+			dateReleased: page.dateReleased,
+			categoryAlias: page.categoryAlias,
+		}))
+		.filter(
+			(
+				value,
+				index,
+				self, // Фильтрация на уникальность
+			) =>
+				index ===
+				self.findIndex(
+					(t) =>
+						t.categoryAlias === value.categoryAlias &&
+						t.dateReleased === value.dateReleased,
+				),
+		);
 
 	// Страницы с категорией и рейтингом
 	const categoryAndRating = categoryAndGenresAndDates
-								.map(page => ({
-									rating: page.rating,
-									categoryAlias: page.categoryAlias
-								}))
-								.filter((value, index, self) => // Фильтрация на уникальность
-									index === self.findIndex((t) => (
-										t.categoryAlias === value.categoryAlias && 
-										+t.rating === +value.rating && 
-										t.rating !== null &&
-										t.rating !== ""
-									))
-								);
-	
+		.map((page) => ({
+			rating: page.rating,
+			categoryAlias: page.categoryAlias,
+		}))
+		.filter(
+			(
+				value,
+				index,
+				self, // Фильтрация на уникальность
+			) =>
+				index ===
+				self.findIndex(
+					(t) =>
+						t.categoryAlias === value.categoryAlias &&
+						+t.rating === +value.rating &&
+						t.rating !== null &&
+						t.rating !== "",
+				),
+		);
+
 	const result = [
 		...categoryPages,
 		...categoryAndRating,
 		...categoryAndDates,
 		...categoryAndGenres,
 		...collectionAndGenres,
-		...categoryAndGenresAndDates
+		...categoryAndGenresAndDates,
 	].flat();
 
 	return result;
