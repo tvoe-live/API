@@ -4179,6 +4179,11 @@ paths:
           schema:
             type: string
           description: Вид категориии. Может быть films, serials или collections
+        - in: query
+          name: rating
+          schema:
+            type: number
+          description: Рейтинг фильма
       responses:
         '200':
           description: OK
