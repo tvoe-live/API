@@ -100,7 +100,7 @@ router.get('/', verify.token, async (req, res) => {
 									},
 								},
 							},
-							{ $sort: { willPublishedAt: -1 } },
+							{ $sort: { isReaded: 1, willPublishedAt: -1 } },
 							{ $skip: skip },
 							{ $limit: limit },
 						],

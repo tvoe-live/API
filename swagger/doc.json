@@ -10,10 +10,7 @@
 		{ "name": "Sitemap", "description": "Данные для sitemap.xml" },
 		{ "name": "Payment", "description": "Тарифы, создание и обработка платежей" },
 		{ "name": "Search", "description": "Поиск" },
-		{
-			"name": "Auth",
-			"description": "Авторизация / регистрация через Яндекс и разрушение сессии"
-		},
+		{ "name": "Auth", "description": "Авторизация / регистрация через Яндекс и разрушение сессии" },
 		{ "name": "Movies", "description": "Фильмы и сериалы" },
 		{ "name": "Referral", "description": "Реферальная программа" }
 	],
@@ -31,30 +28,15 @@
 									"type": "object",
 									"properties": {
 										"_id": { "type": "string", "description": "Profile id" },
-										"email": {
-											"type": "string",
-											"description": "Email user(profile)"
-										},
-										"avatar": {
-											"type": "string",
-											"description": "Path to img src profile user"
-										},
-										"firstname": {
-											"type": "string",
-											"description": "Имя этого человека"
-										},
+										"email": { "type": "string", "description": "Email user(profile)" },
+										"avatar": { "type": "string", "description": "Path to img src profile user" },
+										"firstname": { "type": "string", "description": "Имя этого человека" },
 										"subscribe": {
 											"type": "object",
 											"description": "Информация по подписке. Если подписки нет, в этом поле null",
 											"properties": {
-												"startAt": {
-													"type": "Date",
-													"description": "Дата начала подписки"
-												},
-												"finishAt": {
-													"type": "Date",
-													"description": "Дата окончания подписки"
-												},
+												"startAt": { "type": "Date", "description": "Дата начала подписки" },
+												"finishAt": { "type": "Date", "description": "Дата окончания подписки" },
 												"tariffId": {
 													"type": "string",
 													"description": "Id тарифа (mongoose.ObjectId)"
@@ -68,6 +50,11 @@
 										"role": {
 											"type": "string",
 											"description": "Admin, manager или, если это обычный пользователь - это поле отсуствует."
+										},
+										"disabledNotifications": {
+											"type": "Array",
+											"description": "Типы отключенных уведомлений - 'SERVICE_NEWS', 'GIFTS_AND_PROMOTIONS', 'PROFILE', 'CINEMA_NEWS', 'SERVICE_NOVELTIES', 'FAVOTITES_AND_BOOKMARKS_NEWS'",
+											"items": { "type": "string", "description": "Тип отключенного уведомления" }
 										}
 									},
 									"example": {
@@ -81,7 +68,11 @@
 											"startAt": "2021-04-13T07:41:42.000Z",
 											"finishAt": "2021-04-13T07:41:42.000Z",
 											"tariffId": "63dbe1687f457bc81bc920cb"
-										}
+										},
+										"disabledNotifications": [
+											"GIFTS_AND_PROMOTIONS",
+											"FAVOTITES_AND_BOOKMARKS_NEWS"
+										]
 									}
 								}
 							}
@@ -100,14 +91,8 @@
 								"schema": {
 									"type": "object",
 									"properties": {
-										"type": {
-											"type": "string",
-											"description": "Успешно или нет"
-										},
-										"alert": {
-											"type": "boolean",
-											"description": "Булевое значение"
-										},
+										"type": { "type": "string", "description": "Успешно или нет" },
+										"alert": { "type": "boolean", "description": "Булевое значение" },
 										"msg": {
 											"type": "string",
 											"description": "Сообщение \"Имя пользователя обновлено\""
@@ -171,14 +156,8 @@
 											"type": "object",
 											"description": "Информация по срокам удаления. Восстановить аккаунт можно только в течение одного месяца после удаления",
 											"properties": {
-												"start": {
-													"type": "Date",
-													"description": "Дата удаления"
-												},
-												"finish": {
-													"type": "Date",
-													"description": "Дата удаления + 1 месяц"
-												}
+												"start": { "type": "Date", "description": "Дата удаления" },
+												"finish": { "type": "Date", "description": "Дата удаления + 1 месяц" }
 											}
 										}
 									},
@@ -207,10 +186,7 @@
 								"schema": {
 									"type": "object",
 									"properties": {
-										"deleted": {
-											"type": "null",
-											"description": "Обнуление поля в модели"
-										}
+										"deleted": { "type": "null", "description": "Обнуление поля в модели" }
 									},
 									"example": { "deleted": null }
 								}
@@ -250,14 +226,8 @@
 									"properties": {
 										"type": { "type": "string", "description": "success" },
 										"alert": { "type": "boolean", "description": true },
-										"src": {
-											"type": "string",
-											"description": "Путь к картинке"
-										},
-										"msg": {
-											"type": "string",
-											"description": "Информационное ообщение"
-										}
+										"src": { "type": "string", "description": "Путь к картинке" },
+										"msg": { "type": "string", "description": "Информационное ообщение" }
 									},
 									"example": {
 										"type": "success",
@@ -282,22 +252,13 @@
 								"schema": {
 									"type": "object",
 									"properties": {
-										"type": {
-											"type": "string",
-											"description": "Выводит надпись \"success\""
-										},
+										"type": { "type": "string", "description": "Выводит надпись \"success\"" },
 										"src": {
 											"type": "null",
 											"description": "Здесь происходит обнуление поля в таблице"
 										},
-										"alert": {
-											"type": "boolean",
-											"description": "Показывает true"
-										},
-										"msg": {
-											"type": "string",
-											"description": "Выводит надпись \"Аватар удален\""
-										}
+										"alert": { "type": "boolean", "description": "Показывает true" },
+										"msg": { "type": "string", "description": "Выводит надпись \"Аватар удален\"" }
 									},
 									"example": {
 										"type": "success",
@@ -349,21 +310,12 @@
 											"items": {
 												"type": "object",
 												"properties": {
-													"name": {
-														"type": "string",
-														"description": "Название фильма"
-													},
-													"shortDesc": {
-														"type": "string",
-														"description": "Краткое описание"
-													},
+													"name": { "type": "string", "description": "Название фильма" },
+													"shortDesc": { "type": "string", "description": "Краткое описание" },
 													"trailer": {
 														"type": "object",
 														"properties": {
-															"id": {
-																"type": "string",
-																"description": "Mongoose.ObjectId"
-															},
+															"id": { "type": "string", "description": "Mongoose.ObjectId" },
 															"src": {
 																"type": "string",
 																"description": "Путь к файлу изображению обложки"
@@ -372,20 +324,11 @@
 																"type": "string",
 																"description": "Миниатюра (кадр из видео)"
 															},
-															"duration": {
-																"type": "number",
-																"description": "Длительность"
-															}
+															"duration": { "type": "number", "description": "Длительность" }
 														}
 													},
-													"ageLevel": {
-														"type": "string",
-														"description": "Возрастное ограничение"
-													},
-													"dateReleased": {
-														"type": "Date",
-														"description": "Дата релиза"
-													},
+													"ageLevel": { "type": "string", "description": "Возрастное ограничение" },
+													"dateReleased": { "type": "Date", "description": "Дата релиза" },
 													"categoryAlias": {
 														"type": "string",
 														"description": "Вид категориии. Может быть films, serials или collections"
@@ -393,24 +336,15 @@
 													"poster": {
 														"type": "object",
 														"properties": {
-															"src": {
-																"type": "string",
-																"description": "Путь к файлу изображению"
-															}
+															"src": { "type": "string", "description": "Путь к файлу изображению" }
 														}
 													},
-													"rating": {
-														"type": "number",
-														"description": "Рейтинг от 0 до 10"
-													},
+													"rating": { "type": "number", "description": "Рейтинг от 0 до 10" },
 													"duration": {
 														"type": "string",
 														"description": "Длительность фильма в секундах"
 													},
-													"url": {
-														"type": "string",
-														"description": "Url к фильму"
-													},
+													"url": { "type": "string", "description": "Url к фильму" },
 													"addedToBookmarkAt": {
 														"type": "Date",
 														"description": "Дата добавления фильма/cериала в закладки"
@@ -436,9 +370,7 @@
 													"ageLevel": 18,
 													"dateReleased": "2021-06-15",
 													"categoryAlias": "films",
-													"poster": {
-														"src": "/images/641f4080944e8bd192d18318.jpg"
-													},
+													"poster": { "src": "/images/641f4080944e8bd192d18318.jpg" },
 													"rating": 7,
 													"duration": 5892,
 													"url": "/p/amerika-film",
@@ -455,9 +387,7 @@
 													"ageLevel": 16,
 													"dateReleased": "2023-02-17",
 													"categoryAlias": "films",
-													"poster": {
-														"src": "/images/63fded0598e2af31cb68b46f.jpg"
-													},
+													"poster": { "src": "/images/63fded0598e2af31cb68b46f.jpg" },
 													"rating": 6,
 													"duration": 7063.708333,
 													"url": "/p/snyat-blokirovku",
@@ -510,21 +440,12 @@
 											"items": {
 												"type": "object",
 												"properties": {
-													"name": {
-														"type": "string",
-														"description": "Название фильма"
-													},
-													"shortDesc": {
-														"type": "string",
-														"description": "Краткое описание"
-													},
+													"name": { "type": "string", "description": "Название фильма" },
+													"shortDesc": { "type": "string", "description": "Краткое описание" },
 													"trailer": {
 														"type": "object",
 														"properties": {
-															"id": {
-																"type": "string",
-																"description": "Mongoose.ObjectId"
-															},
+															"id": { "type": "string", "description": "Mongoose.ObjectId" },
 															"src": {
 																"type": "string",
 																"description": "Путь к файлу изображению обложки"
@@ -533,20 +454,11 @@
 																"type": "string",
 																"description": "Миниатюра (кадр из видео)"
 															},
-															"duration": {
-																"type": "number",
-																"description": "Длительность"
-															}
+															"duration": { "type": "number", "description": "Длительность" }
 														}
 													},
-													"ageLevel": {
-														"type": "string",
-														"description": "Возрастное ограничение"
-													},
-													"dateReleased": {
-														"type": "Date",
-														"description": "Дата релиза"
-													},
+													"ageLevel": { "type": "string", "description": "Возрастное ограничение" },
+													"dateReleased": { "type": "Date", "description": "Дата релиза" },
 													"categoryAlias": {
 														"type": "string",
 														"description": "Вид категориии. Может быть films, serials или collections"
@@ -554,16 +466,10 @@
 													"poster": {
 														"type": "object",
 														"properties": {
-															"src": {
-																"type": "string",
-																"description": "Путь к файлу изображению"
-															}
+															"src": { "type": "string", "description": "Путь к файлу изображению" }
 														}
 													},
-													"rating": {
-														"type": "number",
-														"description": "Рейтинг от 0 до 10"
-													},
+													"rating": { "type": "number", "description": "Рейтинг от 0 до 10" },
 													"duration": {
 														"type": "string",
 														"description": "Длительность фильма в секундах"
@@ -597,9 +503,7 @@
 													"ageLevel": 18,
 													"dateReleased": "2021-06-15",
 													"categoryAlias": "films",
-													"poster": {
-														"src": "/images/641f4080944e8bd192d18318.jpg"
-													},
+													"poster": { "src": "/images/641f4080944e8bd192d18318.jpg" },
 													"rating": 7,
 													"duration": 5892,
 													"url": "/p/amerika-film",
@@ -616,9 +520,7 @@
 													"ageLevel": 16,
 													"dateReleased": "2023-02-17",
 													"categoryAlias": "films",
-													"poster": {
-														"src": "/images/63fded0598e2af31cb68b46f.jpg"
-													},
+													"poster": { "src": "/images/63fded0598e2af31cb68b46f.jpg" },
 													"rating": 6,
 													"duration": 7063.708333,
 													"url": "/p/snyat-blokirovku",
@@ -671,21 +573,12 @@
 											"items": {
 												"type": "object",
 												"properties": {
-													"name": {
-														"type": "string",
-														"description": "Название фильма"
-													},
-													"shortDesc": {
-														"type": "string",
-														"description": "Краткое описание"
-													},
+													"name": { "type": "string", "description": "Название фильма" },
+													"shortDesc": { "type": "string", "description": "Краткое описание" },
 													"trailer": {
 														"type": "object",
 														"properties": {
-															"id": {
-																"type": "string",
-																"description": "Mongoose.ObjectId"
-															},
+															"id": { "type": "string", "description": "Mongoose.ObjectId" },
 															"src": {
 																"type": "string",
 																"description": "Путь к файлу изображению обложки"
@@ -694,20 +587,11 @@
 																"type": "string",
 																"description": "Миниатюра (кадр из видео)"
 															},
-															"duration": {
-																"type": "number",
-																"description": "Длительность"
-															}
+															"duration": { "type": "number", "description": "Длительность" }
 														}
 													},
-													"ageLevel": {
-														"type": "string",
-														"description": "Возрастное ограничение"
-													},
-													"dateReleased": {
-														"type": "Date",
-														"description": "Дата релиза"
-													},
+													"ageLevel": { "type": "string", "description": "Возрастное ограничение" },
+													"dateReleased": { "type": "Date", "description": "Дата релиза" },
 													"categoryAlias": {
 														"type": "string",
 														"description": "Вид категориию. Может быть films, serials или collections"
@@ -715,24 +599,15 @@
 													"poster": {
 														"type": "object",
 														"properties": {
-															"src": {
-																"type": "string",
-																"description": "Путь к файлу изображению"
-															}
+															"src": { "type": "string", "description": "Путь к файлу изображению" }
 														}
 													},
-													"rating": {
-														"type": "number",
-														"description": "Рейтинг от 0 до 10"
-													},
+													"rating": { "type": "number", "description": "Рейтинг от 0 до 10" },
 													"duration": {
 														"type": "string",
 														"description": "Длительность фильма в секундах"
 													},
-													"url": {
-														"type": "string",
-														"description": "Путь к фильму"
-													},
+													"url": { "type": "string", "description": "Путь к фильму" },
 													"moviepagelogs": {
 														"type": "object",
 														"properties": {
@@ -746,19 +621,13 @@
 															},
 															"updatedAt": {
 																"type": "array",
-																"items": {
-																	"type": "Date",
-																	"description": "Дата обновления"
-																}
+																"items": { "type": "Date", "description": "Дата обновления" }
 															}
 														}
 													},
 													"lastLogUpdatedAt": {
 														"type": "array",
-														"items": {
-															"type": "Date",
-															"description": "Дата последнего обновления"
-														}
+														"items": { "type": "Date", "description": "Дата последнего обновления" }
 													}
 												}
 											}
@@ -781,9 +650,7 @@
 													"ageLevel": 18,
 													"dateReleased": "2021-06-15",
 													"categoryAlias": "films",
-													"poster": {
-														"src": "/images/641f4080944e8bd192d18318.jpg"
-													},
+													"poster": { "src": "/images/641f4080944e8bd192d18318.jpg" },
 													"rating": 7,
 													"duration": 5892,
 													"url": "/p/amerika-film",
@@ -805,9 +672,7 @@
 													"ageLevel": 18,
 													"dateReleased": "2023-02-17",
 													"categoryAlias": "films",
-													"poster": {
-														"src": "/images/63fded0598e2af31cb68b46f.jpg"
-													},
+													"poster": { "src": "/images/63fded0598e2af31cb68b46f.jpg" },
 													"rating": 10,
 													"duration": 7063.708333,
 													"url": "/p/snyat-blokirovku",
@@ -878,18 +743,9 @@
 											"items": {
 												"type": "object",
 												"properties": {
-													"_id": {
-														"type": "string",
-														"description": "Id тарифа"
-													},
-													"name": {
-														"type": "string",
-														"description": "Название тарифа"
-													},
-													"price": {
-														"type": "number",
-														"description": "Цена тарифа"
-													},
+													"_id": { "type": "string", "description": "Id тарифа" },
+													"name": { "type": "string", "description": "Название тарифа" },
+													"price": { "type": "number", "description": "Цена тарифа" },
 													"sort": {
 														"type": "number",
 														"description": "Сорт тарифа ( номер для сортировки )"
@@ -899,10 +755,7 @@
 														"description": "Название фильма",
 														"required": false
 													},
-													"discount": {
-														"type": "number",
-														"description": "Cкидка"
-													}
+													"discount": { "type": "number", "description": "Cкидка" }
 												}
 											}
 										},
@@ -917,18 +770,9 @@
 											"items": {
 												"type": "object",
 												"properties": {
-													"_id": {
-														"type": "string",
-														"description": "Id оплаты"
-													},
-													"type": {
-														"type": "string",
-														"description": "Тип оплаты"
-													},
-													"startAt": {
-														"type": "Date",
-														"description": "Дата оплаты"
-													},
+													"_id": { "type": "string", "description": "Id оплаты" },
+													"type": { "type": "string", "description": "Тип оплаты" },
+													"startAt": { "type": "Date", "description": "Дата оплаты" },
 													"finishAt": {
 														"type": "Date",
 														"description": "Дата окончания срока действия оплаты"
@@ -936,18 +780,9 @@
 													"tariff": {
 														"type": "object",
 														"properties": {
-															"_id": {
-																"type": "string",
-																"description": "Id тарифа"
-															},
-															"name": {
-																"type": "string",
-																"description": "Название тарифа"
-															},
-															"price": {
-																"type": "number",
-																"description": "Цена тарифа"
-															}
+															"_id": { "type": "string", "description": "Id тарифа" },
+															"name": { "type": "string", "description": "Название тарифа" },
+															"price": { "type": "number", "description": "Цена тарифа" }
 														}
 													}
 												}
@@ -1037,10 +872,7 @@
 								"schema": {
 									"type": "object",
 									"properties": {
-										"userToken": {
-											"type": "string",
-											"description": "JWT Токен юзера"
-										},
+										"userToken": { "type": "string", "description": "JWT Токен юзера" },
 										"totalSize": {
 											"type": "number",
 											"description": "Общее количество устройств, с которых был выполнен вход"
@@ -1053,22 +885,13 @@
 											"items": {
 												"type": "object",
 												"properties": {
-													"token": {
-														"type": "string",
-														"description": "JWT Токен юзера"
-													},
-													"ip": {
-														"type": "string",
-														"description": "Ip адресс юзера"
-													},
+													"token": { "type": "string", "description": "JWT Токен юзера" },
+													"ip": { "type": "string", "description": "Ip адресс юзера" },
 													"os": {
 														"type": "string",
 														"description": "Операционная система устройства"
 													},
-													"isBot": {
-														"type": "boolean",
-														"description": "Является ли юзер ботом"
-													},
+													"isBot": { "type": "boolean", "description": "Является ли юзер ботом" },
 													"isMobile": {
 														"type": "boolean",
 														"description": "Является ли дейвайс мобильным устройством"
@@ -1077,22 +900,13 @@
 														"type": "boolean",
 														"description": "Является ли дейвайс десктопным устройством"
 													},
-													"browser": {
-														"type": "string",
-														"description": "Название браузера"
-													},
-													"version": {
-														"type": "string",
-														"description": "Версия браузера"
-													},
+													"browser": { "type": "string", "description": "Название браузера" },
+													"version": { "type": "string", "description": "Версия браузера" },
 													"platform": {
 														"type": "string",
 														"description": "Платформа устройства ( ос)"
 													},
-													"createdAt": {
-														"type": "Date",
-														"description": "Дата создания"
-													},
+													"createdAt": { "type": "Date", "description": "Дата создания" },
 													"_id": {
 														"type": "string",
 														"description": "Id сессии (mongoose.Schema.Types.ObjectId)"
@@ -1181,10 +995,7 @@
 														"type": "string",
 														"description": "Id (mongoose.ObjectId) уведомления"
 													},
-													"title": {
-														"type": "string",
-														"description": "Название уведомления"
-													},
+													"title": { "type": "string", "description": "Название уведомления" },
 													"description": {
 														"type": "string",
 														"description": "Описаниее в уведомлении",
@@ -1198,10 +1009,7 @@
 														"type": "string",
 														"description": "Планируемая дата публикации уведомления"
 													},
-													"link": {
-														"type": "string",
-														"description": "Ссылка"
-													}
+													"link": { "type": "string", "description": "Ссылка" }
 												}
 											}
 										}
@@ -1255,10 +1063,7 @@
 							"schema": {
 								"type": "object",
 								"properties": {
-									"title": {
-										"type": "string",
-										"description": "Название уведомления"
-									},
+									"title": { "type": "string", "description": "Название уведомления" },
 									"description": {
 										"type": "string",
 										"description": "Описаниее в уведомлении",
@@ -1295,10 +1100,7 @@
 									"properties": {
 										"id": { "type": "string", "description": "id уведомления" },
 										"success": { "type": "boolean", "description": true },
-										"title": {
-											"type": "string",
-											"description": "Название уведомления"
-										},
+										"title": { "type": "string", "description": "Название уведомления" },
 										"description": {
 											"type": "string",
 											"description": "Описаниее в уведомлении",
@@ -1323,14 +1125,8 @@
 										"img": {
 											"type": "object",
 											"properties": {
-												"_id": {
-													"type": "string",
-													"description": "Id файла (mongoose.ObjectId)"
-												},
-												"src": {
-													"type": "string",
-													"description": "Ссылка на файл изображение"
-												}
+												"_id": { "type": "string", "description": "Id файла (mongoose.ObjectId)" },
+												"src": { "type": "string", "description": "Ссылка на файл изображение" }
 											}
 										}
 									},
@@ -1373,10 +1169,7 @@
 							"schema": {
 								"type": "object",
 								"properties": {
-									"title": {
-										"type": "string",
-										"description": "Название уведомления"
-									},
+									"title": { "type": "string", "description": "Название уведомления" },
 									"description": {
 										"type": "string",
 										"description": "Описаниее в уведомлении",
@@ -1412,17 +1205,10 @@
 									"type": "object",
 									"properties": {
 										"type": { "type": "string", "description": "success" },
-										"msg": {
-											"type": "string",
-											"description": "Уведомление обновлено"
-										},
+										"msg": { "type": "string", "description": "Уведомление обновлено" },
 										"alert": { "type": "boolean", "description": true }
 									},
-									"example": {
-										"type": "success",
-										"alert": true,
-										"msg": "Уведомление обновлено"
-									}
+									"example": { "type": "success", "alert": true, "msg": "Уведомление обновлено" }
 								}
 							}
 						}
@@ -1438,10 +1224,7 @@
 							"schema": {
 								"type": "object",
 								"properties": {
-									"_id": {
-										"type": "string",
-										"description": "Id уведомления для удаления"
-									}
+									"_id": { "type": "string", "description": "Id уведомления для удаления" }
 								}
 							}
 						}
@@ -1456,14 +1239,8 @@
 									"type": "object",
 									"properties": {
 										"type": { "type": "string", "description": "success" },
-										"_id": {
-											"type": "string",
-											"description": "Id уведомления для удаления"
-										},
-										"msg": {
-											"type": "string",
-											"description": "Успешно удалено"
-										},
+										"_id": { "type": "string", "description": "Id уведомления для удаления" },
+										"msg": { "type": "string", "description": "Успешно удалено" },
 										"alert": { "type": "boolean", "description": true }
 									},
 									"example": {
@@ -1503,10 +1280,7 @@
 											"type": "number",
 											"description": "Количество просмотров уведомления"
 										},
-										"id": {
-											"type": "number",
-											"description": "Id (mongoose.ObjectId) уведомления"
-										}
+										"id": { "type": "number", "description": "Id (mongoose.ObjectId) уведомления" }
 									},
 									"example": { "totalSize": 10, "id": "64d15212c3003ddd2d373642" }
 								}
@@ -1557,10 +1331,7 @@
 														"type": "string",
 														"description": "Id (mongoose.ObjectId) уведомления"
 													},
-													"title": {
-														"type": "string",
-														"description": "Название уведомления"
-													},
+													"title": { "type": "string", "description": "Название уведомления" },
 													"description": {
 														"type": "string",
 														"description": "Описаниее в уведомлении",
@@ -1570,21 +1341,12 @@
 														"type": "string",
 														"description": "Тип уведомления - premiere или system"
 													},
-													"updatedAt": {
-														"type": "string",
-														"description": "Дата обновления"
-													},
+													"updatedAt": { "type": "string", "description": "Дата обновления" },
 													"img": {
 														"type": "object",
 														"properties": {
-															"_id": {
-																"type": "string",
-																"description": "Id файла изображения"
-															},
-															"src": {
-																"type": "string",
-																"description": "Ссылка на изображения"
-															}
+															"_id": { "type": "string", "description": "Id файла изображения" },
+															"src": { "type": "string", "description": "Ссылка на изображения" }
 														}
 													},
 													"watchingAmount": {
@@ -1652,17 +1414,76 @@
 									"type": "object",
 									"properties": {
 										"type": { "type": "string", "description": "success" },
-										"msg": {
-											"type": "string",
-											"description": "Успешно обновлено"
-										},
+										"msg": { "type": "string", "description": "Успешно обновлено" },
 										"alert": { "type": "boolean", "description": true }
 									},
-									"example": {
-										"type": "success",
-										"alert": true,
-										"msg": "Успешно обновлено"
+									"example": { "type": "success", "alert": true, "msg": "Успешно обновлено" }
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/profile/notifications/settings": {
+			"patch": {
+				"summary": "Профиль > Настройка уведомлений ( включение и выключение определенных категорий)",
+				"tags": ["Profile"],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"description": "Ключи - виды уведомлений, значения - булевый тип, определяйющий включение если извлечение заданного типа уведомлений из списка выключенных уведомлений. False - для добавления заданного вида уведомлений в список выключенных, true - для извлечения из выключенных",
+								"properties": {
+									"SERVICE_NEWS": {
+										"type": "boolean",
+										"description": "Новости сервиса - уведомления о технических работах на сайте и новинках обновленного сервиса",
+										"required": false
+									},
+									"GIFTS_AND_PROMOTIONS": {
+										"type": "boolean",
+										"description": "Подарки и акции - бонусы для пользователей",
+										"required": false
+									},
+									"PROFILE": {
+										"type": "boolean",
+										"description": "Профиль - напоминание об окончании подписки и индивидуальные предложения",
+										"required": false
+									},
+									"CINEMA_NEWS": {
+										"type": "boolean",
+										"description": "Новинки кинематографа",
+										"required": false
+									},
+									"SERVICE_NOVELTIES": {
+										"type": "boolean",
+										"description": "Новинки на сервисе",
+										"required": false
+									},
+									"FAVOTITES_AND_BOOKMARKS_NEWS": {
+										"type": "boolean",
+										"description": "Новинки из раздела \"избранное\" и \"буду смотреть\"",
+										"required": false
 									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"type": { "type": "string", "description": "success" },
+										"msg": { "type": "string", "description": "Успешно обновлено" },
+										"alert": { "type": "boolean", "description": true }
+									},
+									"example": { "type": "success", "alert": true, "msg": "Успешно обновлено" }
 								}
 							}
 						}
@@ -1690,18 +1511,9 @@
 												"type": "string",
 												"description": "Id (mongoose.ObjectId) категории"
 											},
-											"name": {
-												"type": "string",
-												"description": "Название категории"
-											},
-											"alias": {
-												"type": "string",
-												"description": "Алиас категории"
-											},
-											"aliasInUrl": {
-												"type": "string",
-												"description": "Алиас категории в url"
-											},
+											"name": { "type": "string", "description": "Название категории" },
+											"alias": { "type": "string", "description": "Алиас категории" },
+											"aliasInUrl": { "type": "string", "description": "Алиас категории в url" },
 											"genres": {
 												"type": "array",
 												"uniqueItems": true,
@@ -1709,14 +1521,8 @@
 												"items": {
 													"type": "object",
 													"properties": {
-														"name": {
-															"type": "string",
-															"description": "Название жанра"
-														},
-														"alias": {
-															"type": "string",
-															"description": "Алиас жанра"
-														}
+														"name": { "type": "string", "description": "Название жанра" },
+														"alias": { "type": "string", "description": "Алиас жанра" }
 													}
 												}
 											}
@@ -1738,32 +1544,17 @@
 													{ "name": "Вестерны", "alias": "vesterny" },
 													{ "name": "Военные", "alias": "voennye" },
 													{ "name": "Детективы", "alias": "detektivy" },
-													{
-														"name": "Документальные",
-														"alias": "dokumentalnye"
-													},
+													{ "name": "Документальные", "alias": "dokumentalnye" },
 													{ "name": "Драмы", "alias": "dramy" },
-													{
-														"name": "Исторические",
-														"alias": "istoricheskie"
-													},
+													{ "name": "Исторические", "alias": "istoricheskie" },
 													{ "name": "Комедии", "alias": "komedii" },
-													{
-														"name": "Короткометражки",
-														"alias": "korotkometrazhki"
-													},
+													{ "name": "Короткометражки", "alias": "korotkometrazhki" },
 													{ "name": "Криминал", "alias": "kriminal" },
 													{ "name": "Мелодрамы", "alias": "melodramy" },
-													{
-														"name": "Музыкальные",
-														"alias": "muzykalnye"
-													},
+													{ "name": "Музыкальные", "alias": "muzykalnye" },
 													{ "name": "Мультфильмы", "alias": "multfilmy" },
 													{ "name": "Мюзиклы", "alias": "myuzikly" },
-													{
-														"name": "Приключения",
-														"alias": "priklyucheniya"
-													},
+													{ "name": "Приключения", "alias": "priklyucheniya" },
 													{ "name": "Семейные", "alias": "semeynye" },
 													{ "name": "Спортивные", "alias": "sportivnye" },
 													{ "name": "Триллеры", "alias": "trillery" },
@@ -1784,32 +1575,17 @@
 													{ "name": "Вестерны", "alias": "vesterny" },
 													{ "name": "Военные", "alias": "voennye" },
 													{ "name": "Детективы", "alias": "detektivy" },
-													{
-														"name": "Документальные",
-														"alias": "dokumentalnye"
-													},
+													{ "name": "Документальные", "alias": "dokumentalnye" },
 													{ "name": "Драмы", "alias": "dramy" },
-													{
-														"name": "Исторические",
-														"alias": "istoricheskie"
-													},
+													{ "name": "Исторические", "alias": "istoricheskie" },
 													{ "name": "Комедии", "alias": "komedii" },
-													{
-														"name": "Короткометражки",
-														"alias": "korotkometrazhki"
-													},
+													{ "name": "Короткометражки", "alias": "korotkometrazhki" },
 													{ "name": "Криминал", "alias": "kriminal" },
 													{ "name": "Мелодрамы", "alias": "melodramy" },
-													{
-														"name": "Музыкальные",
-														"alias": "muzykalnye"
-													},
+													{ "name": "Музыкальные", "alias": "muzykalnye" },
 													{ "name": "Мультфильмы", "alias": "multfilmy" },
 													{ "name": "Мюзиклы", "alias": "myuzikly" },
-													{
-														"name": "Приключения",
-														"alias": "priklyucheniya"
-													},
+													{ "name": "Приключения", "alias": "priklyucheniya" },
 													{ "name": "Семейные", "alias": "semeynye" },
 													{ "name": "Спортивные", "alias": "sportivnye" },
 													{ "name": "Триллеры", "alias": "trillery" },
@@ -1870,35 +1646,23 @@
 											"items": {
 												"type": "object",
 												"properties": {
-													"_id": {
-														"type": "string",
-														"description": "Profile id"
-													},
+													"_id": { "type": "string", "description": "Profile id" },
 													"role": {
 														"type": "string",
 														"required": false,
 														"description": "Роль этого профиля. Admin, manager или если это обычный пользователь то это поле отсуствует."
 													},
-													"email": {
-														"type": "string",
-														"description": "Email user(profile)"
-													},
+													"email": { "type": "string", "description": "Email user(profile)" },
 													"avatar": {
 														"type": "string",
 														"description": "Path to img src profile user"
 													},
-													"firstname": {
-														"type": "string",
-														"description": "Имя этого человека"
-													},
+													"firstname": { "type": "string", "description": "Имя этого человека" },
 													"subscribe": {
 														"type": "object",
 														"description": "Информация по подписке. Если подписки нет, в этом поле null",
 														"properties": {
-															"startAt": {
-																"type": "Date",
-																"description": "Дата начала подписки"
-															},
+															"startAt": { "type": "Date", "description": "Дата начала подписки" },
 															"finishAt": {
 																"type": "Date",
 																"description": "Дата окончания подписки"
@@ -1909,14 +1673,8 @@
 															}
 														}
 													},
-													"createdAt": {
-														"type": "Date",
-														"description": "Дата создания"
-													},
-													"updatedAt": {
-														"type": "Date",
-														"description": "Дата обновления"
-													},
+													"createdAt": { "type": "Date", "description": "Дата создания" },
+													"updatedAt": { "type": "Date", "description": "Дата обновления" },
 													"lastVisitAt": {
 														"type": "Date",
 														"description": "Дата последнего посещения"
@@ -1994,27 +1752,18 @@
 											"type": "object",
 											"description": "Общее количество сущностей в БД",
 											"properties": {
-												"_id": {
-													"type": "string",
-													"description": "Profile id"
-												},
+												"_id": { "type": "string", "description": "Profile id" },
 												"role": {
 													"type": "string",
 													"required": false,
 													"description": "Роль этого профиля. Admin, manager или если это обычный пользователь то это поле отсуствует."
 												},
-												"email": {
-													"type": "string",
-													"description": "Email user(profile)"
-												},
+												"email": { "type": "string", "description": "Email user(profile)" },
 												"avatar": {
 													"type": "string",
 													"description": "Path to img src profile user"
 												},
-												"firstname": {
-													"type": "string",
-													"description": "Имя этого человека"
-												},
+												"firstname": { "type": "string", "description": "Имя этого человека" },
 												"deleted": {
 													"type": "boolean",
 													"description": "Удален ли аккаунт. Если не удален, этого поля нет",
@@ -2024,10 +1773,7 @@
 													"type": "object",
 													"description": "Информация по подписке. Если подписки нет, в этом поле null",
 													"properties": {
-														"startAt": {
-															"type": "Date",
-															"description": "Дата начала подписки"
-														},
+														"startAt": { "type": "Date", "description": "Дата начала подписки" },
 														"finishAt": {
 															"type": "Date",
 															"description": "Дата окончания подписки"
@@ -2047,22 +1793,10 @@
 											"items": {
 												"type": "object",
 												"properties": {
-													"_id": {
-														"type": "string",
-														"description": "Profile id"
-													},
-													"name": {
-														"type": "string",
-														"description": "Название тарифа"
-													},
-													"price": {
-														"type": "number",
-														"description": "Цена тарифа"
-													},
-													"sort": {
-														"type": "string",
-														"description": "Сорт тарифа?"
-													},
+													"_id": { "type": "string", "description": "Profile id" },
+													"name": { "type": "string", "description": "Название тарифа" },
+													"price": { "type": "number", "description": "Цена тарифа" },
+													"sort": { "type": "string", "description": "Сорт тарифа?" },
 													"hidden": {
 														"type": "boolean",
 														"description": "Скрыт ли тариф",
@@ -2138,18 +1872,12 @@
 							"schema": {
 								"type": "object",
 								"properties": {
-									"id": {
-										"type": "string",
-										"description": "Id пользователя (mongoose.ObjectId)"
-									},
+									"id": { "type": "string", "description": "Id пользователя (mongoose.ObjectId)" },
 									"role": {
 										"type": "string",
 										"description": "Admin, manager или если это обычный пользователь то это поле отсуствует."
 									},
-									"tariffId": {
-										"type": "string",
-										"description": "Id тарифа (mongoose.ObjectId)"
-									}
+									"tariffId": { "type": "string", "description": "Id тарифа (mongoose.ObjectId)" }
 								}
 							}
 						}
@@ -2164,10 +1892,7 @@
 									"type": "object",
 									"properties": {
 										"type": { "type": "string", "description": "success" },
-										"msg": {
-											"type": "string",
-											"description": "Профиль обновлен"
-										}
+										"msg": { "type": "string", "description": "Профиль обновлен" }
 									},
 									"example": { "type": "success", "msg": "Профиль обновлен" }
 								}
@@ -2232,43 +1957,25 @@
 														"type": "string",
 														"description": "Id фильма (mongoose.ObjectId)"
 													},
-													"name": {
-														"type": "string",
-														"description": "Название фильма на русском"
-													},
+													"name": { "type": "string", "description": "Название фильма на русском" },
 													"origName": {
 														"type": "string",
 														"description": "Оригинальное название фильма на английском"
 													},
-													"shortDesc": {
-														"type": "string",
-														"description": "Краткое описание"
-													},
-													"fullDesc": {
-														"type": "string",
-														"description": "Полное описание"
-													},
+													"shortDesc": { "type": "string", "description": "Краткое описание" },
+													"fullDesc": { "type": "string", "description": "Полное описание" },
 													"alias": {
 														"type": "string",
 														"description": "Сгенерированный ЧПУ (человеко понятный url)"
 													},
-													"ageLevel": {
-														"type": "string",
-														"description": "Возрастное ограничение"
-													},
-													"dateReleased": {
-														"type": "string",
-														"description": "Дата выпуска"
-													},
+													"ageLevel": { "type": "string", "description": "Возрастное ограничение" },
+													"dateReleased": { "type": "string", "description": "Дата выпуска" },
 													"countries": {
 														"type": "array",
 														"description": "Cписок стран",
 														"uniqueItems": true,
 														"minItems": 0,
-														"items": {
-															"type": "string",
-															"description": "Название страны"
-														}
+														"items": { "type": "string", "description": "Название страны" }
 													},
 													"categoryAlias": {
 														"type": "string",
@@ -2279,10 +1986,7 @@
 														"description": "Cписок жанров",
 														"uniqueItems": true,
 														"minItems": 0,
-														"items": {
-															"type": "string",
-															"description": "Название жанра"
-														}
+														"items": { "type": "string", "description": "Название жанра" }
 													},
 													"persons": {
 														"type": "array",
@@ -2292,10 +1996,7 @@
 														"items": {
 															"type": "object",
 															"properties": {
-																"_id": {
-																	"type": "string",
-																	"description": "mongoose.ObjectId"
-																},
+																"_id": { "type": "string", "description": "mongoose.ObjectId" },
 																"name": {
 																	"type": "string",
 																	"description": "Имя и фамилия человека"
@@ -2367,21 +2068,12 @@
 															}
 														}
 													},
-													"createdAt": {
-														"type": "Date",
-														"description": "Дата создания"
-													},
-													"updatedAt": {
-														"type": "Date",
-														"description": "Дата обновления"
-													},
+													"createdAt": { "type": "Date", "description": "Дата создания" },
+													"updatedAt": { "type": "Date", "description": "Дата обновления" },
 													"poster": {
 														"type": "object",
 														"properties": {
-															"id": {
-																"type": "string",
-																"description": "mongoose.ObjectId"
-															},
+															"id": { "type": "string", "description": "mongoose.ObjectId" },
 															"src": {
 																"type": "string",
 																"description": "Путь к файлу изображению постера"
@@ -2391,10 +2083,7 @@
 													"cover": {
 														"type": "object",
 														"properties": {
-															"id": {
-																"type": "string",
-																"description": "Mongoose.ObjectId"
-															},
+															"id": { "type": "string", "description": "Mongoose.ObjectId" },
 															"src": {
 																"type": "string",
 																"description": "Путь к файлу изображению обложки"
@@ -2404,10 +2093,7 @@
 													"trailer": {
 														"type": "object",
 														"properties": {
-															"id": {
-																"type": "string",
-																"description": "Mongoose.ObjectId"
-															},
+															"id": { "type": "string", "description": "Mongoose.ObjectId" },
 															"src": {
 																"type": "string",
 																"description": "Путь к файлу изображению обложки"
@@ -2416,19 +2102,13 @@
 																"type": "string",
 																"description": "Миниатюра (кадр из видео)"
 															},
-															"duration": {
-																"type": "number",
-																"description": "Длительность"
-															}
+															"duration": { "type": "number", "description": "Длительность" }
 														}
 													},
 													"logo": {
 														"type": "object",
 														"properties": {
-															"id": {
-																"type": "string",
-																"description": "mongoose.ObjectId"
-															},
+															"id": { "type": "string", "description": "mongoose.ObjectId" },
 															"src": {
 																"type": "string",
 																"description": "Путь к файлу изображению логотипа"
@@ -2439,10 +2119,7 @@
 														"type": "Date",
 														"description": "Дата поднятия в списке (для актуальности)"
 													},
-													"publishedAt": {
-														"type": "Date",
-														"description": "Дата публикации"
-													}
+													"publishedAt": { "type": "Date", "description": "Дата публикации" }
 												}
 											}
 										}
@@ -2774,10 +2451,7 @@
 										"required": false,
 										"uniqueItems": true,
 										"minItems": 0,
-										"items": {
-											"type": "string",
-											"description": "Название страны"
-										}
+										"items": { "type": "string", "description": "Название страны" }
 									},
 									"categoryAlias": {
 										"required": false,
@@ -2790,10 +2464,7 @@
 										"description": "Cписок жанров",
 										"uniqueItems": true,
 										"minItems": 0,
-										"items": {
-											"type": "string",
-											"description": "Название жанра"
-										}
+										"items": { "type": "string", "description": "Название жанра" }
 									},
 									"badge": {
 										"type": "object",
@@ -2804,14 +2475,8 @@
 												"type": "string",
 												"descriptipn": "newSeason - новый сезон, premiere - премьера"
 											},
-											"startAt": {
-												"type": "date",
-												"descriptipn": "дата начала показа бейджа"
-											},
-											"finishAt": {
-												"type": "date",
-												"descriptipn": "дата окончания показа бейджа"
-											}
+											"startAt": { "type": "date", "descriptipn": "дата начала показа бейджа" },
+											"finishAt": { "type": "date", "descriptipn": "дата окончания показа бейджа" }
 										}
 									},
 									"persons": {
@@ -2823,14 +2488,8 @@
 										"items": {
 											"type": "object",
 											"properties": {
-												"_id": {
-													"type": "string",
-													"description": "Mongoose.ObjectId"
-												},
-												"name": {
-													"type": "string",
-													"description": "Имя и фамилия человека"
-												},
+												"_id": { "type": "string", "description": "Mongoose.ObjectId" },
+												"name": { "type": "string", "description": "Имя и фамилия человека" },
 												"type": {
 													"type": "string",
 													"description": "Director - режиссер, actor - актер, producer - продюсер, screenwriter - сценарист, operator - оператор"
@@ -2902,10 +2561,7 @@
 											"required": false,
 											"uniqueItems": true,
 											"minItems": 0,
-											"items": {
-												"type": "string",
-												"description": "Название страны"
-											}
+											"items": { "type": "string", "description": "Название страны" }
 										},
 										"categoryAlias": {
 											"required": false,
@@ -2918,10 +2574,7 @@
 											"description": "Cписок жанров",
 											"uniqueItems": true,
 											"minItems": 0,
-											"items": {
-												"type": "string",
-												"description": "Название жанра"
-											}
+											"items": { "type": "string", "description": "Название жанра" }
 										},
 										"badge": {
 											"type": "object",
@@ -2932,10 +2585,7 @@
 													"type": "string",
 													"descriptipn": "newSeason - новый сезон, premiere - премьера"
 												},
-												"startAt": {
-													"type": "date",
-													"descriptipn": "Дата начала показа бейджа"
-												},
+												"startAt": { "type": "date", "descriptipn": "Дата начала показа бейджа" },
 												"finishAt": {
 													"type": "date",
 													"descriptipn": "Дата окончания показа бейджа"
@@ -2951,14 +2601,8 @@
 											"items": {
 												"type": "object",
 												"properties": {
-													"_id": {
-														"type": "string",
-														"description": "mongoose.ObjectId"
-													},
-													"name": {
-														"type": "string",
-														"description": "Имя и фамилия человека"
-													},
+													"_id": { "type": "string", "description": "mongoose.ObjectId" },
+													"name": { "type": "string", "description": "Имя и фамилия человека" },
 													"type": {
 														"type": "string",
 														"description": "director - режиссер, actor - актер, producer - продюсер, screenwriter - сценарист, operator - оператор"
@@ -2966,11 +2610,7 @@
 												}
 											}
 										},
-										"alert": {
-											"type": "boolean",
-											"description": "надпись true",
-											"required": true
-										},
+										"alert": { "type": "boolean", "description": "надпись true", "required": true },
 										"msg": {
 											"type": "string",
 											"description": "Успешно сохранено",
@@ -3036,47 +2676,26 @@
 								"schema": {
 									"type": "object",
 									"properties": {
-										"_id": {
-											"type": "string",
-											"description": "Id фильма (mongoose.ObjectId)"
-										},
-										"name": {
-											"type": "string",
-											"description": "Название фильма на русском"
-										},
+										"_id": { "type": "string", "description": "Id фильма (mongoose.ObjectId)" },
+										"name": { "type": "string", "description": "Название фильма на русском" },
 										"origName": {
 											"type": "string",
 											"description": "Оригинальное название фильма на английском"
 										},
-										"shortDesc": {
-											"type": "string",
-											"description": "Краткое описание"
-										},
-										"fullDesc": {
-											"type": "string",
-											"description": "Полное описание"
-										},
+										"shortDesc": { "type": "string", "description": "Краткое описание" },
+										"fullDesc": { "type": "string", "description": "Полное описание" },
 										"alias": {
 											"type": "string",
 											"description": "Сгенерированный человекопонятный url"
 										},
-										"ageLevel": {
-											"type": "string",
-											"description": "Возрастное ограничение"
-										},
-										"dateReleased": {
-											"type": "string",
-											"description": "Дата выпуска"
-										},
+										"ageLevel": { "type": "string", "description": "Возрастное ограничение" },
+										"dateReleased": { "type": "string", "description": "Дата выпуска" },
 										"countries": {
 											"type": "array",
 											"description": "Cписок стран",
 											"uniqueItems": true,
 											"minItems": 0,
-											"items": {
-												"type": "string",
-												"description": "Название страны"
-											}
+											"items": { "type": "string", "description": "Название страны" }
 										},
 										"categoryAlias": {
 											"type": "string",
@@ -3087,10 +2706,7 @@
 											"description": "Cписок жанров",
 											"uniqueItems": true,
 											"minItems": 0,
-											"items": {
-												"type": "string",
-												"description": "Название жанра"
-											}
+											"items": { "type": "string", "description": "Название жанра" }
 										},
 										"persons": {
 											"type": "array",
@@ -3100,14 +2716,8 @@
 											"items": {
 												"type": "object",
 												"properties": {
-													"_id": {
-														"type": "string",
-														"description": "mongoose.ObjectId"
-													},
-													"name": {
-														"type": "string",
-														"description": "Имя и фамилия человека"
-													},
+													"_id": { "type": "string", "description": "mongoose.ObjectId" },
+													"name": { "type": "string", "description": "Имя и фамилия человека" },
 													"type": {
 														"type": "string",
 														"description": "director - режиссер, actor - актер, producer - продюсер, screenwriter - сценарист, operator - оператор"
@@ -3156,18 +2766,12 @@
 											"items": {
 												"type": "object",
 												"properties": {
-													"_id": {
-														"type": "string",
-														"description": "Имя и фамилия человека"
-													},
+													"_id": { "type": "string", "description": "Имя и фамилия человека" },
 													"src": {
 														"type": "string",
 														"description": "источник на файл ( путь к исходнику )"
 													},
-													"duration": {
-														"type": "number",
-														"description": "длительность фильма"
-													},
+													"duration": { "type": "number", "description": "длительность фильма" },
 													"thumbnail": {
 														"type": "string",
 														"description": "миниатюра (кадр из видео)"
@@ -3175,21 +2779,12 @@
 												}
 											}
 										},
-										"createdAt": {
-											"type": "Date",
-											"description": "Дата создания"
-										},
-										"updatedAt": {
-											"type": "Date",
-											"description": "Дата обновления"
-										},
+										"createdAt": { "type": "Date", "description": "Дата создания" },
+										"updatedAt": { "type": "Date", "description": "Дата обновления" },
 										"poster": {
 											"type": "object",
 											"properties": {
-												"id": {
-													"type": "string",
-													"description": "mongoose.ObjectId"
-												},
+												"id": { "type": "string", "description": "mongoose.ObjectId" },
 												"src": {
 													"type": "string",
 													"description": "Путь к файлу изображению постера"
@@ -3199,10 +2794,7 @@
 										"cover": {
 											"type": "object",
 											"properties": {
-												"id": {
-													"type": "string",
-													"description": "mongoose.ObjectId"
-												},
+												"id": { "type": "string", "description": "mongoose.ObjectId" },
 												"src": {
 													"type": "string",
 													"description": "Путь к файлу изображению обложки"
@@ -3212,10 +2804,7 @@
 										"logo": {
 											"type": "object",
 											"properties": {
-												"id": {
-													"type": "string",
-													"description": "mongoose.ObjectId"
-												},
+												"id": { "type": "string", "description": "mongoose.ObjectId" },
 												"src": {
 													"type": "string",
 													"description": "Путь к файлу изображению логотипа"
@@ -3225,10 +2814,7 @@
 										"trailer": {
 											"type": "object",
 											"properties": {
-												"id": {
-													"type": "string",
-													"description": "mongoose.ObjectId"
-												},
+												"id": { "type": "string", "description": "mongoose.ObjectId" },
 												"src": {
 													"type": "string",
 													"description": "Путь к файлу изображению обложки"
@@ -3248,10 +2834,7 @@
 											"type": "Date",
 											"description": "Дата поднятия в списке (для актуальности)"
 										},
-										"publishedAt": {
-											"type": "Date",
-											"description": "Дата публикации"
-										}
+										"publishedAt": { "type": "Date", "description": "Дата публикации" }
 									}
 								},
 								"examples": {
@@ -3291,21 +2874,13 @@
 													"type": "actor",
 													"_id": "642f383a8e6fd86616fdf3ae"
 												},
-												{
-													"name": "Джон Кани",
-													"type": "actor",
-													"_id": "642f383a8e6fd86616fdf3af"
-												},
+												{ "name": "Джон Кани", "type": "actor", "_id": "642f383a8e6fd86616fdf3af" },
 												{
 													"name": "Куху Верма",
 													"type": "actor",
 													"_id": "642f383a8e6fd86616fdf3b0"
 												},
-												{
-													"name": "Дэни Бун",
-													"type": "actor",
-													"_id": "642f383a8e6fd86616fdf3b1"
-												},
+												{ "name": "Дэни Бун", "type": "actor", "_id": "642f383a8e6fd86616fdf3b1" },
 												{
 													"name": "Адиль Ахтар",
 													"type": "actor",
@@ -3422,19 +2997,10 @@
 											"type": "string",
 											"description": "Id документа(фильма или сериала) (mongoose.ObjectId)"
 										},
-										"type": {
-											"type": "string",
-											"description": "Надпись \"success\""
-										},
-										"publishedAt": {
-											"type": "date",
-											"description": "Дата публикации"
-										},
+										"type": { "type": "string", "description": "Надпись \"success\"" },
+										"publishedAt": { "type": "date", "description": "Дата публикации" },
 										"alert": { "type": "boolean", "description": true },
-										"msg": {
-											"type": "string",
-											"description": "Успешно опубликовано"
-										}
+										"msg": { "type": "string", "description": "Успешно опубликовано" }
 									},
 									"example": {
 										"type": "success",
@@ -3482,19 +3048,13 @@
 											"type": "string",
 											"description": "Id документа(фильма или сериала) (mongoose.ObjectId)"
 										},
-										"type": {
-											"type": "string",
-											"description": "Надпись \"success\""
-										},
+										"type": { "type": "string", "description": "Надпись \"success\"" },
 										"raisedUpAt": {
 											"type": "date",
 											"description": "Дата поднятия в списке ( устанавливается как значение текущей даты)"
 										},
 										"alert": { "type": "boolean", "description": true },
-										"msg": {
-											"type": "string",
-											"description": "Успешное поднятие"
-										}
+										"msg": { "type": "string", "description": "Успешное поднятие" }
 									},
 									"example": {
 										"type": "success",
@@ -3549,18 +3109,9 @@
 											"items": {
 												"type": "object",
 												"properties": {
-													"_id": {
-														"type": "string",
-														"description": "Tariff id"
-													},
-													"name": {
-														"type": "string",
-														"description": "название тарифа"
-													},
-													"duration": {
-														"type": "number",
-														"description": "длительность тарифа"
-													},
+													"_id": { "type": "string", "description": "Tariff id" },
+													"name": { "type": "string", "description": "название тарифа" },
+													"duration": { "type": "number", "description": "длительность тарифа" },
 													"totalWithdrawAmount": {
 														"type": "number",
 														"description": "Сумма всех пополнений"
@@ -3580,10 +3131,7 @@
 											"type": "number",
 											"description": "Сумма всех пополнений"
 										},
-										"totalSize": {
-											"type": "number",
-											"description": "Всего записей"
-										},
+										"totalSize": { "type": "number", "description": "Всего записей" },
 										"items": {
 											"type": "array",
 											"uniqueItems": true,
@@ -3595,44 +3143,23 @@
 														"type": "string",
 														"description": "Id записи оплаты ( пополнения )"
 													},
-													"updatedAt": {
-														"type": "data",
-														"description": "Дата обновления"
-													},
-													"finishAt": {
-														"type": "data",
-														"description": "Дата окончания"
-													},
-													"startAt": {
-														"type": "data",
-														"description": "Дата начала"
-													},
-													"withdrawAmount": {
-														"type": "number",
-														"description": "Сумма пополнения"
-													},
+													"updatedAt": { "type": "data", "description": "Дата обновления" },
+													"finishAt": { "type": "data", "description": "Дата окончания" },
+													"startAt": { "type": "data", "description": "Дата начала" },
+													"withdrawAmount": { "type": "number", "description": "Сумма пополнения" },
 													"tariff": {
 														"description": "Информация об tariff",
 														"type": "object",
 														"properties": {
-															"name": {
-																"type": "string",
-																"description": "Название тарифа"
-															}
+															"name": { "type": "string", "description": "Название тарифа" }
 														}
 													},
 													"user": {
 														"description": "Информация о пользователе",
 														"type": "object",
 														"properties": {
-															"_id": {
-																"type": "string",
-																"description": "Id пользователя"
-															},
-															"email": {
-																"type": "string",
-																"description": "Почта пользователя"
-															},
+															"_id": { "type": "string", "description": "Id пользователя" },
+															"email": { "type": "string", "description": "Почта пользователя" },
 															"avatar": {
 																"type": "string",
 																"description": "Название тарифа",
@@ -3786,26 +3313,11 @@
 								"schema": {
 									"type": "object",
 									"properties": {
-										"S3_UPLOAD_KEY": {
-											"type": "string",
-											"description": "S3_UPLOAD_KEY"
-										},
-										"S3_UPLOAD_SECRET": {
-											"type": "string",
-											"description": "S3_UPLOAD_SECRET"
-										},
-										"S3_UPLOAD_REGION": {
-											"type": "string",
-											"description": "S3_UPLOAD_REGION"
-										},
-										"S3_UPLOAD_BUCKET": {
-											"type": "string",
-											"description": "S3_UPLOAD_BUCKET"
-										},
-										"S3_UPLOAD_ENDPOINT": {
-											"type": "string",
-											"description": "S3_UPLOAD_ENDPOINT"
-										}
+										"S3_UPLOAD_KEY": { "type": "string", "description": "S3_UPLOAD_KEY" },
+										"S3_UPLOAD_SECRET": { "type": "string", "description": "S3_UPLOAD_SECRET" },
+										"S3_UPLOAD_REGION": { "type": "string", "description": "S3_UPLOAD_REGION" },
+										"S3_UPLOAD_BUCKET": { "type": "string", "description": "S3_UPLOAD_BUCKET" },
+										"S3_UPLOAD_ENDPOINT": { "type": "string", "description": "S3_UPLOAD_ENDPOINT" }
 									},
 									"example": {
 										"S3_UPLOAD_KEY": "qq11111",
@@ -3839,22 +3351,13 @@
 								"schema": {
 									"type": "object",
 									"properties": {
-										"type": {
-											"type": "string",
-											"description": "Надпись \"success\""
-										},
-										"alert": {
-											"type": "boolean",
-											"description": "Значение true"
-										},
+										"type": { "type": "string", "description": "Надпись \"success\"" },
+										"alert": { "type": "boolean", "description": "Значение true" },
 										"_id": {
 											"type": "string",
 											"description": "Id удаленного фильма или сериала (mongoose.ObjectId)"
 										},
-										"msg": {
-											"type": "string",
-											"description": "Надпись \"Успешно удалено\""
-										}
+										"msg": { "type": "string", "description": "Надпись \"Успешно удалено\"" }
 									},
 									"example": {
 										"type": "success",
@@ -3912,23 +3415,14 @@
 									"type": "object",
 									"properties": {
 										"type": { "type": "string", "description": "success" },
-										"movieId": {
-											"type": "string",
-											"description": "Id фильма (mongoose.ObjectId)"
-										},
+										"movieId": { "type": "string", "description": "Id фильма (mongoose.ObjectId)" },
 										"alert": { "type": "boolean", "description": true },
 										"_id": {
 											"type": "boolean",
 											"description": "Id картинки(обложки, постера или логотипа) (mongoose.ObjectId)"
 										},
-										"src": {
-											"type": "string",
-											"description": "путь к картинке"
-										},
-										"msg": {
-											"type": "string",
-											"description": "успешно сохранено"
-										}
+										"src": { "type": "string", "description": "путь к картинке" },
+										"msg": { "type": "string", "description": "успешно сохранено" }
 									},
 									"example": {
 										"type": "success",
@@ -3981,24 +3475,11 @@
 								"schema": {
 									"type": "object",
 									"properties": {
-										"type": {
-											"type": "string",
-											"description": "Надпись \"success\""
-										},
-										"alert": {
-											"type": "boolean",
-											"description": "Значение true"
-										},
-										"msg": {
-											"type": "string",
-											"description": "Надпись \"Успешно удалено\""
-										}
+										"type": { "type": "string", "description": "Надпись \"success\"" },
+										"alert": { "type": "boolean", "description": "Значение true" },
+										"msg": { "type": "string", "description": "Надпись \"Успешно удалено\"" }
 									},
-									"example": {
-										"type": "success",
-										"alert": true,
-										"msg": "Успешно удалено"
-									}
+									"example": { "type": "success", "alert": true, "msg": "Успешно удалено" }
 								}
 							}
 						}
@@ -4063,10 +3544,7 @@
 									"type": "object",
 									"properties": {
 										"type": { "type": "string", "description": "success" },
-										"movieId": {
-											"type": "string",
-											"description": "Id фильма (mongoose.ObjectId)"
-										},
+										"movieId": { "type": "string", "description": "Id фильма (mongoose.ObjectId)" },
 										"_id": {
 											"type": "string",
 											"description": "Уникальный ID ( настроек видео???) от базы данных полученный как new mongoose.Types.ObjectId();"
@@ -4075,10 +3553,7 @@
 											"type": "number",
 											"description": "Длительность видео в секундах"
 										},
-										"src": {
-											"type": "string",
-											"description": "Путь к исходнику видео"
-										},
+										"src": { "type": "string", "description": "Путь к исходнику видео" },
 										"thumbnail": {
 											"type": "string",
 											"description": "Путь к исходнику миниатюры ( кара из видео - картинки)"
@@ -4135,24 +3610,11 @@
 								"schema": {
 									"type": "object",
 									"properties": {
-										"type": {
-											"type": "string",
-											"description": "Надпись \"success\""
-										},
-										"alert": {
-											"type": "boolean",
-											"description": "Значение true"
-										},
-										"msg": {
-											"type": "string",
-											"description": "Надпись \"Успешно удалено\""
-										}
+										"type": { "type": "string", "description": "Надпись \"success\"" },
+										"alert": { "type": "boolean", "description": "Значение true" },
+										"msg": { "type": "string", "description": "Надпись \"Успешно удалено\"" }
 									},
-									"example": {
-										"type": "success",
-										"alert": true,
-										"msg": "Успешно удалено"
-									}
+									"example": { "type": "success", "alert": true, "msg": "Успешно удалено" }
 								}
 							}
 						}
@@ -4207,17 +3669,11 @@
 														"type": "string",
 														"description": "Id (mongoose.ObjectId) поискового запроса (документа коллекции searchlogs)"
 													},
-													"query": {
-														"type": "string",
-														"description": "Запрос пользователя"
-													},
+													"query": { "type": "string", "description": "Запрос пользователя" },
 													"device": {
 														"type": "object",
 														"properties": {
-															"ip": {
-																"type": "string",
-																"description": "ip адресс юзера"
-															},
+															"ip": { "type": "string", "description": "ip адресс юзера" },
 															"os": {
 																"type": "string",
 																"description": "Операционная система устройства"
@@ -4234,35 +3690,20 @@
 																"type": "boolean",
 																"description": "Является ли дейвайс десктопным устройством"
 															},
-															"browser": {
-																"type": "string",
-																"description": "Название браузера"
-															},
-															"version": {
-																"type": "string",
-																"description": "Версия браузера"
-															},
+															"browser": { "type": "string", "description": "Название браузера" },
+															"version": { "type": "string", "description": "Версия браузера" },
 															"platform": {
 																"type": "string",
 																"description": "Платформа устройства ( ос)"
 															}
 														}
 													},
-													"updatedAt": {
-														"type": "Date",
-														"description": "Дата обновления"
-													},
+													"updatedAt": { "type": "Date", "description": "Дата обновления" },
 													"user": {
 														"type": "object",
 														"properties": {
-															"_id": {
-																"type": "string",
-																"description": "Profile id"
-															},
-															"email": {
-																"type": "string",
-																"description": "Email user"
-															},
+															"_id": { "type": "string", "description": "Profile id" },
+															"email": { "type": "string", "description": "Email user" },
 															"avatar": {
 																"type": "string",
 																"description": "Path to img src profile user"
@@ -4412,21 +3853,12 @@
 														"type": "number",
 														"description": "Оценка фильма пользователем"
 													},
-													"createdAt": {
-														"type": "Date",
-														"description": "Дата создания"
-													},
-													"updatedAt": {
-														"type": "Date",
-														"description": "Дата обновления"
-													},
+													"createdAt": { "type": "Date", "description": "Дата создания" },
+													"updatedAt": { "type": "Date", "description": "Дата обновления" },
 													"movie": {
 														"type": "object",
 														"properties": {
-															"name": {
-																"type": "string",
-																"description": "Название фильма"
-															},
+															"name": { "type": "string", "description": "Название фильма" },
 															"poster": {
 																"type": "object",
 																"properties": {
@@ -4441,14 +3873,8 @@
 													"user": {
 														"type": "object",
 														"properties": {
-															"_id": {
-																"type": "string",
-																"description": "Profile id"
-															},
-															"email": {
-																"type": "string",
-																"description": "Email user"
-															},
+															"_id": { "type": "string", "description": "Profile id" },
+															"email": { "type": "string", "description": "Email user" },
 															"avatar": {
 																"type": "string",
 																"description": "Path to img src profile user"
@@ -4497,9 +3923,7 @@
 													"__v": 0,
 													"movie": {
 														"name": "Выстрел в сердце",
-														"poster": {
-															"src": "/images/641f44d1944e8bd192d18c57.jpg"
-														}
+														"poster": { "src": "/images/641f44d1944e8bd192d18c57.jpg" }
 													},
 													"user": {
 														"_id": "63bbed7523c814afb608a3f6",
@@ -4522,9 +3946,7 @@
 													"__v": 0,
 													"movie": {
 														"name": "Битва при Нарвике: Первое поражение Гитлера",
-														"poster": {
-															"src": "/images/640376060a569a75e1507a94.jpg"
-														}
+														"poster": { "src": "/images/640376060a569a75e1507a94.jpg" }
 													},
 													"user": {
 														"_id": "63bbed7523c814afb608a3f6",
@@ -4599,10 +4021,7 @@
 													"device": {
 														"type": "object",
 														"properties": {
-															"ip": {
-																"type": "string",
-																"description": "ip адресс юзера"
-															},
+															"ip": { "type": "string", "description": "ip адресс юзера" },
 															"os": {
 																"type": "string",
 																"description": "Операционная система устройства"
@@ -4619,14 +4038,8 @@
 																"type": "boolean",
 																"description": "Является ли дейвайс десктопным устройством"
 															},
-															"browser": {
-																"type": "string",
-																"description": "Название браузера"
-															},
-															"version": {
-																"type": "string",
-																"description": "Версия браузера"
-															},
+															"browser": { "type": "string", "description": "Название браузера" },
+															"version": { "type": "string", "description": "Версия браузера" },
 															"platform": {
 																"type": "string",
 																"description": "Платформа устройства ( ос)"
@@ -4641,17 +4054,11 @@
 														"type": "string",
 														"description": "Id видео (mongoose.ObjectId)"
 													},
-													"updatedAt": {
-														"type": "Date",
-														"description": "Дата обновления"
-													},
+													"updatedAt": { "type": "Date", "description": "Дата обновления" },
 													"movie": {
 														"type": "object",
 														"properties": {
-															"name": {
-																"type": "string",
-																"description": "Название фильма"
-															},
+															"name": { "type": "string", "description": "Название фильма" },
 															"poster": {
 																"type": "object",
 																"properties": {
@@ -4666,14 +4073,8 @@
 													"user": {
 														"type": "object",
 														"properties": {
-															"_id": {
-																"type": "string",
-																"description": "Profile id"
-															},
-															"email": {
-																"type": "string",
-																"description": "Email user"
-															},
+															"_id": { "type": "string", "description": "Profile id" },
+															"email": { "type": "string", "description": "Email user" },
 															"avatar": {
 																"type": "string",
 																"description": "Path to img src profile user"
@@ -4731,9 +4132,7 @@
 													"updatedAt": "2023-06-07T16:15:48.503Z",
 													"movie": {
 														"name": "Энола Холмс",
-														"poster": {
-															"src": "/images/6402045f0a569a75e15008a0.jpg"
-														}
+														"poster": { "src": "/images/6402045f0a569a75e15008a0.jpg" }
 													},
 													"user": {
 														"_id": "6480807e904d20e5d4c1b6db",
@@ -4765,9 +4164,7 @@
 													"updatedAt": "2023-04-06T12:09:07.205Z",
 													"movie": {
 														"name": "Энола Холмс",
-														"poster": {
-															"src": "/images/6402045f0a569a75e15008a0.jpg"
-														}
+														"poster": { "src": "/images/6402045f0a569a75e15008a0.jpg" }
 													},
 													"user": {
 														"_id": "642c4f828e6fd86616fd8a08",
@@ -4833,14 +4230,8 @@
 												"items": {
 													"type": "object",
 													"properties": {
-														"name": {
-															"type": "string",
-															"description": "Название фильма"
-														},
-														"shortDesc": {
-															"type": "string",
-															"description": "Краткое описание"
-														},
+														"name": { "type": "string", "description": "Название фильма" },
+														"shortDesc": { "type": "string", "description": "Краткое описание" },
 														"ageLevel": {
 															"type": "string",
 															"description": "Возрастное ограничение",
@@ -4859,10 +4250,7 @@
 														"trailer": {
 															"type": "object",
 															"properties": {
-																"id": {
-																	"type": "string",
-																	"description": "Mongoose.ObjectId"
-																},
+																"id": { "type": "string", "description": "Mongoose.ObjectId" },
 																"src": {
 																	"type": "string",
 																	"description": "Путь к файлу изображению обложки"
@@ -4906,10 +4294,7 @@
 															"type": "string",
 															"description": "Длительность фильма в секундах"
 														},
-														"url": {
-															"type": "string",
-															"description": "Url к фильму"
-														},
+														"url": { "type": "string", "description": "Url к фильму" },
 														"genreName": {
 															"type": "string",
 															"description": "Жанр фильма",
@@ -4919,10 +4304,7 @@
 															"type": "object",
 															"required": false,
 															"properties": {
-																"id": {
-																	"type": "string",
-																	"description": "Mongoose.ObjectId"
-																},
+																"id": { "type": "string", "description": "Mongoose.ObjectId" },
 																"src": {
 																	"type": "string",
 																	"description": "Путь к файлу изображению логотипа"
@@ -4972,9 +4354,7 @@
 														"ageLevel": 16,
 														"dateReleased": "2022-12-15",
 														"categoryAlias": "films",
-														"cover": {
-															"src": "/images/640376080a569a75e1507aad.jpg"
-														},
+														"cover": { "src": "/images/640376080a569a75e1507aad.jpg" },
 														"rating": 6,
 														"duration": 6546.833333,
 														"url": "/p/bitva-pri-narvike-pervoe-porazhenie-gitlera",
@@ -4993,9 +4373,7 @@
 												"items": [
 													{
 														"name": "Выстрел в сердце",
-														"poster": {
-															"src": "/images/641f44d1944e8bd192d18c57.jpg"
-														},
+														"poster": { "src": "/images/641f44d1944e8bd192d18c57.jpg" },
 														"shortDesc": "На фоне сражения во Второй мировой войне, известного как первое поражение Гитлера, норвежский солдат возвращается домой и узнает шокирующую правду о своей жене",
 														"rating": 7,
 														"duration": 1163.416667,
@@ -5008,9 +4386,7 @@
 													},
 													{
 														"name": "Вундеркинды",
-														"poster": {
-															"src": "/images/642f5e208e6fd86616fe08d5.jpg"
-														},
+														"poster": { "src": "/images/642f5e208e6fd86616fe08d5.jpg" },
 														"duration": 18578.069334,
 														"url": "/p/vunderkindy",
 														"trailer": {
@@ -5027,9 +4403,7 @@
 													{
 														"name": "Затерянная в метели",
 														"shortDesc": "Маленькая девочка пропадает во время парада в Малаге, и молодая журналистка решает во что бы то ни стало помочь родителям найти дочь",
-														"poster": {
-															"src": "/images/641e0dd00073f02ab65e7213.jpg"
-														},
+														"poster": { "src": "/images/641e0dd00073f02ab65e7213.jpg" },
 														"duration": 0,
 														"url": "/p/zateryannaya-v-meteli",
 														"trailer": {
@@ -5040,9 +4414,7 @@
 													},
 													{
 														"name": "Ты",
-														"poster": {
-															"src": "/images/641c0ac60073f02ab65de349.jpg"
-														},
+														"poster": { "src": "/images/641c0ac60073f02ab65de349.jpg" },
 														"rating": 10,
 														"duration": 115970.58333200001,
 														"url": "/p/ty",
@@ -5060,9 +4432,7 @@
 													{
 														"name": "Ну разве не романтично?",
 														"shortDesc": "Архитектор, которая не верит в романтику, ударяется головой и обнаруживает, что ее непримечательная жизнь превратилась в яркую, полную клише романтическую комедию",
-														"poster": {
-															"src": "/images/642f44cf8e6fd86616fdfc87.jpg"
-														},
+														"poster": { "src": "/images/642f44cf8e6fd86616fdfc87.jpg" },
 														"duration": 5334.144,
 														"url": "/p/nu-razve-ne-romantichno",
 														"trailer": {
@@ -5074,9 +4444,7 @@
 													{
 														"name": "тик-так… БУМ!",
 														"shortDesc": "На пороге тридцатилетия многообещающий театральный композитор пытается разобраться с любовью и дружбой и жаждет создать нечто великое, пока еще есть время",
-														"poster": {
-															"src": "/images/63bd03db23c814afb608cbab.jpg"
-														},
+														"poster": { "src": "/images/63bd03db23c814afb608cbab.jpg" },
 														"duration": 7296.416667,
 														"url": "/p/tik-tak-bum",
 														"trailer": {
@@ -5122,10 +4490,7 @@
 								"schema": {
 									"type": "object",
 									"properties": {
-										"totalSize": {
-											"type": "number",
-											"description": "Общее количество документов"
-										},
+										"totalSize": { "type": "number", "description": "Общее количество документов" },
 										"items": {
 											"type": "array",
 											"uniqueItems": true,
@@ -5161,10 +4526,7 @@
 																"type": "string",
 																"description": "Название фильма/сериала"
 															},
-															"alias": {
-																"type": "string",
-																"description": "alias фильма/сериала"
-															},
+															"alias": { "type": "string", "description": "alias фильма/сериала" },
 															"categoryAlias": {
 																"type": "string",
 																"description": "Категория - serials или films"
@@ -5200,14 +4562,8 @@
 														"type": "object",
 														"required": false,
 														"properties": {
-															"season": {
-																"type": "number",
-																"description": "Номер сезона"
-															},
-															"episode": {
-																"type": "number",
-																"description": "Номер серии"
-															},
+															"season": { "type": "number", "description": "Номер сезона" },
+															"episode": { "type": "number", "description": "Номер серии" },
 															"seriaDuration": {
 																"type": "number",
 																"description": "Длительность серии"
@@ -5233,11 +4589,7 @@
 														"alias": "serial-test-hls",
 														"categoryAlias": "serials"
 													},
-													"seriaInfo": {
-														"season": 2,
-														"episode": 1,
-														"seriaDuration": 4170
-													}
+													"seriaInfo": { "season": 2, "episode": 1, "seriaDuration": 4170 }
 												},
 												{
 													"_id": "64e87d576ffabb5ba3d14f03",
@@ -5250,11 +4602,7 @@
 														"alias": "serial-test-hls",
 														"categoryAlias": "serials"
 													},
-													"seriaInfo": {
-														"season": 1,
-														"episode": 2,
-														"seriaDuration": 4170
-													}
+													"seriaInfo": { "season": 1, "episode": 2, "seriaDuration": 4170 }
 												},
 												{
 													"_id": "64e72f736ffabb5ba3ce617d",
@@ -5306,10 +4654,7 @@
 								"schema": {
 									"type": "object",
 									"properties": {
-										"totalSize": {
-											"type": "number",
-											"description": "Общее количество документов"
-										},
+										"totalSize": { "type": "number", "description": "Общее количество документов" },
 										"items": {
 											"type": "array",
 											"uniqueItems": true,
@@ -5317,22 +4662,13 @@
 											"items": {
 												"type": "object",
 												"properties": {
-													"name": {
-														"type": "string",
-														"description": "Название фильма/сериала"
-													},
+													"name": { "type": "string", "description": "Название фильма/сериала" },
 													"_id": {
 														"type": "string",
 														"description": "Id (mongoose.ObjectId) просмотра (документа коллекции Movies)"
 													},
-													"duration": {
-														"type": "number",
-														"description": "Длительность"
-													},
-													"url": {
-														"type": "string",
-														"description": "Url к фильму"
-													},
+													"duration": { "type": "number", "description": "Длительность" },
+													"url": { "type": "string", "description": "Url к фильму" },
 													"poster": {
 														"type": "object",
 														"required": false,
@@ -5441,6 +4777,12 @@
 						"name": "categoryAlias",
 						"schema": { "type": "string" },
 						"description": "Вид категориии. Может быть films, serials или collections"
+					},
+					{
+						"in": "query",
+						"name": "rating",
+						"schema": { "type": "number" },
+						"description": "Рейтинг фильма"
 					}
 				],
 				"responses": {
@@ -5462,43 +4804,25 @@
 											"items": {
 												"type": "object",
 												"properties": {
-													"name": {
-														"type": "string",
-														"description": "Название фильма"
-													},
-													"ageLevel": {
-														"type": "string",
-														"description": "Возрастное ограничение"
-													},
-													"dateReleased": {
-														"type": "Date",
-														"description": "Дата релиза"
-													},
+													"name": { "type": "string", "description": "Название фильма" },
+													"ageLevel": { "type": "string", "description": "Возрастное ограничение" },
+													"dateReleased": { "type": "Date", "description": "Дата релиза" },
 													"categoryAlias": {
 														"type": "string",
 														"description": "Вид категориию. Может быть films, serials или collections"
 													},
-													"shortDesc": {
-														"type": "string",
-														"description": "Краткое описание"
-													},
+													"shortDesc": { "type": "string", "description": "Краткое описание" },
 													"genresNames": {
 														"type": "array",
 														"description": "Cписок жанров на русском",
 														"uniqueItems": true,
 														"minItems": 0,
-														"items": {
-															"type": "string",
-															"description": "Название жанра"
-														}
+														"items": { "type": "string", "description": "Название жанра" }
 													},
 													"trailer": {
 														"type": "object",
 														"properties": {
-															"id": {
-																"type": "string",
-																"description": "Mongoose.ObjectId"
-															},
+															"id": { "type": "string", "description": "Mongoose.ObjectId" },
 															"src": {
 																"type": "string",
 																"description": "Путь к файлу изображению обложки"
@@ -5532,10 +4856,7 @@
 														"type": "string",
 														"description": "Длительность фильма в секундах"
 													},
-													"url": {
-														"type": "string",
-														"description": "Url к фильму"
-													},
+													"url": { "type": "string", "description": "Url к фильму" },
 													"series": {
 														"type": "array",
 														"description": "Массивы первого уровня - сезоны, в каждом из которых вложенные подмассивы -список серий. Это поле есть в ответе только если query параметр categoryAlias = serials",
@@ -5603,9 +4924,7 @@
 													"ageLevel": 16,
 													"dateReleased": "2022-12-15",
 													"categoryAlias": "films",
-													"poster": {
-														"src": "/images/640376060a569a75e1507a94.jpg"
-													},
+													"poster": { "src": "/images/640376060a569a75e1507a94.jpg" },
 													"rating": 6,
 													"duration": 6546.833333,
 													"url": "/p/bitva-pri-narvike-pervoe-porazhenie-gitlera",
@@ -5678,11 +4997,7 @@
 												"type": "string",
 												"description": "Вид категориию. Может быть films, serials"
 											},
-											"genreAlias": {
-												"type": "string",
-												"description": "Жанр",
-												"required": false
-											}
+											"genreAlias": { "type": "string", "description": "Жанр", "required": false }
 										}
 									}
 								},
@@ -5719,9 +5034,7 @@
 				"responses": {
 					"200": {
 						"description": "OK",
-						"content": {
-							"text/xml": { "schema": { "$ref": "#/definitions/XmlSiteMapModel" } }
-						}
+						"content": { "text/xml": { "schema": { "$ref": "#/definitions/XmlSiteMapModel" } } }
 					}
 				}
 			}
@@ -5745,26 +5058,14 @@
 											"items": {
 												"type": "object",
 												"properties": {
-													"_id": {
-														"type": "string",
-														"description": "Id тарифа"
-													},
-													"name": {
-														"type": "string",
-														"description": "Название тарифа"
-													},
-													"price": {
-														"type": "number",
-														"description": "Цена тарифа"
-													},
+													"_id": { "type": "string", "description": "Id тарифа" },
+													"name": { "type": "string", "description": "Название тарифа" },
+													"price": { "type": "number", "description": "Цена тарифа" },
 													"duration": {
 														"type": "number",
 														"descripton": "Длительность подписки в мили секундах"
 													},
-													"discount": {
-														"type": "number",
-														"description": "Cкидка"
-													},
+													"discount": { "type": "number", "description": "Cкидка" },
 													"sort": {
 														"type": "number",
 														"description": "Сорт тарифа ( номер для сортировки )"
@@ -5787,23 +5088,14 @@
 											"items": {
 												"type": "object",
 												"properties": {
-													"name": {
-														"type": "string",
-														"description": "Название фильма"
-													},
+													"name": { "type": "string", "description": "Название фильма" },
 													"poster": {
 														"type": "object",
 														"properties": {
-															"src": {
-																"type": "string",
-																"description": "Путь к файлу изображению"
-															}
+															"src": { "type": "string", "description": "Путь к файлу изображению" }
 														}
 													},
-													"rating": {
-														"type": "number",
-														"description": "Рейтинг от 0 до 10"
-													}
+													"rating": { "type": "number", "description": "Рейтинг от 0 до 10" }
 												}
 											}
 										}
@@ -5841,22 +5133,16 @@
 											"popularMovies": [
 												{
 													"name": "Белый шум",
-													"poster": {
-														"src": "/images/6405fe000a569a75e15129f4.jpg"
-													}
+													"poster": { "src": "/images/6405fe000a569a75e15129f4.jpg" }
 												},
 												{
 													"name": "Армия воров",
-													"poster": {
-														"src": "/images/63ac7d7fb2c93ed2212181a8.jpg"
-													},
+													"poster": { "src": "/images/63ac7d7fb2c93ed2212181a8.jpg" },
 													"rating": 10
 												},
 												{
 													"name": "Уэнделл и Уайлд",
-													"poster": {
-														"src": "/images/63ad6f76b2c93ed22121a059.jpg"
-													}
+													"poster": { "src": "/images/63ad6f76b2c93ed22121a059.jpg" }
 												}
 											]
 										}
@@ -5932,10 +5218,7 @@
 										"type": "number",
 										"description": "Для переводов из кошелька — номер счета отправителя. Для переводов с произвольной карты — параметр содержит пустую строку."
 									},
-									"amount": {
-										"type": "number",
-										"description": "Сумма операции."
-									},
+									"amount": { "type": "number", "description": "Сумма операции." },
 									"codepro": {
 										"type": "boolean",
 										"description": "1 из параметров для формирования hash. Признак того, что перевод защищен кодом протекции. В ЮMoney больше нельзя делать переводы с кодом протекции, поэтому параметр всегда имеет значение false."
@@ -6000,10 +5283,7 @@
 											"type": "string",
 											"description": "Тип платежа - paid, trial или issued-by-admin"
 										},
-										"finishAt": {
-											"type": "string",
-											"description": "Дата окончания тарифа"
-										}
+										"finishAt": { "type": "string", "description": "Дата окончания тарифа" }
 									},
 									"example": {
 										"_id": "63e864ae801189b4df7ea04d",
@@ -6049,21 +5329,12 @@
 											"items": {
 												"type": "object",
 												"properties": {
-													"name": {
-														"type": "string",
-														"description": "Название фильма"
-													},
-													"shortDesc": {
-														"type": "string",
-														"description": "Краткое описание"
-													},
+													"name": { "type": "string", "description": "Название фильма" },
+													"shortDesc": { "type": "string", "description": "Краткое описание" },
 													"trailer": {
 														"type": "object",
 														"properties": {
-															"id": {
-																"type": "string",
-																"description": "Mongoose.ObjectId"
-															},
+															"id": { "type": "string", "description": "Mongoose.ObjectId" },
 															"src": {
 																"type": "string",
 																"description": "Путь к файлу изображению обложки"
@@ -6088,14 +5359,8 @@
 															}
 														}
 													},
-													"ageLevel": {
-														"type": "string",
-														"description": "Возрастное ограничение"
-													},
-													"dateReleased": {
-														"type": "Date",
-														"description": "Дата релиза"
-													},
+													"ageLevel": { "type": "string", "description": "Возрастное ограничение" },
+													"dateReleased": { "type": "Date", "description": "Дата релиза" },
 													"categoryAlias": {
 														"type": "string",
 														"description": "Вид категориии. Может быть films, serials или collections"
@@ -6103,24 +5368,15 @@
 													"poster": {
 														"type": "object",
 														"properties": {
-															"src": {
-																"type": "string",
-																"description": "Путь к файлу изображению"
-															}
+															"src": { "type": "string", "description": "Путь к файлу изображению" }
 														}
 													},
-													"rating": {
-														"type": "number",
-														"description": "Рейтинг от 0 до 10"
-													},
+													"rating": { "type": "number", "description": "Рейтинг от 0 до 10" },
 													"duration": {
 														"type": "string",
 														"description": "Длительность фильма в секундах"
 													},
-													"url": {
-														"type": "string",
-														"description": "Url к фильму? путь к фильму?"
-													}
+													"url": { "type": "string", "description": "Url к фильму? путь к фильму?" }
 												}
 											}
 										}
@@ -6138,9 +5394,7 @@
 													"ageLevel": 18,
 													"dateReleased": "2019-12-20",
 													"categoryAlias": "serials",
-													"poster": {
-														"src": "/images/63e00a92ccaf134edd216858.jpg"
-													},
+													"poster": { "src": "/images/63e00a92ccaf134edd216858.jpg" },
 													"rating": 7,
 													"duration": 56502.375,
 													"url": "/p/vedmak",
@@ -6156,9 +5410,7 @@
 													"ageLevel": 18,
 													"dateReleased": "2019-09-02",
 													"categoryAlias": "films",
-													"poster": {
-														"src": "/images/63c0fb1423c814afb609605a.jpg"
-													},
+													"poster": { "src": "/images/63c0fb1423c814afb609605a.jpg" },
 													"rating": 8,
 													"duration": 8429.083333,
 													"url": "/p/korol-anglii",
@@ -6174,9 +5426,7 @@
 													"ageLevel": 18,
 													"dateReleased": "2021-01-15",
 													"categoryAlias": "films",
-													"poster": {
-														"src": "/images/63c130fe23c814afb6097501.jpg"
-													},
+													"poster": { "src": "/images/63c130fe23c814afb6097501.jpg" },
 													"duration": 6952.541667,
 													"url": "/p/smertelnaya-zona",
 													"trailer": {
@@ -6232,22 +5482,10 @@
 											"items": {
 												"type": "object",
 												"properties": {
-													"name": {
-														"type": "string",
-														"description": "Название фильма"
-													},
-													"shortDesc": {
-														"type": "string",
-														"description": "Краткое описание"
-													},
-													"ageLevel": {
-														"type": "string",
-														"description": "Возрастное ограничение"
-													},
-													"dateReleased": {
-														"type": "Date",
-														"description": "Дата релиза"
-													},
+													"name": { "type": "string", "description": "Название фильма" },
+													"shortDesc": { "type": "string", "description": "Краткое описание" },
+													"ageLevel": { "type": "string", "description": "Возрастное ограничение" },
+													"dateReleased": { "type": "Date", "description": "Дата релиза" },
 													"categoryAlias": {
 														"type": "string",
 														"description": "Вид категориии. Может быть films, serials или collections"
@@ -6255,19 +5493,13 @@
 													"poster": {
 														"type": "object",
 														"properties": {
-															"src": {
-																"type": "string",
-																"description": "Путь к файлу изображению"
-															}
+															"src": { "type": "string", "description": "Путь к файлу изображению" }
 														}
 													},
 													"trailer": {
 														"type": "object",
 														"properties": {
-															"id": {
-																"type": "string",
-																"description": "Mongoose.ObjectId"
-															},
+															"id": { "type": "string", "description": "Mongoose.ObjectId" },
 															"src": {
 																"type": "string",
 																"description": "Путь к файлу изображению обложки"
@@ -6292,18 +5524,12 @@
 															}
 														}
 													},
-													"rating": {
-														"type": "number",
-														"description": "Рейтинг от 0 до 10"
-													},
+													"rating": { "type": "number", "description": "Рейтинг от 0 до 10" },
 													"duration": {
 														"type": "string",
 														"description": "Длительность фильма в секундах"
 													},
-													"url": {
-														"type": "string",
-														"description": "Url к фильму? путь к фильму?"
-													}
+													"url": { "type": "string", "description": "Url к фильму? путь к фильму?" }
 												}
 											}
 										}
@@ -6333,9 +5559,7 @@
 													"ageLevel": 16,
 													"dateReleased": "2022-08-31",
 													"categoryAlias": "films",
-													"poster": {
-														"src": "/images/6405fe000a569a75e15129f4.jpg"
-													},
+													"poster": { "src": "/images/6405fe000a569a75e15129f4.jpg" },
 													"duration": 8216.875,
 													"url": "/p/belyy-shum",
 													"trailer": {
@@ -6350,9 +5574,7 @@
 													"ageLevel": 6,
 													"dateReleased": "2018-11-02",
 													"categoryAlias": "serials",
-													"poster": {
-														"src": "/images/642f5e208e6fd86616fe08d5.jpg"
-													},
+													"poster": { "src": "/images/642f5e208e6fd86616fe08d5.jpg" },
 													"duration": 18578.069334,
 													"url": "/p/vunderkindy",
 													"trailer": {
@@ -6400,10 +5622,7 @@
 								"schema": {
 									"type": "object",
 									"properties": {
-										"type": {
-											"type": "string",
-											"description": "Cообщение \"success\""
-										}
+										"type": { "type": "string", "description": "Cообщение \"success\"" }
 									},
 									"example": { "type": "success" }
 								}
@@ -6424,9 +5643,7 @@
 							"application/json": {
 								"schema": {
 									"type": "object",
-									"properties": {
-										"token": { "type": "string", "description": "JWT token" }
-									},
+									"properties": { "token": { "type": "string", "description": "JWT token" } },
 									"example": {
 										"token": "eyJhbGciOiJIUzI1NiIsInR1cCI6IkpXVCJ9.eyJpZCI6IjY0ODA4ODZjMmZjMzhkY2E4MDQyOThkMCIsImlhdCI6MTY4ODc1NDAwMywiZXhwIjoxNzIwMzExNjAzfQ.sTY0dun0jUgAS96QXciWl7V-J7OeurvxmSAXjNp-AFQ"
 									}
@@ -6555,43 +5772,22 @@
 								"schema": {
 									"type": "object",
 									"properties": {
-										"_id": {
-											"type": "string",
-											"description": "Id фильма (mongoose.ObjectId)"
-										},
-										"name": {
-											"type": "string",
-											"description": "Название фильма на русском"
-										},
+										"_id": { "type": "string", "description": "Id фильма (mongoose.ObjectId)" },
+										"name": { "type": "string", "description": "Название фильма на русском" },
 										"origName": {
 											"type": "string",
 											"description": "Оригинальное название фильма на английском"
 										},
-										"shortDesc": {
-											"type": "string",
-											"description": "Краткое описание"
-										},
-										"fullDesc": {
-											"type": "string",
-											"description": "Полное описание"
-										},
-										"ageLevel": {
-											"type": "string",
-											"description": "Возрастное ограничение"
-										},
-										"dateReleased": {
-											"type": "string",
-											"description": "Дата выпуска"
-										},
+										"shortDesc": { "type": "string", "description": "Краткое описание" },
+										"fullDesc": { "type": "string", "description": "Полное описание" },
+										"ageLevel": { "type": "string", "description": "Возрастное ограничение" },
+										"dateReleased": { "type": "string", "description": "Дата выпуска" },
 										"countries": {
 											"type": "array",
 											"description": "Cписок стран",
 											"uniqueItems": true,
 											"minItems": 0,
-											"items": {
-												"type": "string",
-												"description": "Название страны"
-											}
+											"items": { "type": "string", "description": "Название страны" }
 										},
 										"categoryAlias": {
 											"type": "string",
@@ -6602,10 +5798,7 @@
 											"description": "Cписок жанров",
 											"uniqueItems": true,
 											"minItems": 0,
-											"items": {
-												"type": "string",
-												"description": "Название жанра"
-											}
+											"items": { "type": "string", "description": "Название жанра" }
 										},
 										"persons": {
 											"type": "array",
@@ -6615,10 +5808,7 @@
 											"items": {
 												"type": "object",
 												"properties": {
-													"name": {
-														"type": "string",
-														"description": "Имя и фамилия человека"
-													},
+													"name": { "type": "string", "description": "Имя и фамилия человека" },
 													"type": {
 														"type": "string",
 														"description": "director - режиссер, actor - актер, producer - продюсер, screenwriter - сценарист, operator - оператор"
@@ -6630,18 +5820,12 @@
 											"type": "object",
 											"description": "Параметры исходников видео. Объект для фильмов. Для сериалов здесь приходит массив из одного массива в котором объекты",
 											"properties": {
-												"_id": {
-													"type": "string",
-													"description": "Id фильма (mongoose.ObjectId)"
-												},
+												"_id": { "type": "string", "description": "Id фильма (mongoose.ObjectId)" },
 												"src": {
 													"type": "string",
 													"description": "Источник на файл ( путь к исходнику )"
 												},
-												"duration": {
-													"type": "number",
-													"description": "Длительность фильма"
-												},
+												"duration": { "type": "number", "description": "Длительность фильма" },
 												"thumbnail": {
 													"type": "string",
 													"description": "Миниатюра (кадр из видео)"
@@ -6678,10 +5862,7 @@
 										"trailer": {
 											"type": "object",
 											"properties": {
-												"id": {
-													"type": "string",
-													"description": "Mongoose.ObjectId"
-												},
+												"id": { "type": "string", "description": "Mongoose.ObjectId" },
 												"src": {
 													"type": "string",
 													"description": "Путь к файлу изображению обложки"
@@ -6690,16 +5871,10 @@
 													"type": "string",
 													"description": "Миниатюра (кадр из видео)"
 												},
-												"duration": {
-													"type": "number",
-													"description": "Длительность"
-												}
+												"duration": { "type": "number", "description": "Длительность" }
 											}
 										},
-										"rating": {
-											"type": "number",
-											"description": "Рейтинг от 0 до 10"
-										},
+										"rating": { "type": "number", "description": "Рейтинг от 0 до 10" },
 										"duration": {
 											"type": "string",
 											"description": "Длительность фильма в секундах"
@@ -6717,10 +5892,7 @@
 														"type": "string",
 														"description": "Id(mongoose.ObjectId) фильма/cериала (документа коллекции movie)"
 													},
-													"name": {
-														"type": "string",
-														"description": "Название фильма на русском"
-													},
+													"name": { "type": "string", "description": "Название фильма на русском" },
 													"duration": {
 														"type": "string",
 														"description": "Длительность фильма в секундах"
@@ -6753,23 +5925,14 @@
 															}
 														}
 													},
-													"rating": {
-														"type": "number",
-														"description": "Рейтинг от 0 до 10"
-													},
-													"url": {
-														"type": "string",
-														"description": "Url к фильму"
-													},
+													"rating": { "type": "number", "description": "Рейтинг от 0 до 10" },
+													"url": { "type": "string", "description": "Url к фильму" },
 													"genreNames": {
 														"type": "array",
 														"description": "Cписок жанров",
 														"uniqueItems": true,
 														"minItems": 0,
-														"items": {
-															"type": "string",
-															"description": "Название жанра"
-														}
+														"items": { "type": "string", "description": "Название жанра" }
 													}
 												}
 											}
@@ -6812,10 +5975,7 @@
 																"type": "string",
 																"description": "Путь к исходнику картинки профиля пользователя"
 															},
-															"firstname": {
-																"type": "string",
-																"description": "Имя пользователя"
-															},
+															"firstname": { "type": "string", "description": "Имя пользователя" },
 															"lastname": {
 																"type": "string",
 																"description": "Фамилия пользователя"
@@ -6827,10 +5987,7 @@
 														},
 														"description": "Id(mongoose.ObjectId) фильма/cериала (документа коллекции movie)"
 													},
-													"name": {
-														"type": "string",
-														"description": "Название фильма на русском"
-													},
+													"name": { "type": "string", "description": "Название фильма на русском" },
 													"duration": {
 														"type": "string",
 														"description": "Длительность фильма в секундах"
@@ -6849,10 +6006,7 @@
 														"description": "Cписок жанров",
 														"uniqueItems": true,
 														"minItems": 0,
-														"items": {
-															"type": "string",
-															"description": "Название жанра"
-														}
+														"items": { "type": "string", "description": "Название жанра" }
 													}
 												}
 											}
@@ -6879,10 +6033,7 @@
 											{ "name": "Тамара Смарт", "type": "actor" },
 											{ "name": "Сима Вирди", "type": "actor" },
 											{ "name": "Рамона Янг", "type": "screenwriter" },
-											{
-												"name": "Клэй МакЛеод Чэпман",
-												"type": "screenwriter"
-											},
+											{ "name": "Клэй МакЛеод Чэпман", "type": "screenwriter" },
 											{ "name": " Питер Сорг", "type": "operator" }
 										],
 										"poster": { "src": "/images/63ad6f76b2c93ed22121a059.jpg" },
@@ -7033,9 +6184,7 @@
 											{
 												"_id": "63bafda44b33357ef706bd9e",
 												"name": "Ферри",
-												"poster": {
-													"src": "/images/63bb942ba10c560357ec2e9f.jpg"
-												},
+												"poster": { "src": "/images/63bb942ba10c560357ec2e9f.jpg" },
 												"duration": 6420.5,
 												"url": "/p/amerika-film",
 												"rating": 9,
@@ -7049,9 +6198,7 @@
 											{
 												"_id": "63bbf7ee23c814afb608a5d5",
 												"name": "Осада в Сильвертоне",
-												"poster": {
-													"src": "/images/63bcfcab23c814afb608c6a2.jpg"
-												},
+												"poster": { "src": "/images/63bcfcab23c814afb608c6a2.jpg" },
 												"duration": 6062.625,
 												"genreNames": ["Боевики", "Триллеры", "Драмы", "Криминал", "Исторические"]
 											},
@@ -7065,153 +6212,119 @@
 											{
 												"_id": "63ad7d34b2c93ed22121a4f2",
 												"name": "Армия мертвецов",
-												"poster": {
-													"src": "/images/63ad7d37b2c93ed22121a51e.jpg"
-												},
+												"poster": { "src": "/images/63ad7d37b2c93ed22121a51e.jpg" },
 												"duration": 8906.833333,
 												"genreNames": ["Ужасы", "Боевики", "Криминал", "Триллеры", "Фантастика"]
 											},
 											{
 												"_id": "63adf8c5b2c93ed22121b7f9",
 												"name": "Беккет",
-												"poster": {
-													"src": "/images/63adf8c8b2c93ed22121b823.jpg"
-												},
+												"poster": { "src": "/images/63adf8c8b2c93ed22121b823.jpg" },
 												"duration": 6605.791667,
 												"genreNames": ["Боевики", "Триллеры", "Драмы", "Криминал"]
 											},
 											{
 												"_id": "63ad873eb2c93ed22121a7c3",
 												"name": "В тени Луны",
-												"poster": {
-													"src": "/images/63ad8741b2c93ed22121a7ed.jpg"
-												},
+												"poster": { "src": "/images/63ad8741b2c93ed22121a7ed.jpg" },
 												"duration": 6931.791667,
 												"genreNames": ["Боевики", "Фантастика", "Криминал", "Триллеры", "Детективы"]
 											},
 											{
 												"_id": "63acc01cb2c93ed221219609",
 												"name": "Кейт",
-												"poster": {
-													"src": "/images/63acc01fb2c93ed221219637.jpg"
-												},
+												"poster": { "src": "/images/63acc01fb2c93ed221219637.jpg" },
 												"duration": 6470.125,
 												"genreNames": ["Боевики", "Триллеры", "Криминал"]
 											},
 											{
 												"_id": "63b5deb6bada9539c72fb48e",
 												"name": "Экстремо",
-												"poster": {
-													"src": "/images/63b5def4bada9539c72fb590.jpg"
-												},
+												"poster": { "src": "/images/63b5def4bada9539c72fb590.jpg" },
 												"duration": 6742.666667,
 												"genreNames": ["Боевики", "Триллеры", "Драмы", "Криминал", "Приключения"]
 											},
 											{
 												"_id": "63c69fc21c98adb3690e592f",
 												"name": "В упор",
-												"poster": {
-													"src": "/images/63c94cc56396809788e002c7.jpg"
-												},
+												"poster": { "src": "/images/63c94cc56396809788e002c7.jpg" },
 												"duration": 5201.916667,
 												"genreNames": ["Боевики", "Триллеры", "Криминал"]
 											},
 											{
 												"_id": "63bc071f23c814afb608b170",
 												"name": "Неогранённые алмазы",
-												"poster": {
-													"src": "/images/63bcf11c23c814afb608bf8b.jpg"
-												},
+												"poster": { "src": "/images/63bcf11c23c814afb608bf8b.jpg" },
 												"duration": 8147.666667,
 												"genreNames": ["Триллеры", "Драмы", "Криминал"]
 											},
 											{
 												"_id": "63bd642e23c814afb608ffde",
 												"name": "Виновный",
-												"poster": {
-													"src": "/images/63be3f5f23c814afb60919da.jpg"
-												},
+												"poster": { "src": "/images/63be3f5f23c814afb60919da.jpg" },
 												"duration": 5465.375,
 												"genreNames": ["Триллеры", "Криминал"]
 											},
 											{
 												"_id": "63dc1fd594254691aaa7d4c8",
 												"name": "Расплата за грехи",
-												"poster": {
-													"src": "/images/63dd438128f91e4e4703f397.jpg"
-												},
+												"poster": { "src": "/images/63dd438128f91e4e4703f397.jpg" },
 												"duration": 5778.75,
 												"genreNames": ["Триллеры", "Драмы", "Мелодрамы", "Криминал", "Детективы"]
 											},
 											{
 												"_id": "63bbff8523c814afb608ac10",
 												"name": "Тройная граница",
-												"poster": {
-													"src": "/images/63bcf95623c814afb608c454.jpg"
-												},
+												"poster": { "src": "/images/63bcf95623c814afb608c454.jpg" },
 												"duration": 7557.375,
 												"genreNames": ["Боевики", "Триллеры"]
 											},
 											{
 												"_id": "63bbfd4223c814afb608aa04",
 												"name": "Тайлер Рейк: Операция по спасению",
-												"poster": {
-													"src": "/images/63bd26e323c814afb608d4e5.jpg"
-												},
+												"poster": { "src": "/images/63bd26e323c814afb608d4e5.jpg" },
 												"duration": 7052.875,
 												"genreNames": ["Боевики", "Криминал"]
 											},
 											{
 												"_id": "63c213557621fcffb6e676d5",
 												"name": "В погоне за Бонни и Клайдом",
-												"poster": {
-													"src": "/images/63c3d4561c98adb3690e03a4.jpg"
-												},
+												"poster": { "src": "/images/63c3d4561c98adb3690e03a4.jpg" },
 												"duration": 7936.541667,
 												"genreNames": ["Триллеры", "Драмы", "Криминал", "Детективы", "Биографии"]
 											},
 											{
 												"_id": "63bb00ad4b33357ef706c023",
 												"name": "Внезапная удача",
-												"poster": {
-													"src": "/images/63bb9be6a10c560357ec32fd.jpg"
-												},
+												"poster": { "src": "/images/63bb9be6a10c560357ec32fd.jpg" },
 												"duration": 5546.5,
 												"genreNames": ["Триллеры", "Драмы", "Криминал"]
 											},
 											{
 												"_id": "63c1ddc423c814afb609b318",
 												"name": "Земля и кровь",
-												"poster": {
-													"src": "/images/641f48a9944e8bd192d19541.jpg"
-												},
+												"poster": { "src": "/images/641f48a9944e8bd192d19541.jpg" },
 												"duration": 4856.5,
 												"genreNames": ["Боевики", "Криминал"]
 											},
 											{
 												"_id": "63c69e511c98adb3690e58fe",
 												"name": "Утёйа, 22 июля",
-												"poster": {
-													"src": "/images/63cd96a41a0acf0408641cd4.jpg"
-												},
+												"poster": { "src": "/images/63cd96a41a0acf0408641cd4.jpg" },
 												"duration": 8639.041667,
 												"genreNames": ["Триллеры", "Драмы", "Криминал", "Исторические"]
 											},
 											{
 												"_id": "63cd29bb1a0acf040863ec84",
 												"name": "Ограбить Муссолини",
-												"poster": {
-													"src": "/images/63d19cc81a0acf040864e8c0.jpg"
-												},
+												"poster": { "src": "/images/63d19cc81a0acf040864e8c0.jpg" },
 												"duration": 5986.958333,
 												"genreNames": ["Боевики", "Комедии", "Криминал", "Драмы"]
 											},
 											{
 												"_id": "63cd25911a0acf040863e817",
 												"name": "4 наёмника",
-												"poster": {
-													"src": "/images/6407a0d35da2f6823e4b31d3.jpg"
-												},
+												"poster": { "src": "/images/6407a0d35da2f6823e4b31d3.jpg" },
 												"duration": 8512.625,
 												"genreNames": ["Боевики", "Комедии", "Криминал"]
 											}
@@ -7300,10 +6413,7 @@
 											"type": "boolean",
 											"description": "Значение true - сообщение об успехе"
 										},
-										"movieId": {
-											"type": "string",
-											"description": "Id фильма (mongoose.ObjectId)"
-										},
+										"movieId": { "type": "string", "description": "Id фильма (mongoose.ObjectId)" },
 										"rating": {
 											"type": "number",
 											"description": "Рейтинг который поставил пользователь фильму с переданным id"
@@ -7348,22 +6458,13 @@
 								"schema": {
 									"type": "object",
 									"properties": {
-										"type": {
-											"type": "string",
-											"description": "Надпись \"success\""
-										},
-										"alert": {
-											"type": "boolean",
-											"description": "Значение true"
-										},
+										"type": { "type": "string", "description": "Надпись \"success\"" },
+										"alert": { "type": "boolean", "description": "Значение true" },
 										"_id": {
 											"type": "string",
 											"description": "Id удаленного фильма или сериала (mongoose.ObjectId)"
 										},
-										"msg": {
-											"type": "string",
-											"description": "Надпись \"Успешно удалено\""
-										}
+										"msg": { "type": "string", "description": "Надпись \"Успешно удалено\"" }
 									},
 									"example": {
 										"type": "success",
@@ -7408,10 +6509,7 @@
 											"description": "Добавлен ли данный фильм данным пользователем в избранное"
 										}
 									},
-									"example": {
-										"movieId": "63ac8aa1b2c93ed2212186e7",
-										"isFavorite": true
-									}
+									"example": { "movieId": "63ac8aa1b2c93ed2212186e7", "isFavorite": true }
 								}
 							}
 						}
@@ -7449,10 +6547,7 @@
 											"type": "boolean",
 											"description": "Значение true - сообщение об успехе"
 										},
-										"movieId": {
-											"type": "string",
-											"description": "Id фильма (mongoose.ObjectId)"
-										},
+										"movieId": { "type": "string", "description": "Id фильма (mongoose.ObjectId)" },
 										"isFavorite": {
 											"type": "boolean",
 											"description": "Добавлен ли данный фильм данным пользователем в избранное"
@@ -7500,10 +6595,7 @@
 											"description": "Добавлен ли данный фильм данным пользователем в закладки"
 										}
 									},
-									"example": {
-										"movieId": "63ac8aa1b2c93ed2212186e7",
-										"isBookmark": true
-									}
+									"example": { "movieId": "63ac8aa1b2c93ed2212186e7", "isBookmark": true }
 								}
 							}
 						}
@@ -7596,10 +6688,7 @@
 												"type": "string",
 												"description": "Время окончания просмотра фильма в секундах"
 											},
-											"updatedAt": {
-												"type": "string",
-												"description": "Дата обновления"
-											}
+											"updatedAt": { "type": "string", "description": "Дата обновления" }
 										}
 									},
 									"example": [
@@ -7666,10 +6755,7 @@
 								"schema": {
 									"type": "object",
 									"properties": {
-										"link": {
-											"type": "string",
-											"description": "Реферальная ссылка"
-										},
+										"link": { "type": "string", "description": "Реферальная ссылка" },
 										"referralPercentBonuse": {
 											"type": "number",
 											"description": "Бонус в процентах от реферала"
@@ -7682,14 +6768,8 @@
 											"type": "object",
 											"description": "Данные карты для вывода баланса",
 											"properties": {
-												"number": {
-													"type": "string",
-													"description": "Номер карты"
-												},
-												"balance": {
-													"type": "string",
-													"cardholder": "Владелец карты"
-												}
+												"number": { "type": "string", "description": "Номер карты" },
+												"balance": { "type": "string", "cardholder": "Владелец карты" }
 											}
 										}
 									},
@@ -7697,10 +6777,7 @@
 										"link": "deercvt4btf/?r=6480807e904d20e5d4c1b6db",
 										"referralPercentBonuse": 50,
 										"balance": 5000,
-										"card": {
-											"number": "1234123412341234",
-											"cardholder": "Иванов СН"
-										}
+										"card": { "number": "1234123412341234", "cardholder": "Иванов СН" }
 									}
 								}
 							}
@@ -7735,10 +6812,7 @@
 								"schema": {
 									"type": "object",
 									"properties": {
-										"totalSize": {
-											"type": "number",
-											"description": "Общее количество рефералов"
-										},
+										"totalSize": { "type": "number", "description": "Общее количество рефералов" },
 										"items": {
 											"type": "array",
 											"uniqueItems": true,
@@ -7749,14 +6823,8 @@
 													"payment": {
 														"type": "object",
 														"properties": {
-															"createdAt": {
-																"type": "string",
-																"description": "Дата создания"
-															},
-															"status": {
-																"type": "string",
-																"description": "Статус"
-															},
+															"createdAt": { "type": "string", "description": "Дата создания" },
+															"status": { "type": "string", "description": "Статус" },
 															"bonuseAmount": {
 																"type": "string",
 																"description": "Бонусное количество рублей"
@@ -7770,10 +6838,7 @@
 																"type": "string",
 																"description": "Ссылка на файл картинку аватарки"
 															},
-															"firstname": {
-																"type": "string",
-																"description": "Имя пользователя"
-															}
+															"firstname": { "type": "string", "description": "Имя пользователя" }
 														}
 													}
 												}
@@ -7845,10 +6910,7 @@
 								"schema": {
 									"type": "object",
 									"properties": {
-										"totalSize": {
-											"type": "number",
-											"description": "Всего записей"
-										},
+										"totalSize": { "type": "number", "description": "Всего записей" },
 										"items": {
 											"type": "array",
 											"uniqueItems": true,
@@ -7865,18 +6927,9 @@
 															}
 														}
 													},
-													"amount": {
-														"type": "object",
-														"description": "Сумма"
-													},
-													"createdAt": {
-														"type": "string",
-														"description": "Дата создания"
-													},
-													"status": {
-														"type": "string",
-														"description": "Статус"
-													}
+													"amount": { "type": "object", "description": "Сумма" },
+													"createdAt": { "type": "string", "description": "Дата создания" },
+													"status": { "type": "string", "description": "Статус" }
 												}
 											}
 										}
@@ -7939,11 +6992,7 @@
 							"schema": {
 								"type": "object",
 								"properties": {
-									"number": {
-										"type": "string",
-										"description": "Номер карты",
-										"required": true
-									},
+									"number": { "type": "string", "description": "Номер карты", "required": true },
 									"cardholder": {
 										"type": "string",
 										"description": "Держатель карты",
@@ -7963,17 +7012,10 @@
 									"type": "object",
 									"properties": {
 										"type": { "type": "string", "description": "success" },
-										"msg": {
-											"type": "string",
-											"description": "Карта обновлена"
-										},
+										"msg": { "type": "string", "description": "Карта обновлена" },
 										"alert": { "type": "boolean", "description": true }
 									},
-									"example": {
-										"type": "success",
-										"alert": true,
-										"msg": "Карта обновлена"
-									}
+									"example": { "type": "success", "alert": true, "msg": "Карта обновлена" }
 								}
 							}
 						}
@@ -7994,17 +7036,10 @@
 									"type": "object",
 									"properties": {
 										"type": { "type": "string", "description": "success" },
-										"msg": {
-											"type": "string",
-											"description": "Данные карты удалены"
-										},
+										"msg": { "type": "string", "description": "Данные карты удалены" },
 										"alert": { "type": "boolean", "description": true }
 									},
-									"example": {
-										"type": "success",
-										"alert": true,
-										"msg": "Данные карты удалены"
-									}
+									"example": { "type": "success", "alert": true, "msg": "Данные карты удалены" }
 								}
 							}
 						}
@@ -8025,10 +7060,7 @@
 									"type": "object",
 									"properties": {
 										"type": { "type": "string", "description": "success" },
-										"msg": {
-											"type": "string",
-											"description": "Создана заявка на вывод средств"
-										},
+										"msg": { "type": "string", "description": "Создана заявка на вывод средств" },
 										"alert": { "type": "boolean", "description": true }
 									},
 									"example": {
