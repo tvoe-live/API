@@ -36,14 +36,14 @@ const movieOperations = ({
 		as: "category"
 	};
 	const project = {
-		_id: true,
+		_id: false,
 		name: true,
 		badge: true,
 		rating: true,
 		ageLevel: true,
 		dateReleased: true,
 		categoryAlias: true,
-		trailer:true,
+		trailer: true,
 		series: {
 			$cond: {
 			  if: { $eq: ["$categoryAlias", "serials"] },

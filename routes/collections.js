@@ -25,7 +25,7 @@ const carousel = [
 				}
 			} },
 			{ $project: {
-				_id: true
+				_id: false
 			} }
 		],
 		as: "countPageViewed"
@@ -33,7 +33,7 @@ const carousel = [
 	...movieOperations({
 		addToProject: {
 			poster: { src: true },
-			logo: true,
+			logo:  { src: true },
 			cover: { src: true },
 			genreName: { $first: "$genres.name" },
 			countPageViewed: { $size: "$countPageViewed" },
@@ -75,8 +75,8 @@ router.get('/', async (req, res) => {
 		poster: true,
 		trailer: true,
 		logo: true,
-		cover:true,
-		rating:true,
+		cover: true,
+		rating: true,
 		categoryAlias: true,
 		url: { $concat: [ "/p/", "$alias" ] },
 	};
@@ -114,7 +114,7 @@ router.get('/', async (req, res) => {
 				//Топ 10 фильмов по просмотрам за неделю
 				"top10": [
 					{ $project: {
-						_id: true,
+						_id: false,
 						name: true,
 						alias:true,
 						shortDesc:true,
@@ -126,7 +126,7 @@ router.get('/', async (req, res) => {
 						foreignField: "movieId",
 						pipeline: [
 							{ $project: {
-								_id: true,
+								_id: false,
 								userId: true,
 								movieId:true,
 								videoId:true,
@@ -169,6 +169,8 @@ router.get('/', async (req, res) => {
 					...carousel,
 					{$limit: limit},
 					{ $project: {
+						_id: false,
+						series: false,
 						countPageViewed: false
 					} }
 				],
@@ -183,6 +185,8 @@ router.get('/', async (req, res) => {
 						limit: limit
 					}),
 					{ $project: {
+						_id: false,
+						series: false,
 						genres: false,
 						ageLevel: false,
 						dateReleased: false,
@@ -314,11 +318,11 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 		pipeline: [
 			{ $project: {
 					name: true,
-					alias:true,
-					series:true,
-					categoryAlias:true,
+					alias: true,
+					series: true,
+					categoryAlias: true,
 					films:{
-						duration:true
+						duration: true
 					},
 					poster: {
 						src: true
