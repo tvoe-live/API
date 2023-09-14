@@ -132,7 +132,7 @@ router.get('/', async (req, res) => {
 					top10: [
 						{
 							$project: {
-								_id: false,
+								_id: true,
 								name: true,
 								alias: true,
 								poster: true,
@@ -146,7 +146,7 @@ router.get('/', async (req, res) => {
 								pipeline: [
 									{
 										$project: {
-											_id: false,
+											_id: true,
 											movieId: true,
 											videoId: true,
 											updatedAt: true,
