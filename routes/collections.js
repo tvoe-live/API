@@ -32,7 +32,8 @@ const carousel = [
 				},
 				{
 					$project: {
-						_id: true,
+						_id: false,
+						series: false
 					},
 				},
 			],
@@ -131,10 +132,9 @@ router.get('/', async (req, res) => {
 					top10: [
 						{
 							$project: {
-								_id: true,
+								_id: false,
 								name: true,
 								alias: true,
-								shortDesc: true,
 								poster: true,
 							},
 						},
@@ -146,8 +146,7 @@ router.get('/', async (req, res) => {
 								pipeline: [
 									{
 										$project: {
-											_id: true,
-											userId: true,
+											_id: false,
 											movieId: true,
 											videoId: true,
 											updatedAt: true,
@@ -199,6 +198,7 @@ router.get('/', async (req, res) => {
 						{ $limit: limit },
 						{
 							$project: {
+								series: false,
 								countPageViewed: false,
 							},
 						},
@@ -215,6 +215,7 @@ router.get('/', async (req, res) => {
 						}),
 						{
 							$project: {
+								series: false,
 								genres: false,
 								ageLevel: false,
 								dateReleased: false,
@@ -284,6 +285,7 @@ router.get('/', async (req, res) => {
 						{
 							$project: {
 								items: {
+									series: false,
 									genres: false,
 									ageLevel: false,
 									dateReleased: false,
