@@ -3,4 +3,4 @@ const getBoolean = (value, defaultValue = undefined) => {
 	return Boolean(JSON.parse(value.toString()))
 }
 
-module.exports = getBoolean;
+module.exports = getBoolean
