@@ -12,6 +12,7 @@ const movieOperations = require('../../helpers/movieOperations');
 router.get('/', verify.token, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100);
+	const subprofileId = req.body?.subprofileId
 
 	const agregationListForTotalSize = [
 		{ $lookup: {
@@ -19,9 +20,10 @@ router.get('/', verify.token, async (req, res) => {
 			localField: "_id",
 			foreignField: "movieId",
 			pipeline: [
-				{ $match: { 
+				{ $match: {
 					userId: req.user._id,
-					isFavorite: true
+					isFavorite: true,
+					...(subprofileId && {subprofileId})
 				} },
 				{ $sort: { updatedAt: -1 } }
 			],
@@ -29,15 +31,15 @@ router.get('/', verify.token, async (req, res) => {
 		} },
 		{ $unwind: "$favorite" },
 	]
-	
+
 	try {
 		Movie.aggregate([
 			{
 				"$facet": {
 					"totalSize":[
 						...agregationListForTotalSize,
-						{ $group: { 
-							_id: null, 
+						{ $group: {
+							_id: null,
 							count: { $sum: 1 }
 						} },
 						{ $project: { _id: false } },

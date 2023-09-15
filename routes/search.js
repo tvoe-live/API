@@ -262,6 +262,9 @@ router.get('/', getSearchQuery, async (req, res) => {
 // Добавление записи просмотра страницы в логи
 // Из-за обнаружения ботов, логгирование должно быть отдельным запросом
 router.post('/addLog', getSearchQuery, async (req, res) => {
+
+	const {	subprofileId } = req.body;
+
 	const query = req.searchQuery;
 
 	if(!req.searchQuery || !req.searchQuery.length) {
@@ -284,7 +287,7 @@ router.post('/addLog', getSearchQuery, async (req, res) => {
 
 	// Получение userId от авторизованных пользователей
 	await verify.token(req);
-	const user = req.user ? { userId: req.user._id } : {};
+	const user = req.user ? { userId: req.user._id,  subprofileId} : {};
 
 	try {
 		searchLog.create({

@@ -5,8 +5,9 @@ const mongoose = require('mongoose');
  */
 
 const movieFavoriteSchema = new mongoose.Schema({
-	movieId: mongoose.Schema.Types.ObjectId,
-	userId: mongoose.Schema.Types.ObjectId,
+	movieId: {type: mongoose.Schema.Types.ObjectId, index: true},
+	userId:  {type: mongoose.Schema.Types.ObjectId, index: true},
+	subprofileId: mongoose.Schema.Types.ObjectId,
 	isFavorite: Boolean
 }, {
 	timestamps: true

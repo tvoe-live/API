@@ -14,7 +14,7 @@ const { uploadImageToS3 } = require('../helpers/uploadImage');
  * Авторизация / регистрация через Яндекс и разрушение сессии
  */
 
-// Скачивание аватарки 
+// Скачивание аватарки
 const downloadAvatar = async (res, default_avatar_id) => {
 	try {
 		const { data } = await axios({
@@ -55,8 +55,8 @@ router.post('/login', async (req, res) => {
 	let refererUserId = req.header('RefererUserId') || null
 
 	if(!authorization) {
-		return resError({ 
-			res, 
+		return resError({
+			res,
 			alert: true,
 			msg: 'Не получен authorization'
 		});
@@ -66,7 +66,7 @@ router.post('/login', async (req, res) => {
 		axios({
 			method: 'GET',
 			url: 'https://login.yandex.ru/info?format=json',
-			headers: { 
+			headers: {
 				'Authorization': authorization
 			}
 		})
@@ -74,7 +74,7 @@ router.post('/login', async (req, res) => {
 			const { data } = response;
 
 			if(!data.id) return res.status(400).json(data);
-			
+
 			const {
 				id,
 				sex,
@@ -93,7 +93,7 @@ router.post('/login', async (req, res) => {
 
 			// Поиск пользователя в БД
 			let user = await User.findOne({ initial_id: id });
-			
+
 			// Если пользователя нет в БД, создаем нового
 			if(!user) {
 				// Скачать аватар с поставщика регистрации
@@ -118,7 +118,11 @@ router.post('/login', async (req, res) => {
 					firstname: first_name,
 					displayName: display_name,
 					phone: default_phone?.number,
-					lastVisitAt: Date.now()
+					lastVisitAt: Date.now(),
+					subprofiles:[{
+						firstname: "Детский профиль 6+",
+						avatar:'/images/6503080e8ae1faa986122e92.jpg'
+					}]
 				}).save();
 
 				if(refererUserId) {
@@ -144,7 +148,7 @@ router.post('/login', async (req, res) => {
 			const token = await generateAccessToken(userId);
 
 			await User.updateOne(
-				{ _id: userId }, 
+				{ _id: userId },
 				{ $push: {
 					sessions: {
 						token,
@@ -199,8 +203,8 @@ router.post('/logout', verify.token, async (req, res) => {
 	const { token } = req.body;
 
 	if(!token) {
-		return resError({ 
-			res, 
+		return resError({
+			res,
 			alert: true,
 			msg: 'Не получен токен'
 		});
@@ -213,8 +217,8 @@ router.post('/logout', verify.token, async (req, res) => {
 		});
 	}
 
-	const isLogout = await User.findOne({ 
-		_id: req.user._id, 
+	const isLogout = await User.findOne({
+		_id: req.user._id,
 		sessions: {
 			$elemMatch: { token }
 		}
@@ -236,7 +240,7 @@ router.post('/logout', verify.token, async (req, res) => {
 	}).save();
 
 	await User.updateOne(
-		{ _id: req.user._id }, 
+		{ _id: req.user._id },
 		{ $pull: {
 			sessions: { token }
 		} }

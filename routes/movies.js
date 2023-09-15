@@ -315,12 +315,12 @@ router.get('/movie', async (req, res) => {
 
 // Получить рейтинг и комментарий поставленный пользователем
 router.get('/rating', verify.token, async (req, res) => {
-
-	const { movieId } = req.query;
+	const { movieId,  subprofileId } = req.query;
 
 	const rating = await MovieRating.findOne({
 		movieId,
-		userId: req.user._id
+		userId: req.user._id,
+		...(subprofileId? {subprofileId}: {subprofileId:null})
 	}, {
 		_id: false,
 		rating: true,
@@ -335,7 +335,8 @@ router.post('/rating', verify.token, async (req, res) => {
 	let {
 		movieId,
 		rating,
-		review
+		review,
+		subprofileId
 	} = req.body;
 
 	if(!movieId) {
@@ -386,7 +387,8 @@ router.post('/rating', verify.token, async (req, res) => {
 		const userRating = await MovieRating.findOneAndUpdate(
 			{
 				movieId,
-				userId: req.user._id
+				userId: req.user._id,
+				...(subprofileId? {subprofileId}: {subprofileId:null})
 			},
 			{
 				$set: {
@@ -403,6 +405,7 @@ router.post('/rating', verify.token, async (req, res) => {
 				review,
 				movieId,
 				userId: req.user._id,
+				subprofileId
 			});
 		}
 
@@ -444,6 +447,7 @@ router.post('/rating', verify.token, async (req, res) => {
 router.delete('/rating', verify.token, async (req, res) => {
 	let {
 		movieId,
+	    subprofileId
 	} = req.body;
 
 	if(!movieId) {
@@ -462,7 +466,8 @@ router.delete('/rating', verify.token, async (req, res) => {
 		 await MovieRating.findOneAndUpdate(
 			{
 				movieId,
-				userId: req.user._id
+				userId: req.user._id,
+				...(subprofileId? {subprofileId}: {subprofileId:null})
 			},
 			{
 				$set: {
@@ -510,7 +515,7 @@ router.delete('/rating', verify.token, async (req, res) => {
 
 // Получение статуса на избранное
 router.get('/favorite', verify.token, async (req, res) => {
-	const { movieId } = req.query;
+	const { movieId, subprofileId } = req.query;
 
 	const movie = await Movie.findOne({ _id: movieId }, { _id: true });
 
@@ -525,7 +530,8 @@ router.get('/favorite', verify.token, async (req, res) => {
 	const userFavorite = await MovieFavorite.findOne(
 		{
 			movieId,
-			userId: req.user._id
+			userId: req.user._id,
+			...(subprofileId? {subprofileId}: {subprofileId:null})
 		},
 		{
 			_id: false,
@@ -544,7 +550,7 @@ router.get('/favorite', verify.token, async (req, res) => {
 // Добавление / удаление из избранного
 router.post('/favorite', verify.token, async (req, res) => {
 
-	const { movieId } = req.body;
+	const { movieId, subprofileId } = req.body;
 
 	if(!movieId) {
 		return resError({
@@ -571,7 +577,8 @@ router.post('/favorite', verify.token, async (req, res) => {
 		const userFavorite = await MovieFavorite.findOne(
 			{
 				movieId,
-				userId: req.user._id
+				userId: req.user._id,
+				...(subprofileId? {subprofileId}: {subprofileId:null})
 			},
 			{
 				_id: true,
@@ -596,7 +603,8 @@ router.post('/favorite', verify.token, async (req, res) => {
 			await MovieFavorite.create({
 				movieId,
 				isFavorite,
-				userId: req.user._id
+				userId: req.user._id,
+				subprofileId
 			});
 		}
 
@@ -613,7 +621,7 @@ router.post('/favorite', verify.token, async (req, res) => {
 
 // Получение статуса на закладки
 router.get('/bookmark', verify.token, async (req, res) => {
-	const { movieId } = req.query;
+	const { movieId, subprofileId } = req.query;
 
 	const movie = await Movie.findOne({ _id: movieId }, { _id: true });
 
@@ -628,7 +636,8 @@ router.get('/bookmark', verify.token, async (req, res) => {
 	const userBookmark = await MovieBookmark.findOne(
 		{
 			movieId,
-			userId: req.user._id
+			userId: req.user._id,
+			...(subprofileId? {subprofileId}: {subprofileId:null})
 		},
 		{
 			_id: false,
@@ -647,7 +656,7 @@ router.get('/bookmark', verify.token, async (req, res) => {
 // Добавление / удаление из закладок
 router.post('/bookmark', verify.token, async (req, res) => {
 
-	const { movieId } = req.body;
+	const { movieId, subprofileId } = req.body;
 
 	if(!movieId) {
 		return resError({
@@ -673,7 +682,8 @@ router.post('/bookmark', verify.token, async (req, res) => {
 		const userBookmark = await MovieBookmark.findOne(
 			{
 				movieId,
-				userId: req.user._id
+				userId: req.user._id,
+				...(subprofileId? {subprofileId}: {subprofileId:null})
 			},
 			{
 				_id: true,
@@ -697,7 +707,8 @@ router.post('/bookmark', verify.token, async (req, res) => {
 			await MovieBookmark.create({
 				movieId,
 				isBookmark,
-				userId: req.user._id
+				userId: req.user._id,
+				subprofileId
 			});
 		}
 
@@ -714,7 +725,7 @@ router.post('/bookmark', verify.token, async (req, res) => {
 
 // Получение логов просмотра фильма / серий сериала
 router.get('/logs', verify.token, async (req, res) => {
-	const { movieId } = req.query;
+	const { movieId, subprofileId } = req.query;
 
 	if(!movieId) {
 		return resError({
@@ -727,7 +738,8 @@ router.get('/logs', verify.token, async (req, res) => {
 	try {
 		const logs = await MoviePageLog.find({
 			movieId,
-			userId: req.user._id
+			userId: req.user._id,
+			...(subprofileId? {subprofileId}: {subprofileId:null})
 		}, {
 			_id: false,
 			videoId: true,
@@ -751,6 +763,7 @@ router.post('/addLog', verify.token, async (req, res) => {
 		endTime,
 		startTime,
 		action,
+		subprofileId
 	} = req.body;
 
 	// action == 'new': открытие видео
@@ -773,7 +786,8 @@ router.post('/addLog', verify.token, async (req, res) => {
 
 	const logExists = await MoviePageLog.findOne({
 		videoId,
-		userId: req.user._id
+		userId: req.user._id,
+		...(subprofileId? {subprofileId}: {subprofileId:null})
 	}, { _id: true });
 
 	const device = {
@@ -792,7 +806,8 @@ router.post('/addLog', verify.token, async (req, res) => {
 			await MoviePageLog.updateOne(
 				{
 					videoId,
-					userId: req.user._id
+					userId: req.user._id,
+					...(subprofileId? {subprofileId}: {subprofileId:null})
 				},
 				{
 					$set: {
@@ -811,7 +826,8 @@ router.post('/addLog', verify.token, async (req, res) => {
 				videoId,
 				endTime,
 				startTime,
-				userId: req.user._id
+				userId: req.user._id,
+				...(subprofileId && {subprofileId})
 			});
 		}
 

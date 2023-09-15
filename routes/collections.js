@@ -6,6 +6,7 @@ const resError = require('../helpers/resError');
 const movieOperations = require('../helpers/movieOperations');
 const verify = require('../middlewares/verify');
 const MoviePageLog = require('../models/moviePageLog');
+const mongoose = require('mongoose');
 
 const carousel = [
 	{ $lookup: {
@@ -304,8 +305,10 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20);
+	const subprofileId = req.query?.subprofileId
 
 	const titlesDuration =  10*60
+
 
 	const lookup = {
 		from: "movies",
@@ -399,7 +402,8 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 					//Всего записей
 					"totalSize": [
 						{ $match: {
-							userId: req.user._id
+							userId: req.user._id,
+							...(subprofileId? {subprofileId: mongoose.Types.ObjectId(subprofileId)}: {subprofileId:null})
 						} },
 						{ $lookup: lookup },
 						{ $unwind: { path: "$movie" } },
@@ -415,7 +419,8 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 					// Список
 					"items":[
 						{ $match: {
-							userId: req.user._id
+							userId: req.user._id,
+							...(subprofileId? {subprofileId: mongoose.Types.ObjectId(subprofileId)}: {subprofileId:null})
 						} },
 						{ $lookup: lookup },
 						{ $unwind: { path: "$movie" } },
@@ -445,6 +450,7 @@ router.get('/possibleYouLike', verify.token, async (req, res) => {
 
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20);
+	const subprofileId = req.query?.subprofileId
 
 	const lookup = {
 		from: "movies",
@@ -468,10 +474,11 @@ router.get('/possibleYouLike', verify.token, async (req, res) => {
 					// Список
 					"items":[
 						{ $match: {
-							userId: req.user._id
+							userId: req.user._id,
+							...(subprofileId? {subprofileId: mongoose.Types.ObjectId(subprofileId)}: {subprofileId:null})
 						} },
 						{ $lookup: lookup },
-						{$project:{
+						{ $project:{
 							userId:true,
 							movieId:true,
 							movie:true
@@ -829,6 +836,7 @@ router.get('/popular', async (req, res) => {
 router.get('/carouselWithFavoritesAndBookmarks', verify.token, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 18 ? req.query.limit : 18);
+	const subprofileId = req.query?.subprofileId
 
 	const mainAgregation = [
 		...carousel,
@@ -839,6 +847,7 @@ router.get('/carouselWithFavoritesAndBookmarks', verify.token, async (req, res) 
 			pipeline: [
 				{ $match: {
 					userId: req.user._id,
+					...(subprofileId? {subprofileId: mongoose.Types.ObjectId(subprofileId)}: {subprofileId:null})
 				} },
 			],
 			as: "favorite"
@@ -851,6 +860,7 @@ router.get('/carouselWithFavoritesAndBookmarks', verify.token, async (req, res) 
 			pipeline: [
 				{ $match: {
 					userId: req.user._id,
+					...(subprofileId? {subprofileId: mongoose.Types.ObjectId(subprofileId)}: {subprofileId:null})
 				} },
 			],
 			as: "bookmark"

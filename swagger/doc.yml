@@ -4739,7 +4739,7 @@ paths:
 
   /search/oftenSeek:
     get:
-      summary: Поиск > Часто ищут (! Сейчас логика из карусели !)
+      summary: Поиск > Часто ищут
       tags:
         - Search
       parameters:

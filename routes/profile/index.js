@@ -9,6 +9,7 @@ const resError = require('../../helpers/resError');
 const resSuccess = require('../../helpers/resSuccess');
 const { uploadImageToS3 } = require('../../helpers/uploadImage');
 const { deleteFileFromS3 } = require('../../helpers/deleteFile');
+const mongoose = require('mongoose');
 
 /*
  * Профиль > Основное
@@ -29,9 +30,11 @@ router.get('/', verify.token, async (req, res) => {
 			avatar: true,
 			deleted: true,
 			firstname: true,
+			lastname:true,
 			subscribe: true,
 			allowTrialTariff: true,
 			disabledNotifications:true,
+			subprofiles:true
 		}
 	);
 
@@ -238,5 +241,108 @@ router.delete('/avatar', verify.token, async (req, res) => {
 	})
 });
 
+// Создание подпрофиля
+router.post('/subprofile', verify.token, uploadMemoryStorage.single('file'), async (req, res) => {
+
+	let avatar
+
+	const buffer = req.file?.buffer
+	try {
+
+	if (buffer){
+		const maxSizeMbyte = 5; // Лимит 5MB
+		const maxSizeByte = maxSizeMbyte * 1024 * 1024;
+
+		if(req.file.buffer.byteLength >= maxSizeByte) {
+			return resError({
+				res,
+				alert: true,
+				msg: `Размер файла не должен превышать ${maxSizeMbyte} МБ`
+			});
+		}
+
+		const { fileSrc } = await uploadImageToS3({
+			res,
+			buffer,
+			width: 100,
+			height: 100,
+			fit: 'fill'
+		})
+
+	    avatar = fileSrc
+	}
+
+	const {
+		firstname,
+		lastname
+	} = req.body
+
+	if(!firstname || !lastname) {
+		return resError({
+			res,
+			alert: true,
+			msg: "Поля для ввода имени и фамилии являются обязательными"
+		});
+	}
+
+
+	const user = await User.findOne({ _id: req.user._id });
+
+	const subprofile = {
+		firstname, lastname, avatar
+	}
+	user.subprofiles.push(subprofile)
+	user.save()
+
+	return resSuccess({
+		res,
+		alert: true,
+		msg: 'Подпрофиль успешно добавлен',
+		subprofile:{
+			...subprofile,
+			_id:user.subprofiles.at(-1)._id
+		}
+	})
+
+	} catch(err){
+		console.log('err:', err)
+		return resError({ res, msg: err });
+	}
+});
+
+// Удаление подпрофиля
+router.delete('/subprofile', verify.token, async (req, res) => {
+
+	const {
+		subprofileId
+	} = req.body
+
+	if(!subprofileId) return resError({ res, msg: 'Не передан subprofileId' });
+
+	try {
+		const user = await User.findOne({ _id: req.user._id });
+
+		const subprofile = user.subprofiles.find(subprofile=>String(subprofile._id)==subprofileId)
+		
+		const pathToFileIng = subprofile?.avatar
+		// Удаление файла картинки
+		if(pathToFileIng) await deleteFileFromS3(pathToFileIng)
+
+		const newSubprofiles = user.subprofiles.filter(subprofile=>String(subprofile._id)!==subprofileId)
+
+		user.subprofiles = newSubprofiles
+		user.save()
+
+		return resSuccess({
+			res,
+			alert: true,
+			msg: 'Успешно удалено'
+		})
+
+	} catch(err){
+		console.log('err:', err)
+		return resError({ res, msg: err });
+	}
+});
 
 module.exports = router;

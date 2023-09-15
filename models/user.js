@@ -37,6 +37,12 @@ const userSchema = new mongoose.Schema({
 		createdAt: Date
 	}],
 
+	subprofiles: [{
+		avatar: String,
+		lastname: String,
+		firstname: String,
+	}],
+
 	subscribe: { // Равен null, если подписка не действует
 		startAt: Date, // Начало подписки
 		finishAt: Date, // Конец подписки
