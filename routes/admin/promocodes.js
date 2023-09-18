@@ -84,11 +84,24 @@ router.get('/', verify.token, verify.isAdmin, async (req, res) => {
  */
 
 router.post('/', verify.token, verify.isAdmin, async (req, res) => {
-	const { title, value, type, startAt, finishAt } = req.body
+	const {
+		title,
+		value,
+		startAt,
+		finishAt,
+		amountActivation,
+		tariffId,
+		discountFormat,
+		sizeDiscount,
+		isActive = false,
+		onlyForNewUsers = true,
+	} = req.body
 
 	if (!title) return resError({ res, msg: 'Не передан title' })
+	if (!amountActivation) return resError({ res, msg: 'Не передан amountActivation' })
+	if (!discountFormat) return resError({ res, msg: 'Не передан discountFormat' })
 	if (!value) return resError({ res, msg: 'Не передан value' })
-	if (!type) return resError({ res, msg: 'Не передан type' })
+
 	if (!startAt)
 		return resError({
 			res,
@@ -105,6 +118,7 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 			title,
 			value,
 			type,
+			amountActivation,
 			startAt: new Date(startAt),
 			finishAt: new Date(finishAt),
 		})
