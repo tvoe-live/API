@@ -591,7 +591,9 @@ router.get('/recentlySeek', verify.token, async (req, res) => {
 router.get('/', getSearchQuery, async (req, res) => {
 	const skip = +(req.query.skip ?? 0)
 	const query = req.searchQuery?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-	const RegExpQuery = new RegExp(query?.replace(/[eё]/gi, '[её]'), 'i')
+	const editSpace = query?.replace(/ /gi, '\\s.*')
+	const RegExpQuery = new RegExp(editSpace?.replace(/[eё]/gi, '[её]'), 'i')
+
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	const aggregationForTotalSize = {
