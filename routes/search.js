@@ -6,6 +6,7 @@ const resError = require('../helpers/resError')
 const searchLog = require('../models/searchLog')
 const movieOperations = require('../helpers/movieOperations')
 const getSearchQuery = require('../middlewares/getSearchQuery')
+const ru = require('convert-layout/ru')
 
 /*
  * Поиск фильмов, сериалов и всего их персонала сьемочной группы
@@ -590,27 +591,84 @@ router.get('/recentlySeek', verify.token, async (req, res) => {
 
 router.get('/', getSearchQuery, async (req, res) => {
 	const skip = +(req.query.skip ?? 0)
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
+
 	const query = req.searchQuery?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 	const editSpace = query?.replace(/ /gi, '\\s.*')
 	const RegExpQuery = new RegExp(editSpace?.replace(/[eё]/gi, '[её]'), 'i')
 
-	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
+	const queryInglishKeyboard = ru.fromEn(query)
+	const editSpaceEnglish = queryInglishKeyboard?.replace(/ /gi, '\\s.*')
+	const RegExpQueryInglishKeyboard = new RegExp(editSpaceEnglish?.replace(/[eё]/gi, '[её]'), 'i')
 
-	const aggregationForTotalSize = {
-		$or: [
-			{ name: RegExpQuery },
-			{ origName: RegExpQuery },
-			{ shortDesc: RegExpQuery },
-			{ fullDesc: RegExpQuery },
-			{ countries: RegExpQuery },
-			{
-				persons: {
-					$elemMatch: { name: RegExpQuery },
+	const mainAgregation = [
+		{
+			$addFields: {
+				similarityScore: {
+					$function: {
+						body: function (s1, s2) {
+							function editDistance(s1, s2) {
+								s1 = s1.toLowerCase()
+								s2 = s2.toLowerCase()
+
+								var costs = new Array()
+								for (var i = 0; i <= s1.length; i++) {
+									var lastValue = i
+									for (var j = 0; j <= s2.length; j++) {
+										if (i == 0) costs[j] = j
+										else {
+											if (j > 0) {
+												var newValue = costs[j - 1]
+												if (s1.charAt(i - 1) != s2.charAt(j - 1))
+													newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1
+												costs[j - 1] = lastValue
+												lastValue = newValue
+											}
+										}
+									}
+									if (i > 0) costs[s2.length] = lastValue
+								}
+								return costs[s2.length]
+							}
+
+							let longer = s1
+							let shorter = s2
+							if (s1.length < s2.length) {
+								longer = s2
+								shorter = s1
+							}
+							var longerLength = longer.length
+							if (longerLength == 0) {
+								return 1.0
+							}
+							return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength)
+						},
+						args: [query, '$name'],
+						lang: 'js',
+					},
 				},
 			},
-		],
-		publishedAt: { $ne: null },
-	}
+		},
+		{
+			$match: {
+				$or: [
+					{ name: RegExpQuery },
+					{ name: RegExpQueryInglishKeyboard },
+					{ origName: RegExpQuery },
+					{ shortDesc: RegExpQuery },
+					{ fullDesc: RegExpQuery },
+					{ countries: RegExpQuery },
+					{
+						persons: {
+							$elemMatch: { name: RegExpQuery },
+						},
+					},
+					{ similarityScore: { $gte: 0.7 } },
+				],
+				publishedAt: { $ne: null },
+			},
+		},
+	]
 
 	if (!req.searchQuery || !req.searchQuery.length) {
 		return resError({
@@ -634,7 +692,7 @@ router.get('/', getSearchQuery, async (req, res) => {
 				$facet: {
 					// Всего записей
 					totalSize: [
-						{ $match: aggregationForTotalSize },
+						...mainAgregation,
 						{
 							$group: {
 								_id: null,
@@ -646,15 +704,17 @@ router.get('/', getSearchQuery, async (req, res) => {
 					],
 					// Список
 					items: [
-						...movieOperations({
-							addToMatch: aggregationForTotalSize,
-							addToProject: {
-								poster: { src: true },
+						...mainAgregation,
+						{
+							$project: {
+								name: true,
+								dataReleased: true,
+								poster: true,
+								url: { $concat: ['/p/', '$alias'] },
 							},
-							skip,
-							limit,
-						}),
-						{ $sort: { _id: -1 } },
+						},
+						{ $skip: skip },
+						{ $limit: limit },
 					],
 				},
 			},

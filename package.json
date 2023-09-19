@@ -14,6 +14,7 @@
 		"@aws-sdk/lib-storage": "^3.290.0",
 		"axios": "^1.1.3",
 		"body-parser": "^1.20.1",
+		"convert-layout": "^0.11.1",
 		"cors": "^2.8.5",
 		"crypto": "^1.0.1",
 		"dotenv": "^16.0.0",
