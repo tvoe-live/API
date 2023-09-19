@@ -12,7 +12,7 @@ const getSearchQuery = async (req, res, next) => {
 		query = query.replace(/\s+/g, ' ')
 
 		req.searchQuery = query
-		req.RegExpQuery = new RegExp(query, 'i')
+		req.RegExpQuery = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
 	}
 
 	next()

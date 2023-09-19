@@ -347,7 +347,7 @@ router.post('/notification', async (req, res) => {
 		}
 	)
 
-	// Начислить рефереру долю с первой подписки пользователя
+	// Начислить рефереру долю с подписки пользователя
 	const shareWithReferrer = async ({ userId, amount, refererUserId }) => {
 		if (!userId || !amount || !refererUserId) return
 
