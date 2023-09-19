@@ -8,7 +8,6 @@ const verify = require('../middlewares/verify')
 const MoviePageLog = require('../models/moviePageLog')
 
 const carousel = [
-
 	{
 		$lookup: {
 			from: 'moviepagelogs',
@@ -33,7 +32,7 @@ const carousel = [
 				{
 					$project: {
 						_id: false,
-						series: false
+						series: false,
 					},
 				},
 			],
@@ -43,7 +42,7 @@ const carousel = [
 	...movieOperations({
 		addToProject: {
 			poster: { src: true },
-			logo:  { src: true },
+			logo: { src: true },
 			cover: { src: true },
 			genreName: { $first: '$genres.name' },
 			countPageViewed: { $size: '$countPageViewed' },
@@ -126,7 +125,6 @@ router.get('/', async (req, res) => {
 							},
 						},
 					],
-
 
 					//Топ 10 фильмов по просмотрам за неделю
 					top10: [
@@ -226,41 +224,41 @@ router.get('/', async (req, res) => {
 					],
 					// Жанры
 					genres: [
-						{
-							$lookup: {
-								from: 'moviepagelogs',
-								localField: '_id',
-								foreignField: 'movieId',
-								pipeline: [
-									{
-										$match: {
-											updatedAt: {
-												$gte: new Date(new Date() - 5 * 60 * 60 * 24 * 1000),
-											},
-										},
-									},
-									{
-										$group: {
-											_id: '$userId',
-											items: {
-												$push: '$$ROOT',
-											},
-										},
-									},
-									{
-										$project: {
-											_id: true,
-										},
-									},
-								],
-								as: 'countPageViewed',
-							},
-						},
+						// {
+						// 	$lookup: {
+						// 		from: 'moviepagelogs',
+						// 		localField: '_id',
+						// 		foreignField: 'movieId',
+						// 		pipeline: [
+						// 			{
+						// 				$match: {
+						// 					updatedAt: {
+						// 						$gte: new Date(new Date() - 5 * 60 * 60 * 24 * 1000),
+						// 					},
+						// 				},
+						// 			},
+						// 			{
+						// 				$group: {
+						// 					_id: '$userId',
+						// 					items: {
+						// 						$push: '$$ROOT',
+						// 					},
+						// 				},
+						// 			},
+						// 			{
+						// 				$project: {
+						// 					_id: true,
+						// 				},
+						// 			},
+						// 		],
+						// 		as: 'countPageViewed',
+						// 	},
+						// },
 						...movieOperations({
 							addToProject: {
 								poster: { src: true },
 								genres: { $first: '$genres' },
-								countPageViewed: { $size: '$countPageViewed' },
+								//countPageViewed: { $size: '$countPageViewed' },
 							},
 							limit: 300,
 							sort: { raisedUpAt: -1, publishedAt: -1 },
@@ -272,10 +270,10 @@ router.get('/', async (req, res) => {
 								items: {
 									$push: '$$ROOT',
 								},
-								countPageViewed: { $sum: '$countPageViewed' },
+								//countPageViewed: { $sum: '$countPageViewed' },
 							},
 						},
-						{ $sort: { countPageViewed: -1 } },
+						//{ $sort: { countPageViewed: -1 } },
 						{
 							$project: {
 								_id: false,
@@ -371,8 +369,8 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 					alias: true,
 					series: true,
 					categoryAlias: true,
-					films:{
-						duration: true
+					films: {
+						duration: true,
 					},
 					poster: {
 						src: true,
