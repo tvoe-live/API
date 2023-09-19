@@ -57,7 +57,7 @@ const carousel = [
  */
 
 router.get('/', async (req, res) => {
-	const limit = +(req.query.limit >= 6 && req.query.limit <= 18 ? req.query.limit : 18)
+	const limit = +(req.query.limit >= 6 && req.query.limit <= 15 ? req.query.limit : 15)
 
 	const projectWillSoon = {
 		_id: false,
@@ -261,6 +261,7 @@ router.get('/', async (req, res) => {
 								genres: { $first: '$genres' },
 								countPageViewed: { $size: '$countPageViewed' },
 							},
+							limit: 300,
 							sort: { raisedUpAt: -1, publishedAt: -1 },
 						}),
 						{ $unwind: { path: '$genres' } },
@@ -331,7 +332,7 @@ router.get('/', async (req, res) => {
 			},
 		])
 
-		collections = [...result[0]['collections'], ...result[0]['genres'].slice(0, -5)]
+		collections = [...result[0]['collections'], ...result[0]['genres']]
 
 		const collectionsFiltered = collections
 			.filter(
