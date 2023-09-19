@@ -101,14 +101,14 @@ router.get('/', async (req, res) => {
 		const result = await Movie.aggregate([
 			{
 				$facet: {
-					willPublishedSoon: [
-						{
-							$match: {
-								willPublishedAt: { $gte: new Date() },
-							},
-						},
-						{ $project: projectWillSoon },
-					],
+					// willPublishedSoon: [
+					// 	{
+					// 		$match: {
+					// 			willPublishedAt: { $gte: new Date() },
+					// 		},
+					// 	},
+					// 	{ $project: projectWillSoon },
+					// ],
 
 					//Случайные фильмы с рейтингом 7+
 					moviesWithRatingMore7: [
@@ -217,6 +217,7 @@ router.get('/', async (req, res) => {
 							$project: {
 								series: false,
 								genres: false,
+								trailer: false,
 								ageLevel: false,
 								dateReleased: false,
 								categoryAlias: false,
@@ -288,6 +289,7 @@ router.get('/', async (req, res) => {
 								items: {
 									series: false,
 									genres: false,
+									trailer: false,
 									ageLevel: false,
 									dateReleased: false,
 									categoryAlias: false,
@@ -310,12 +312,12 @@ router.get('/', async (req, res) => {
 							type: 'new',
 							items: '$new',
 						},
-						{
-							name: 'Cкоро на сервисе',
-							type: 'willPublishedSoon',
-							items: '$willPublishedSoon',
-							url: '/collections/willPublishedSoon',
-						},
+						// {
+						// 	name: 'Cкоро на сервисе',
+						// 	type: 'willPublishedSoon',
+						// 	items: '$willPublishedSoon',
+						// 	url: '/collections/willPublishedSoon',
+						// },
 						{
 							name: 'Cлучайныe фильмы с рейтингом 7+',
 							type: 'randomMoviesWithRatingMore7',
