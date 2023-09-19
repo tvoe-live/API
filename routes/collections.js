@@ -331,7 +331,7 @@ router.get('/', async (req, res) => {
 			},
 		])
 
-		collections = [...result[0]['collections'], ...result[0]['genres']]
+		collections = [...result[0]['collections'], ...result[0]['genres'].slice(0, -5)]
 
 		const collectionsFiltered = collections
 			.filter(
