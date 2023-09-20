@@ -135,11 +135,7 @@ router.patch('/markAsRead', verify.token, async (req, res) => {
 	try {
 		await NotificationReadLog.insertMany(NotificationReadLogForInsert)
 
-		return resSuccess({
-			res,
-			alert: true,
-			msg: 'Успешно обновлено',
-		})
+		return res.status(200).json()
 	} catch (err) {
 		return resError({ res, msg: err })
 	}
