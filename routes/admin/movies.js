@@ -165,6 +165,8 @@ router.post('/', verify.token, verify.isManager, async (req, res) => {
 		persons,
 	}
 
+	if (!Object.keys(req.body).length) return res.json()
+
 	try {
 		let movie
 
