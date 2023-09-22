@@ -24,9 +24,18 @@ router.get('/', verify.token, async (req, res) => {
 		userId: req.user._id,
 		startAt: { $ne: null },
 		finishAt: { $ne: null },
-		status: {
-			$in: ['success', 'CONFIRMED'],
-		},
+		$or: [
+			{
+				type: {
+					$in: ['issued-by-admin', 'trial'],
+				},
+			},
+			{
+				status: {
+					$in: ['success', 'CONFIRMED'],
+				},
+			},
+		],
 	}
 
 	try {
