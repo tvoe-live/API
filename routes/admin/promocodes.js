@@ -4,6 +4,7 @@ const verify = require('../../middlewares/verify')
 const resError = require('../../helpers/resError')
 const Promocode = require('../../models/promocode')
 const PromocodesLog = require('../../models/promocodeLog')
+const Tariff = require('../../models/tariff')
 
 const resSuccess = require('../../helpers/resSuccess')
 const getBoolean = require('../../helpers/getBoolean')
@@ -85,21 +86,23 @@ router.get('/', verify.token, verify.isAdmin, async (req, res) => {
 
 router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 	const {
-		title,
 		value,
 		startAt,
 		finishAt,
-		amountActivation,
-		tariffId,
+		maxAmountActivation,
+		tariffName,
 		discountFormat,
 		sizeDiscount,
 		isActive = false,
-		onlyForNewUsers = true,
+		isOnlyForNewUsers = true,
 	} = req.body
 
-	if (!title) return resError({ res, msg: 'Не передан title' })
-	if (!amountActivation) return resError({ res, msg: 'Не передан amountActivation' })
+	if (!maxAmountActivation) return resError({ res, msg: 'Не передан maxAmountActivation' })
 	if (!discountFormat) return resError({ res, msg: 'Не передан discountFormat' })
+	if (discountFormat !== 'free-month' && !sizeDiscount)
+		return resError({ res, msg: 'Не передан sizeDiscount' })
+	if (discountFormat !== 'free-month' && !tariffName)
+		return resError({ res, msg: 'Не передан tariffName' })
 	if (!value) return resError({ res, msg: 'Не передан value' })
 
 	if (!startAt)
@@ -113,22 +116,29 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 			msg: 'Не передана дата и время начала действия промокода - параметр finishAt',
 		})
 
+	const existTariff = Tariff.findOne({ name: tariffName })
+	if (!existTariff) return resError({ res, msg: 'Указанного тарифа не существует' })
+
+	const existPromocode = await Promocode.findOne({ value })
+	if (existPromocode) return resError({ res, msg: 'Промокод с таким названием уже существует' })
+
 	try {
 		const response = await Promocode.create({
-			title,
 			value,
-			type,
-			amountActivation,
+			maxAmountActivation,
+			discountFormat,
+			sizeDiscount,
+			tariffName,
+			isOnlyForNewUsers,
+			isActive,
 			startAt: new Date(startAt),
 			finishAt: new Date(finishAt),
+			currentAmountActivation: 0,
 		})
 
 		return res.status(200).json({
 			success: true,
-			value,
-			type,
-			startAt,
-			finishAt,
+			msg: 'Промокод успешно создан',
 		})
 	} catch (err) {
 		return resError({ res, msg: err })
@@ -246,22 +256,46 @@ router.get('/countAll', verify.token, verify.isAdmin, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
 
-	const lookup = {
-		$lookup: {
-			from: 'promocodeslogs',
-			localField: '_id',
-			foreignField: 'promocodeId',
-			as: 'PromocodesLog',
-		},
-	}
-
 	try {
+		const activatedPromocodesAmount = await PromocodesLog.countDocuments({}) // Общее количество активированных когда либо промокодов
+
 		Promocode.aggregate(
 			[
 				{
 					$facet: {
 						totalSize: [
-							lookup,
+							{
+								$group: {
+									_id: null,
+									count: { $sum: 1 },
+								},
+							},
+							{ $project: { _id: false } },
+							{ $limit: 1 },
+						],
+						totalSizeActiveNow: [
+							{
+								$match: {
+									isActive: true,
+									startAt: { $lte: new Date() },
+									finishAt: { $gte: new Date() },
+								},
+							},
+							{
+								$group: {
+									_id: null,
+									count: { $sum: 1 },
+								},
+							},
+							{ $project: { _id: false } },
+							{ $limit: 1 },
+						],
+						totalSizeNotPublishedNow: [
+							{
+								$match: {
+									isActive: false,
+								},
+							},
 							{
 								$group: {
 									_id: null,
@@ -272,17 +306,16 @@ router.get('/countAll', verify.token, verify.isAdmin, async (req, res) => {
 							{ $limit: 1 },
 						],
 						items: [
-							lookup,
 							{ $sort: { updatedAt: -1 } },
 							{
 								$project: {
 									updatedAt: true,
-									title: true,
 									value: true,
-									type: true,
 									startAt: true,
 									finishAt: true,
-									activationAmount: { $size: '$PromocodesLog' },
+									isActive: true,
+									maxAmountActivation: true,
+									currentAmountActivation: true,
 								},
 							},
 							{ $skip: skip },
@@ -292,15 +325,24 @@ router.get('/countAll', verify.token, verify.isAdmin, async (req, res) => {
 				},
 				{ $limit: 1 },
 				{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
+				{ $unwind: { path: '$totalSizeActiveNow', preserveNullAndEmptyArrays: true } },
+				{ $unwind: { path: '$totalSizeNotPublishedNow', preserveNullAndEmptyArrays: true } },
 				{
 					$project: {
 						totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+						totalSizeActiveNow: {
+							$cond: ['$totalSizeActiveNow.count', '$totalSizeActiveNow.count', 0],
+						},
+						totalSizeNotPublishedNow: {
+							$cond: ['$totalSizeNotPublishedNow.count', '$totalSizeNotPublishedNow.count', 0],
+						},
 						items: '$items',
 					},
 				},
 			],
 			async (err, result) => {
-				return res.status(200).json(result[0])
+				const finalResult = { activatedPromocodesAmount, ...result[0] }
+				return res.status(200).json(finalResult)
 			}
 		)
 	} catch (err) {
