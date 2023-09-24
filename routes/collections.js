@@ -260,7 +260,7 @@ router.get('/', async (req, res) => {
 								genres: { $first: '$genres' },
 								//countPageViewed: { $size: '$countPageViewed' },
 							},
-							limit: 300,
+							limit: 200,
 							sort: { raisedUpAt: -1, publishedAt: -1 },
 						}),
 						{ $unwind: { path: '$genres' } },
