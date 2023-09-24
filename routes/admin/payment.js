@@ -86,7 +86,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 					pipeline: [
 						{
 							$match: {
-								$or: [{ status: 'success' }, { status: 'CONFIRMED' }],
+								$or: [{ status: 'success' }, { status: 'CONFIRMED' }, { status: 'AUTHORIZED' }],
 							},
 						},
 						{
@@ -132,7 +132,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 					totalSize: [
 						{
 							$match: {
-								$or: [{ status: 'success' }, { status: 'CONFIRMED' }],
+								$or: [{ status: 'success' }, { status: 'CONFIRMED' }, { status: 'AUTHORIZED' }],
 							},
 						},
 						{
@@ -148,7 +148,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 					items: [
 						{
 							$match: {
-								$or: [{ status: 'success' }, { status: 'CONFIRMED' }],
+								$or: [{ status: 'success' }, { status: 'CONFIRMED' }, { status: 'AUTHORIZED' }],
 							},
 						},
 						{

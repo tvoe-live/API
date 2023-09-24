@@ -364,6 +364,7 @@ router.post('/notification', async (req, res) => {
 	}
 
 	switch (status) {
+		case 'AUTHORIZED': // Деньги захолдированы на карте клиента. Ожидается подтверждение операции
 		case 'CONFIRMED': // Операция подтверждена
 			// Обновить время подписки пользователю
 			await User.updateOne(
@@ -393,7 +394,7 @@ router.post('/notification', async (req, res) => {
 			const lastActivePayment = await PaymentLog.findOne({
 				userId: user._id,
 				type: 'paid',
-				$or: [{ status: 'success' }, { status: 'CONFIRMED' }],
+				$or: [{ status: 'success' }, { status: 'CONFIRMED' }, { status: 'AUTHORIZED' }],
 				finishAt: { $gt: new Date() },
 			}).sort({ _id: -1 })
 
@@ -426,7 +427,6 @@ router.post('/notification', async (req, res) => {
 			})
 
 			break
-		case 'AUTHORIZED': // Деньги захолдированы на карте клиента. Ожидается подтверждение операции
 		case 'PARTIAL_REVERSED': // Частичная отмена
 		case 'REVERSED': // Операция отменена
 		case 'REJECTED': // Списание денежных средств закончилась ошибкой

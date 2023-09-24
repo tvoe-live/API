@@ -128,6 +128,7 @@ router.get('/movie', async (req, res) => {
 										{
 											$match: {
 												review: { $ne: null },
+												deleted: { $ne: true },
 											},
 										},
 									],
@@ -182,6 +183,7 @@ router.get('/movie', async (req, res) => {
 										{
 											$match: {
 												review: { $ne: null },
+												deleted: { $ne: true },
 											},
 										},
 										{

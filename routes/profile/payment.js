@@ -32,7 +32,7 @@ router.get('/', verify.token, async (req, res) => {
 			},
 			{
 				status: {
-					$in: ['success', 'CONFIRMED'],
+					$in: ['success', 'CONFIRMED', 'AUTHORIZED'],
 				},
 			},
 		],
