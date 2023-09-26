@@ -254,14 +254,14 @@ router.post('/createPayment', verify.token, async (req, res) => {
 			DATA: {
 				account: req.user._id,
 				DefaultCard: 'none',
-				TinkoffPayWeb: 'true',
-				YandexPayWeb: 'true',
+				//TinkoffPayWeb: 'true',
+				//YandexPayWeb: 'true',
 				Device: req.useragent.isDesktop ? 'Desktop' : 'Mobile',
 				DeviceOs: req.useragent.os,
 				DeviceWebView: 'true',
 				DeviceBrowser: req.useragent.browser,
-				NotificationEnableSource: 'TinkoffPay',
-				QR: 'true',
+				//NotificationEnableSource: 'TinkoffPay',
+				//QR: 'true',
 			},
 			token: token,
 		},
@@ -319,6 +319,20 @@ router.post('/notification', async (req, res) => {
 
 	// Дата окончания использования тарифа для пользователя
 	const finishAt = new Date(paymentStartAt.getTime() + tariffDuration)
+
+	// Обновить статус платежного лога, если деньги захолдированы
+	if (paymentLog.status === 'AUTHORIZED' && status === 'CONFIRMED') {
+		await PaymentLog.updateOne(
+			{ _id: paymentLogId },
+			{
+				$set: {
+					status,
+				},
+			}
+		)
+
+		return res.status(200).send('OK')
+	}
 
 	// Обновить платежный лог
 	await PaymentLog.updateOne(
