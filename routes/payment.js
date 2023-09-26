@@ -320,6 +320,20 @@ router.post('/notification', async (req, res) => {
 	// Дата окончания использования тарифа для пользователя
 	const finishAt = new Date(paymentStartAt.getTime() + tariffDuration)
 
+	// Обновить статус платежного лога, если деньги захолдированы
+	if (paymentLog.status === 'AUTHORIZED' && status === 'CONFIRMED') {
+		await PaymentLog.updateOne(
+			{ _id: paymentLogId },
+			{
+				$set: {
+					status,
+				},
+			}
+		)
+
+		return res.status(200).send('OK')
+	}
+
 	// Обновить платежный лог
 	await PaymentLog.updateOne(
 		{ _id: paymentLogId },
