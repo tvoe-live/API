@@ -224,41 +224,41 @@ router.get('/', async (req, res) => {
 					],
 					// Жанры
 					genres: [
-						// {
-						// 	$lookup: {
-						// 		from: 'moviepagelogs',
-						// 		localField: '_id',
-						// 		foreignField: 'movieId',
-						// 		pipeline: [
-						// 			{
-						// 				$match: {
-						// 					updatedAt: {
-						// 						$gte: new Date(new Date() - 5 * 60 * 60 * 24 * 1000),
-						// 					},
-						// 				},
-						// 			},
-						// 			{
-						// 				$group: {
-						// 					_id: '$userId',
-						// 					items: {
-						// 						$push: '$$ROOT',
-						// 					},
-						// 				},
-						// 			},
-						// 			{
-						// 				$project: {
-						// 					_id: true,
-						// 				},
-						// 			},
-						// 		],
-						// 		as: 'countPageViewed',
-						// 	},
-						// },
+						{
+							$lookup: {
+								from: 'moviepagelogs',
+								localField: '_id',
+								foreignField: 'movieId',
+								pipeline: [
+									{
+										$match: {
+											updatedAt: {
+												$gte: new Date(new Date() - 3 * 60 * 60 * 24 * 1000),
+											},
+										},
+									},
+									{
+										$group: {
+											_id: '$userId',
+											items: {
+												$push: '$$ROOT',
+											},
+										},
+									},
+									{
+										$project: {
+											_id: true,
+										},
+									},
+								],
+								as: 'countPageViewed',
+							},
+						},
 						...movieOperations({
 							addToProject: {
 								poster: { src: true },
 								genres: { $first: '$genres' },
-								//countPageViewed: { $size: '$countPageViewed' },
+								countPageViewed: { $size: '$countPageViewed' },
 							},
 							limit: 200,
 							sort: { raisedUpAt: -1, publishedAt: -1 },
@@ -270,10 +270,10 @@ router.get('/', async (req, res) => {
 								items: {
 									$push: '$$ROOT',
 								},
-								//countPageViewed: { $sum: '$countPageViewed' },
+								countPageViewed: { $sum: '$countPageViewed' },
 							},
 						},
-						//{ $sort: { countPageViewed: -1 } },
+						{ $sort: { countPageViewed: -1 } },
 						{
 							$project: {
 								_id: false,
