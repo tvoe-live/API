@@ -582,6 +582,7 @@ router.get('/possibleYouLike', verify.token, async (req, res) => {
 						poster: { src: true },
 						cover: { src: true },
 						alias: true,
+						_id: true,
 					},
 				}),
 				{
@@ -824,6 +825,7 @@ router.get('/popular', async (req, res) => {
 			addToProject: {
 				poster: { src: true },
 				alias: true,
+				_id: true,
 			},
 		}),
 		{
