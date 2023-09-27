@@ -445,6 +445,22 @@ router.post('/willPublish', verify.token, verify.isManager, existMovie, async (r
 	}
 })
 
+router.post('/uploadingUpdate', verify.token, verify.isManager, async (req, res) => {
+	let { movieId, uploadingIds } = req.body
+
+	if (typeof uploadingIds === 'string') {
+		uploadingIds = JSON.parse(uploadingIds)
+	}
+
+	try {
+		await Movie.updateOne({ _id: movieId })
+
+		return res.status(200).json()
+	} catch (err) {
+		return resError({ res, msg: err })
+	}
+})
+
 /*
  * Обновление прогресса загрузки видеофрагментов
  */
