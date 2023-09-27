@@ -453,7 +453,50 @@ router.post('/uploadingUpdate', verify.token, verify.isManager, async (req, res)
 	}
 
 	try {
-		await Movie.updateOne({ _id: movieId })
+		const movie = await Movie.findOne({ _id: movieId })
+
+		let needToUpdate = false
+		const $set = {}
+
+		// Добавить поле для обновления даты
+		const setUpdate = (path) => {
+			$set[`${path}.lastUpdateAt`] = Date.now()
+			needToUpdate = true
+		}
+
+		if (movie.trailer) {
+			const trailerId = movie.trailer._id.toString()
+
+			if (uploadingIds.indexOf(trailerId) != -1) {
+				setUpdate('trailer')
+			}
+		}
+
+		if (Array.isArray(movie.films)) {
+			movie.films.forEach((film, filmKey) => {
+				const filmId = film._id.toString()
+
+				if (uploadingIds.indexOf(filmId) != -1) {
+					setUpdate(`films.${filmKey}`)
+				}
+			})
+		}
+
+		if (Array.isArray(movie.series)) {
+			movie.series.forEach((season, seasonKey) => {
+				season.forEach((episode, episodeKey) => {
+					const episodeId = episode._id.toString()
+
+					if (uploadingIds.indexOf(episodeId) != -1) {
+						setUpdate(`series.${seasonKey}.${episodeKey}`)
+					}
+				})
+			})
+		}
+
+		if (needToUpdate) {
+			await Movie.updateOne({ _id: movieId }, { $set })
+		}
 
 		return res.status(200).json()
 	} catch (err) {
