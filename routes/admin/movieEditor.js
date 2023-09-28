@@ -84,7 +84,6 @@ router.post(
 		}
 
 		const { movieId, name } = req.body
-
 		const { buffer } = req.file
 
 		try {
@@ -716,14 +715,14 @@ router.post('/video/progress', verify.token, verify.isManager, async (req, res) 
  * Удаление изображений
  */
 router.delete('/image', verify.token, verify.isManager, async (req, res) => {
-	const { name, movieId } = req.body
+	const { movieId, name } = req.body
 
 	try {
-		// Удаление ссылки на фаил в БД
+		// Удаление ссылки на файл в БД
 		const movie = await Movie.findOneAndUpdate({ _id: movieId }, { $unset: { [name]: {} } })
 
-		const pathToOldFile = movie[name].src
 		// Удаление старого файла
+		const pathToOldFile = movie[name].src
 		if (pathToOldFile) await deleteFileFromS3(pathToOldFile)
 
 		return resSuccess({
