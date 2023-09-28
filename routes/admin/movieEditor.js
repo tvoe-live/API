@@ -79,40 +79,49 @@ router.post(
 	existMovie,
 	uploadMemoryStorage.single('file'),
 	async (req, res) => {
+		if (!req.file || !req.file.buffer) {
+			return resError({ res, msg: 'Не получена картинка' })
+		}
+
+		const { movieId, name } = req.body
+
 		const { buffer } = req.file
-		const { name, movieId } = req.body
 
-		const { fileId, fileSrc } = await uploadImageToS3({
-			res,
-			buffer,
-			type: name === 'logo' ? 'png' : 'jpg',
-		})
+		try {
+			const { fileId, fileSrc } = await uploadImageToS3({
+				res,
+				buffer,
+				type: name === 'logo' ? 'png' : 'jpg',
+			})
 
-		// Добавление / обновление ссылки на фаил в БД
-		const movie = await Movie.findOneAndUpdate(
-			{ _id: movieId },
-			{
-				$set: {
-					[name]: {
-						_id: fileId,
-						src: fileSrc,
+			// Добавление / обновление ссылки на фаил в БД
+			const movie = await Movie.findOneAndUpdate(
+				{ _id: movieId },
+				{
+					$set: {
+						[name]: {
+							_id: fileId,
+							src: fileSrc,
+						},
 					},
-				},
-			}
-		)
+				}
+			)
 
-		const pathToOldFile = movie[name].src
-		// Удаление старого файла
-		if (pathToOldFile) await deleteFileFromS3(pathToOldFile)
+			// Удаление старого файла
+			const pathToOldFile = movie[name].src
+			if (pathToOldFile) await deleteFileFromS3(pathToOldFile)
 
-		return resSuccess({
-			res,
-			movieId,
-			alert: true,
-			_id: fileId,
-			src: fileSrc,
-			msg: 'Успешно сохранено',
-		})
+			return resSuccess({
+				res,
+				movieId,
+				alert: true,
+				_id: fileId,
+				src: fileSrc,
+				msg: 'Успешно сохранено',
+			})
+		} catch (err) {
+			return resError({ res, msg: err })
+		}
 	}
 )
 
