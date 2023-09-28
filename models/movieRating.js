@@ -10,6 +10,8 @@ const movieRatingSchema = new mongoose.Schema(
 		userId: mongoose.Schema.Types.ObjectId,
 		rating: Number,
 		review: String,
+		isPublished: Boolean,
+		isDeleted: Boolean,
 	},
 	{
 		timestamps: true,
