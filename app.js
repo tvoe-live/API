@@ -74,6 +74,7 @@ const profileNotifications = require('./routes/profile/notifications')
 const adminMoviesRatingHistory = require('./routes/admin/moviesRatingHistory')
 const adminMoviesViewingHistory = require('./routes/admin/moviesViewingHistory')
 const adminPromocodes = require('./routes/admin/promocodes')
+const adminNotifications = require('./routes/admin/notification')
 
 app.use('/auth', auth) // Авторизация / регистрация через Яндекс и разрушение сессии
 app.use('/movies', movies) // Фильмы и сериалы
@@ -103,6 +104,7 @@ app.use('/admin/searchHistory', adminSearchHistory) // Админ-панель >
 app.use('/admin/moviesRatingHistory', adminMoviesRatingHistory) // Админ-панель > История рейтингов
 app.use('/admin/moviesViewingHistory', adminMoviesViewingHistory) // Админ-панель > История просмотров
 app.use('/admin/promocodes', adminPromocodes) // Админ-панель > Промокоды
+app.use('/admin/notifications', adminNotifications) // Админ-панель > Уведомления
 
 // Работа со сваггером
 const data = fs.readFileSync('swagger/doc.yml', 'utf8')
