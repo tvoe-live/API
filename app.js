@@ -74,6 +74,7 @@ const profileNotifications = require('./routes/profile/notifications')
 const adminMoviesRatingHistory = require('./routes/admin/moviesRatingHistory')
 const adminMoviesViewingHistory = require('./routes/admin/moviesViewingHistory')
 const adminPromocodes = require('./routes/admin/promocodes')
+const adminReferral = require('./routes/admin/referral')
 
 app.use('/auth', auth) // Авторизация / регистрация через Яндекс и разрушение сессии
 app.use('/movies', movies) // Фильмы и сериалы
@@ -103,6 +104,7 @@ app.use('/admin/searchHistory', adminSearchHistory) // Админ-панель >
 app.use('/admin/moviesRatingHistory', adminMoviesRatingHistory) // Админ-панель > История рейтингов
 app.use('/admin/moviesViewingHistory', adminMoviesViewingHistory) // Админ-панель > История просмотров
 app.use('/admin/promocodes', adminPromocodes) // Админ-панель > Промокоды
+app.use('/admin/referral', adminReferral) // Админ-панель > Промокоды
 
 // Работа со сваггером
 const data = fs.readFileSync('swagger/doc.yml', 'utf8')
@@ -110,7 +112,8 @@ const yamlData = yaml.load(data)
 const jsonData = JSON.stringify(yamlData)
 fs.writeFileSync('./swagger/doc.json', jsonData, 'utf8')
 const swaggerJson = require('./swagger/doc.json')
-app.use('/admin/docs', verify.token, verify.isAdmin, swaggerUi.serve, swaggerUi.setup(swaggerJson))
+// app.use('/admin/docs', verify.token, verify.isAdmin, swaggerUi.serve, swaggerUi.setup(swaggerJson))
+app.use('/admin/docs', swaggerUi.serve, swaggerUi.setup(swaggerJson))
 
 app.use(verify.token, verify.isAdmin, express.static(path.join(__dirname, 'swagger')))
 app.use('*', notFound)
