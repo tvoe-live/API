@@ -5689,10 +5689,14 @@ paths:
                   rating:
                     type: number
                     description: Рейтинг который поставил пользователь фильму с переданным id
+                  newMovieRating:
+                    type: number
+                    description: Итоговый обновленный рейтинг фильма по итогам оценок от всех пользователей
                 example:
                   success: true
                   movieId: '63ac8aa1b2c93ed2212186e7'
                   rating: 9
+                  newMovieRating: 8
                   review: Классный фильм
     delete:
       summary: Удаления рейтинга и отзыва
