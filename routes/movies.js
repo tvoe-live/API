@@ -478,6 +478,7 @@ router.post('/rating', verify.token, async (req, res) => {
 			success: true,
 			movieId,
 			rating,
+			newMovieRating,
 			review,
 		})
 	} catch (err) {
