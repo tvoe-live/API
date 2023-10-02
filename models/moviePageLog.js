@@ -10,9 +10,18 @@ const moviePageLogSchema = new mongoose.Schema(
 		referer: String,
 		startTime: Number,
 		endTime: Number,
-		userId: mongoose.Schema.Types.ObjectId,
-		movieId: mongoose.Schema.Types.ObjectId,
-		videoId: mongoose.Schema.Types.ObjectId,
+		userId: {
+			type: mongoose.Schema.Types.ObjectId,
+			index: true,
+		},
+		movieId: {
+			type: mongoose.Schema.Types.ObjectId,
+			index: true,
+		},
+		videoId: {
+			type: mongoose.Schema.Types.ObjectId,
+			index: true,
+		},
 	},
 	{
 		timestamps: true,

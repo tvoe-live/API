@@ -45,6 +45,8 @@ router.get('/', async (req, res) => {
 			case 'rating':
 				sortParams = { rating: -1, raisedUpAt: -1, createdAt: -1 }
 				break
+			case 'popular':
+				break
 			default:
 				return resError({ res, msg: 'Неверный sort' })
 		}
@@ -137,12 +139,48 @@ router.get('/', async (req, res) => {
 						...movieOperations({
 							addToMatch: page,
 							addToProject: {
+								_id: true,
 								poster: { src: true },
 								genreNames: '$genres.name',
 								...(categoryAlias === 'serials' ? { series: true } : []),
 							},
 							sort: sortParams,
 						}),
+						...(sort === 'popular'
+							? [
+									{
+										$lookup: {
+											from: 'moviepagelogs',
+											localField: '_id',
+											foreignField: 'movieId',
+											pipeline: [
+												{
+													$project: {
+														_id: true,
+													},
+												},
+											],
+											as: 'moviepagelog',
+										},
+									},
+									{
+										$addFields: {
+											amountWatching: { $size: '$moviepagelog' },
+										},
+									},
+									{
+										$project: {
+											moviepagelog: false,
+										},
+									},
+									{ $sort: { amountWatching: -1 } },
+									{
+										$project: {
+											amountWatching: false,
+										},
+									},
+							  ]
+							: []),
 						{ $skip: skip },
 						{ $limit: limit },
 					],

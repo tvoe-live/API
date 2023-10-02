@@ -41,6 +41,7 @@ const carousel = [
 	},
 	...movieOperations({
 		addToProject: {
+			_id: true,
 			poster: { src: true },
 			logo: { src: true },
 			cover: { src: true },
@@ -207,6 +208,7 @@ router.get('/', async (req, res) => {
 						...movieOperations({
 							addToProject: {
 								poster: { src: true },
+								_id: true,
 							},
 							sort: { raisedUpAt: -1, createdAt: -1 },
 							limit: limit,

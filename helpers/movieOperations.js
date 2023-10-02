@@ -36,7 +36,7 @@ const movieOperations = ({
 		as: 'category',
 	}
 	const project = {
-		_id: false,
+		_id: true,
 		name: true,
 		badge: true,
 		rating: true,
