@@ -7,6 +7,7 @@ const mongoose = require('mongoose')
 const Movie = require('../../models/movie')
 const verify = require('../../middlewares/verify')
 const resError = require('../../helpers/resError')
+const CleanupLog = require('../../models/cleanupLog')
 const resSuccess = require('../../helpers/resSuccess')
 const { uploadImageToS3 } = require('../../helpers/uploadImage')
 const { deleteFileFromS3, deleteFolderFromS3 } = require('../../helpers/deleteFile')
@@ -59,15 +60,26 @@ const cannotBeDeleted = (req, video) => {
 
 // Удаление видео
 const deleteVideoExecute = async (video) => {
-	if (video.src) {
-		await deleteFolderFromS3(video.src)
-	}
-	if (video.thumbnail) {
-		await deleteFileFromS3(video.thumbnail)
-	}
+	const { src, thumbnail } = video
 
-	// Через 5 минут повторить ещё раз, чтобы наверняка
-	setTimeout(deleteVideoExecute, 300000, video)
+	// Внести ресурсы в базу удалений
+	const { _id } = await CleanupLog.create({ src, thumbnail })
+
+	try {
+		if (src) await deleteFolderFromS3(src)
+		if (thumbnail) await deleteFileFromS3(thumbnail)
+	} catch {}
+
+	// Через 5 минут проверить удаление
+	setTimeout(async () => {
+		try {
+			if (src) await deleteFolderFromS3(src)
+			if (thumbnail) await deleteFileFromS3(thumbnail)
+
+			// Удалить ресурсы из базы, так как они наверняка удалены
+			await CleanupLog.deleteOne({ _id })
+		} catch {}
+	}, 300000)
 }
 
 /*
@@ -575,32 +587,14 @@ router.delete('/', verify.token, verify.isManager, async (req, res) => {
 		// Удаление постера
 		if (poster && poster.src) await deleteFileFromS3(poster.src)
 
-		if (trailer) {
-			// Удаление трейлера
-			if (trailer.src) await deleteFolderFromS3(trailer.src)
-			// Удаление превью трейлера
-			if (trailer.thumbnail) await deleteFileFromS3(trailer.thumbnail)
-		}
+		// Удаление трейлера
+		if (trailer) deleteVideoExecute(trailer)
 
-		if (films) {
-			films.map(async (film) => {
-				// Удаление всех фильмов
-				if (film.src) await deleteFolderFromS3(film.src)
-				// Удаление всех превью фильмов
-				if (film.thumbnail) await deleteFileFromS3(film.thumbnail)
-			})
-		}
+		// Удаление всех фильмов
+		if (films) films.forEach(deleteVideoExecute)
 
-		if (series) {
-			series.map((season) => {
-				season.map(async (series) => {
-					// Удаление всех серий
-					if (series.src) await deleteFolderFromS3(series.src)
-					// Удаление всех превью серий
-					if (series.thumbnail) await deleteFileFromS3(series.thumbnail)
-				})
-			})
-		}
+		// Удаление всех серий
+		if (series) series.forEach((season) => season.forEach(deleteVideoExecute))
 
 		// Удаление записи из БД
 		await Movie.deleteOne({ _id })
