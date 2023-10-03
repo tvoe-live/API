@@ -36,7 +36,7 @@ const existMovie = async (req, res, next) => {
 		creatorUserId: req.user._id,
 	})
 
-	req.query.movieId = newMovie._id
+	req.body.movieId = newMovie._id
 
 	next()
 }
