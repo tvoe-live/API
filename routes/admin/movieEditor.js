@@ -43,9 +43,13 @@ const existMovie = async (req, res, next) => {
 
 // Если нельзя удалить видео, то выдать ошибку, иначе удалить
 const cannotBeDeleted = (req, video) => {
-	if (!video || !video.status) return false
+	if (!video || !video._id || !video.status) return false
 
-	if (video.status === 'READY' || req.user._id.toString() === video.managerUserId.toString()) {
+	if (
+		!video.managerUserId ||
+		video.status === 'READY' ||
+		req.user._id.toString() === video.managerUserId.toString()
+	) {
 		deleteVideoExecute(video)
 		return false
 	}
