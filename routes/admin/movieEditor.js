@@ -285,8 +285,15 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 				updateOptions.$set = { trailer: videoParams }
 				break
 			case 'films':
-				if (movie.films && cannotBeDeleted(req, movie.films[0])) {
-					return notEnoughRights()
+				if (movie.films) {
+					if (cannotBeDeleted(req, movie.films[0])) {
+						return notEnoughRights()
+					}
+
+					if (movie.films.length) {
+						updateOptions.$set = { 'films.0': videoParams }
+						break
+					}
 				}
 
 				updateOptions.$push = { films: videoParams }
@@ -297,7 +304,7 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 						return notEnoughRights()
 					}
 
-					if (episodeKey !== movie.series[seasonKey].length - 1) {
+					if (episodeKey < movie.series[seasonKey].length) {
 						updateOptions.$set = { [`series.${seasonKey}.${episodeKey}`]: videoParams }
 						break
 					}
