@@ -17,9 +17,9 @@ const videoSchema = {
 		fragments: Object, // Количество TS-фрагментов
 		thumbnails: Number, // Количество склеек миниатюр
 	},
-	status: String, // uploading - загрузка, removing - удаление, ready - готово
-	uploaded: Number, // Сколько файлов загружено
-	total: Number, // Всего файлов нужно загрузить
+	status: String, // 'UPLOADING' - загружается, 'READY' - доступно к просмотру
+	managerUserId: mongoose.Schema.Types.ObjectId, // ID менеджера, загружающего видео
+	lastUpdateAt: Date, // Дата последнего обновления (для загрузки и удаления)
 }
 
 /*
