@@ -610,4 +610,7 @@ router.delete('/', verify.token, verify.isManager, async (req, res) => {
 	}
 })
 
+// Вызвать функцию очистки файлов при каждой перезагрузке API
+CleanupLog.find((err, data) => data.forEach(deleteVideoExecute))
+
 module.exports = router
