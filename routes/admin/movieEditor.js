@@ -59,11 +59,15 @@ const cannotBeDeleted = (req, video) => {
 }
 
 // Удаление видео
-const deleteVideoExecute = async (video) => {
+const deleteVideoExecute = async (video, createLog = true) => {
 	const { src, thumbnail } = video
+	let _id
 
 	// Внести ресурсы в базу удалений
-	const { _id } = await CleanupLog.create({ src, thumbnail })
+	if (createLog) {
+		const item = await CleanupLog.create({ src, thumbnail })
+		_id = item._id
+	}
 
 	try {
 		if (src) await deleteFolderFromS3(src)
@@ -77,8 +81,10 @@ const deleteVideoExecute = async (video) => {
 			if (thumbnail) await deleteFileFromS3(thumbnail)
 		} catch {}
 
-		// Удалить ресурсы из базы, так как они наверняка удалены
-		await CleanupLog.deleteOne({ _id })
+		// Удалить ресурсы из базы, так как они уже наверняка удалены с S3
+		if (createLog) {
+			await CleanupLog.deleteOne({ _id })
+		}
 	}, 300000)
 }
 
@@ -611,6 +617,8 @@ router.delete('/', verify.token, verify.isManager, async (req, res) => {
 })
 
 // Вызвать функцию очистки файлов при каждой перезагрузке API
-CleanupLog.find((err, data) => data.forEach(deleteVideoExecute))
+CleanupLog.find((err, data) => {
+	data.forEach((item) => deleteVideoExecute(item, false))
+})
 
 module.exports = router
