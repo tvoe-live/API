@@ -301,14 +301,20 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
  * Обновление прогресса загрузки видеофрагментов
  */
 router.post('/uploadingUpdate', verify.token, verify.isManager, async (req, res) => {
-	let { movieId, uploadingIds } = req.body
-
-	if (typeof uploadingIds === 'string') {
-		uploadingIds = JSON.parse(uploadingIds)
-	}
+	let { movieId, name, seasonKey, episodeKey } = req.body
 
 	try {
 		const movie = await Movie.findOne({ _id: movieId })
+		if (
+			(name === 'series' && movie.categoryAlias != 'serials') ||
+			(name === 'films' && movie.categoryAlias != 'films')
+		) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Категория страницы была изменена',
+			})
+		}
 
 		let needToUpdate = false
 		const $set = {}
@@ -319,36 +325,24 @@ router.post('/uploadingUpdate', verify.token, verify.isManager, async (req, res)
 			needToUpdate = true
 		}
 
-		if (movie.trailer) {
-			const trailerId = movie.trailer._id.toString()
-
-			if (uploadingIds.indexOf(trailerId) != -1) {
-				setUpdate('trailer')
-			}
-		}
-
-		if (Array.isArray(movie.films)) {
-			movie.films.forEach((film, filmKey) => {
-				const filmId = film._id.toString()
-
-				if (uploadingIds.indexOf(filmId) != -1) {
-					setUpdate(`films.${filmKey}`)
+		switch (name) {
+			case 'trailer':
+				if (movie.trailer) {
+					setUpdate('trailer')
 				}
-			})
+				break
+			case 'films':
+				if (movie.films && movie.films[0]) {
+					setUpdate('films.0')
+				}
+				break
+			case 'series':
+				if (movie.series && movie.series[seasonKey] && movie.series[seasonKey][episodeKey]) {
+					setUpdate(`series.${seasonKey}.${episodeKey}`)
+				}
 		}
 
-		if (Array.isArray(movie.series)) {
-			movie.series.forEach((season, seasonKey) => {
-				season.forEach((episode, episodeKey) => {
-					const episodeId = episode._id.toString()
-
-					if (uploadingIds.indexOf(episodeId) != -1) {
-						setUpdate(`series.${seasonKey}.${episodeKey}`)
-					}
-				})
-			})
-		}
-
+		// Обновить загрузку видео
 		if (needToUpdate) {
 			await Movie.updateOne({ _id: movieId }, { $set })
 		}
