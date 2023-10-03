@@ -75,10 +75,10 @@ const deleteVideoExecute = async (video) => {
 		try {
 			if (src) await deleteFolderFromS3(src)
 			if (thumbnail) await deleteFileFromS3(thumbnail)
-
-			// Удалить ресурсы из базы, так как они наверняка удалены
-			await CleanupLog.deleteOne({ _id })
 		} catch {}
+
+		// Удалить ресурсы из базы, так как они наверняка удалены
+		await CleanupLog.deleteOne({ _id })
 	}, 300000)
 }
 
