@@ -776,6 +776,9 @@ if (false) {
 
 				if (needToUpdate) {
 					await Movie.updateOne({ _id }, updateOptions)
+
+					// Удаление пустых массивов
+					await Movie.updateOne({ _id }, { $pull: { series: { $in: [[]] } } }, { multi: true })
 				}
 			}
 		})
