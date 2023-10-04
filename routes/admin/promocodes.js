@@ -1,5 +1,6 @@
-const router = express.Router()
 const express = require('express')
+const router = express.Router()
+
 const mongoose = require('mongoose')
 const Tariff = require('../../models/tariff')
 const verify = require('../../middlewares/verify')
