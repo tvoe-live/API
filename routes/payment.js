@@ -11,13 +11,11 @@ const axios = require('axios')
 const crypto = require('crypto')
 const mongoose = require('mongoose')
 const User = require('../models/user')
-const PromocodeLog = require('../models/promocodeLog')
-
 const Tariff = require('../models/tariff')
 const verify = require('../middlewares/verify')
 const resError = require('../helpers/resError')
 const PaymentLog = require('../models/paymentLog')
-
+const PromocodeLog = require('../models/promocodeLog')
 const isValidObjectId = require('../helpers/isValidObjectId')
 
 /*
@@ -448,7 +446,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		NotificationURL: `${API_URL}/payment/notification`, // URL для уведомлений об оплате
 		Password: PAYMENT_TERMINAL_PASSWORD, // Пароль терминала
 
-		Amount: price * 100, // Цена тарифа (в коп)
+		Amount: price * 100, // Цена тарифа (в копейках)
 		OrderId: paymentLog._id, // ID заказа
 		Description: `Подписка на ${selectedTariff.name}`, // Описание заказа (для СБП)
 		//CustomerKey:

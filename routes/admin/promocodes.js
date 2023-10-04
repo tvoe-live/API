@@ -1,14 +1,13 @@
-const express = require('express')
 const router = express.Router()
+const express = require('express')
+const mongoose = require('mongoose')
+const Tariff = require('../../models/tariff')
 const verify = require('../../middlewares/verify')
 const resError = require('../../helpers/resError')
 const Promocode = require('../../models/promocode')
-const PromocodesLog = require('../../models/promocodeLog')
-const Tariff = require('../../models/tariff')
-
 const resSuccess = require('../../helpers/resSuccess')
 const getBoolean = require('../../helpers/getBoolean')
-const mongoose = require('mongoose')
+const PromocodesLog = require('../../models/promocodeLog')
 
 /*
  * Промокоды
