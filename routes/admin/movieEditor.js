@@ -108,8 +108,8 @@ router.post(
 	'/image',
 	verify.token,
 	verify.isManager,
-	existMovie,
 	uploadMemoryStorage.single('file'),
+	existMovie,
 	async (req, res) => {
 		if (!req.file || !req.file.buffer) {
 			return resError({
