@@ -4,7 +4,7 @@ info:
   version: v1
 servers:
   - url: https://api.1390760-cu92735.tw1.ru/
-gittags:
+tags:
   - name: Profile
     description: Профиль
   - name: Admin
