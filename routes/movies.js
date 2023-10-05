@@ -128,7 +128,7 @@ router.get('/movie', async (req, res) => {
 										{
 											$match: {
 												review: { $ne: null },
-												deleted: { $ne: true },
+												isDeleted: { $ne: true },
 											},
 										},
 									],
@@ -183,7 +183,7 @@ router.get('/movie', async (req, res) => {
 										{
 											$match: {
 												review: { $ne: null },
-												deleted: { $ne: true },
+												isDeleted: { $ne: true },
 											},
 										},
 										{
@@ -445,6 +445,8 @@ router.post('/rating', verify.token, async (req, res) => {
 				review,
 				movieId,
 				userId: req.user._id,
+				isDeleted: false,
+				isPublished: false,
 			})
 		}
 
@@ -453,6 +455,7 @@ router.post('/rating', verify.token, async (req, res) => {
 			{
 				$match: {
 					movieId,
+					isDeleted: { $ne: true },
 				},
 			},
 			{
@@ -509,8 +512,7 @@ router.delete('/rating', verify.token, async (req, res) => {
 			},
 			{
 				$set: {
-					rating: null,
-					review: null,
+					isDeleted: true,
 				},
 				$inc: { __v: 1 },
 			}
@@ -521,6 +523,7 @@ router.delete('/rating', verify.token, async (req, res) => {
 			{
 				$match: {
 					movieId,
+					isDeleted: { $ne: true },
 				},
 			},
 			{
