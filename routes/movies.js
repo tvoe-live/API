@@ -446,7 +446,7 @@ router.post('/rating', verify.token, async (req, res) => {
 				movieId,
 				userId: req.user._id,
 				isDeleted: false,
-				isPublished: false,
+				isPublished: false, // Поле отвечающиее за то опубликован ли отзыв
 			})
 		}
 
