@@ -6,6 +6,7 @@ const resError = require('../helpers/resError')
 const resSuccess = require('../helpers/resSuccess')
 const { CLIENT_URL, REFERRAL_PERCENT_BONUSE } = process.env
 const ReferralWithdrawalLog = require('../models/referralWithdrawalLog')
+require('dotenv').config()
 
 /*
  * Реферальная программа
@@ -58,6 +59,9 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 									{
 										$match: {
 											type: 'paid',
+											status: {
+												$in: ['success', 'CONFIRMED', 'AUTHORIZED'],
+											},
 										},
 									},
 									{
@@ -91,6 +95,9 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 									{
 										$match: {
 											type: 'paid',
+											status: {
+												$in: ['success', 'CONFIRMED', 'AUTHORIZED'],
+											},
 										},
 									},
 									{
@@ -99,7 +106,10 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 											status: true,
 											createdAt: true,
 											bonuseAmount: {
-												$multiply: ['$amount', +REFERRAL_PERCENT_BONUSE / 100],
+												$round: [
+													{ $multiply: ['$amount', +process.env.REFERRAL_PERCENT_BONUSE / 100] },
+													2,
+												],
 											},
 										},
 									},
