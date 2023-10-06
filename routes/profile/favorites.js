@@ -151,7 +151,9 @@ router.get('/', verify.token, async (req, res) => {
 						],
 					},
 				},
+
 				{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
+
 				{
 					$project: {
 						totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
