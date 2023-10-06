@@ -357,7 +357,7 @@ router.get('/movie', async (req, res) => {
 	}
 })
 
-// Получить рейтинг и комментарий поставленный пользователем
+// Получить рейтинг и комментарий, поставленный пользователем
 router.get('/rating', verify.token, async (req, res) => {
 	const { movieId } = req.query
 
@@ -365,6 +365,7 @@ router.get('/rating', verify.token, async (req, res) => {
 		{
 			movieId,
 			userId: req.user._id,
+			isDeleted: false,
 		},
 		{
 			_id: false,
@@ -429,6 +430,7 @@ router.post('/rating', verify.token, async (req, res) => {
 			{
 				movieId,
 				userId: req.user._id,
+				isDeleted: false,
 			},
 			{
 				$set: {
@@ -472,7 +474,7 @@ router.post('/rating', verify.token, async (req, res) => {
 			},
 		])
 
-		const newMovieRating = movieRatingLogs[0].avg
+		const newMovieRating = movieRatingLogs[0]?.avg || null
 
 		// Обновить среднюю оценку фильма
 		await Movie.updateOne({ _id: movieId }, { $set: { rating: newMovieRating } })
@@ -509,6 +511,7 @@ router.delete('/rating', verify.token, async (req, res) => {
 			{
 				movieId,
 				userId: req.user._id,
+				isDeleted: false,
 			},
 			{
 				$set: {
@@ -548,6 +551,7 @@ router.delete('/rating', verify.token, async (req, res) => {
 		return resSuccess({
 			res,
 			movieId,
+			newMovieRating,
 			alert: true,
 			msg: 'Успешно удалено',
 		})
