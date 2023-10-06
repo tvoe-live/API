@@ -5,7 +5,7 @@
 	"main": "app.js",
 	"scripts": {
 		"start": "nodemon NODE_ENV=production && --max-old-space-size=8192 app.js",
-		"dev": "nodemon NODE_ENV=development && app.js",
+		"dev": "nodemon NODE_ENV=development app.js",
 		"prepare": "husky install"
 	},
 	"author": "",
