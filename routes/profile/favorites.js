@@ -19,6 +19,7 @@ router.get('/', verify.token, async (req, res) => {
 			// Отбор по userID
 			$match: {
 				userId: req.user._id,
+				isFavorite: true,
 			},
 		},
 		{
