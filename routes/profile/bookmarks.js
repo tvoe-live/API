@@ -128,40 +128,39 @@ router.get('/', verify.token, async (req, res) => {
 	]
 
 	try {
-		movieBookmark.aggregate([
-			{
-				$facet: {
-					totalSize: [
-						...agregationListForTotalSize,
-						{
-							$group: {
-								_id: null,
-								count: { $sum: 1 },
+		movieBookmark
+			.aggregate([
+				{
+					$facet: {
+						totalSize: [
+							...agregationListForTotalSize,
+							{
+								$group: {
+									_id: null,
+									count: { $sum: 1 },
+								},
 							},
-						},
-						{ $project: { _id: false } },
-						{ $limit: 1 },
-					],
-					items: [
-						...agregationListForTotalSize,
-						{ $sort: { updatedAt: -1 } },
-						{ $skip: skip },
-						{ $limit: limit },
-					],
+							{ $project: { _id: false } },
+							{ $limit: 1 },
+						],
+						items: [
+							...agregationListForTotalSize,
+							{ $sort: { updatedAt: -1 } },
+							{ $skip: skip },
+							{ $limit: limit },
+						],
+					},
 				},
-			},
-			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
-			{
-				$project: {
-					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
-					items: '$items',
+				{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
+				{
+					$project: {
+						totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+						items: '$items',
+					},
 				},
-			},
-			(_, result) => {
-				return res.status(200).json(result[0])
-			},
-		])
-	} catch (error) {
+			])
+			.exec((_, result) => res.status(200).send(result[0]))
+	} catch (err) {
 		return resError({ res, msg: err })
 	}
 })
