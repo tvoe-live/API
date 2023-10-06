@@ -4,6 +4,18 @@ info:
   version: v1
 servers:
   - url: https://api.1390760-cu92735.tw1.ru/
+
+components:
+  parameters:
+    AuthorizationHeader:
+      name: token
+      in: header
+      description: Access token только для возможности отправлять запросы из свагера
+      required: true
+      schema:
+        type: string
+        default: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY1MDQ1ZjRiMWJkNmRkYzM2NDI5MDlmYiIsImlhdCI6MTY5NjQ4OTA0MCwiZXhwIjoxNzI4MDQ2NjQwfQ.hhoCzqDtsVMlXZ1BBzwJOgqwJPGGQr-kTNl05aNWQ_Q
+
 tags:
   - name: Profile
     description: Профиль
@@ -31,6 +43,8 @@ paths:
       summary: Получение профиля
       tags:
         - Profile
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       responses:
         '200':
           description: OK
@@ -91,9 +105,20 @@ paths:
                     - GIFTS_AND_PROMOTIONS
                     - FAVOTITES_AND_BOOKMARKS_NEWS
     patch:
-      summary: Обновления профиля
+      summary: Обновление имени профиля
       tags:
         - Profile
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstname:
+                  type: string
+                  description: Имя пользователя
       responses:
         '200':
           description: OK
@@ -119,6 +144,8 @@ paths:
       summary: Удаление профиля
       tags:
         - Profile
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           application/json:
@@ -167,6 +194,8 @@ paths:
       summary: Восстановление профиля
       tags:
         - Profile
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       responses:
         '200':
           description: OK
@@ -186,6 +215,8 @@ paths:
       summary: Загрузка аватарки
       tags:
         - Profile
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           multipart/form-data:
@@ -225,6 +256,8 @@ paths:
       summary: Удаление аватарки
       tags:
         - Profile
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       responses:
         '200':
           description: OK
@@ -257,6 +290,7 @@ paths:
       tags:
         - Profile
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: limit
           schema:
@@ -375,6 +409,7 @@ paths:
       tags:
         - Profile
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: limit
           schema:
@@ -493,6 +528,7 @@ paths:
       tags:
         - Profile
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: limit
           schema:
@@ -639,6 +675,7 @@ paths:
       tags:
         - Profile
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: limit
           schema:
@@ -771,6 +808,7 @@ paths:
       tags:
         - Profile
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: limit
           schema:
@@ -869,6 +907,7 @@ paths:
       tags:
         - Profile
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: limit
           schema:
@@ -935,6 +974,8 @@ paths:
       summary: Загрузка уведомления
       tags:
         - Profile
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           multipart/form-data:
@@ -1032,6 +1073,8 @@ paths:
       summary: Обновление уведомления
       tags:
         - Profile
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           multipart/form-data:
@@ -1095,6 +1138,8 @@ paths:
       summary: Удаление уведомления
       tags:
         - Profile
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           application/json:
@@ -1136,6 +1181,7 @@ paths:
       tags:
         - Profile
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: id
           schema:
@@ -1165,6 +1211,7 @@ paths:
       tags:
         - Profile
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: limit
           schema:
@@ -1244,6 +1291,8 @@ paths:
       summary: Профиль > Список уведомлений для пользователя
       tags:
         - Profile
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           application/json:
@@ -1281,6 +1330,8 @@ paths:
       summary: Профиль > Настройка уведомлений ( включение и выключение определенных категорий)
       tags:
         - Profile
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           application/json:
@@ -1339,6 +1390,8 @@ paths:
       summary: Получение категорий
       tags:
         - Admin
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       responses:
         '200':
           description: OK
@@ -1489,6 +1542,7 @@ paths:
       tags:
         - Admin
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: limit
           schema:
@@ -1596,6 +1650,7 @@ paths:
       tags:
         - Admin
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: id
           schema:
@@ -1709,6 +1764,8 @@ paths:
       summary: Админ-панель > Обновления пользователя
       tags:
         - Admin
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           application/json:
@@ -1748,6 +1805,7 @@ paths:
       tags:
         - Admin
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: skip
           schema:
@@ -2134,6 +2192,8 @@ paths:
       summary: Добавление / редактирование записей ( фильмов и сериалов )
       tags:
         - Admin
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           application/json:
@@ -2374,6 +2434,7 @@ paths:
       tags:
         - Admin
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: skip
           schema:
@@ -2659,6 +2720,8 @@ paths:
       summary: Админ-панель > Опубликовать / снять с публикации запись (фильм или сериал )
       tags:
         - Admin
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           application/json:
@@ -2704,6 +2767,8 @@ paths:
       summary: Админ-панель >  Поднять медиа страницу во всех списках
       tags:
         - Admin
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           application/json:
@@ -2750,6 +2815,7 @@ paths:
       tags:
         - Admin
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: limit
           schema:
@@ -2948,6 +3014,8 @@ paths:
       summary: Админ-панель > Редактор медиа страницы
       tags:
         - Admin
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       responses:
         '200':
           description: OK
@@ -2982,6 +3050,7 @@ paths:
       tags:
         - Admin
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: _id
           schema:
@@ -3019,6 +3088,7 @@ paths:
       tags:
         - Admin
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: name
           schema:
@@ -3077,6 +3147,7 @@ paths:
       tags:
         - Admin
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: name
           schema:
@@ -3125,6 +3196,7 @@ paths:
       tags:
         - Admin
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: movieId
           schema:
@@ -3198,6 +3270,7 @@ paths:
       tags:
         - Admin
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: name
           schema:
@@ -3246,6 +3319,7 @@ paths:
       tags:
         - Admin
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: limit
           schema:
@@ -3396,6 +3470,7 @@ paths:
       tags:
         - Admin
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: limit
           schema:
@@ -3533,6 +3608,7 @@ paths:
       tags:
         - Admin
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: limit
           schema:
@@ -3928,6 +4004,7 @@ paths:
       tags:
         - Collections
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: limit
           schema:
@@ -4063,6 +4140,7 @@ paths:
       tags:
         - Collections
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: limit
           schema:
@@ -4162,7 +4240,7 @@ paths:
           name: sort
           schema:
             type: string
-          description: Установление сортировки списка. Либо new, либо rating.
+          description: Установление сортировки списка. Либо new, либо rating, либо popular
         - in: query
           name: genreAlias
           schema:
@@ -4399,6 +4477,8 @@ paths:
       summary: Тарифы, создание и обработка платежей
       tags:
         - Payment
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       responses:
         '200':
           description: OK
@@ -4498,6 +4578,8 @@ paths:
       summary: Загрузка платежа
       tags:
         - Payment
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           application/json:
@@ -4529,6 +4611,8 @@ paths:
       summary: Обработка уведомления от платежной системы о совершении платежа
       tags:
         - Payment
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           application/json:
@@ -4575,6 +4659,7 @@ paths:
       tags:
         - Payment
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: id
           schema:
@@ -4735,7 +4820,7 @@ paths:
 
   /search/oftenSeek:
     get:
-      summary: Поиск > Часто ищут (! Сейчас логика из карусели !)
+      summary: Поиск > Часто ищут
       tags:
         - Search
       parameters:
@@ -4862,11 +4947,361 @@ paths:
                           src: '/videos/642f4a4b8e6fd86616fe019e.mp4'
                           thumbnail: '/images/642f4a4b8e6fd86616fe01a0.jpg'
 
+  /search/nowSeek:
+    get:
+      summary: Поиск > Ищут сейчас ( за последние 3 дня)
+      tags:
+        - Search
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: number
+          description: Ограничение на максимальное количество элементов в теле ответа
+        - in: query
+          name: skip
+          schema:
+            type: number
+          description: Количество пропускаемых элементов из начала выборки
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalSize:
+                    type: number
+                    description: Общее количество документов(фильмов) в БД в коллекции movies
+                  items:
+                    type: array
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          description: Id фильма (mongoose.ObjectId)
+                        name:
+                          type: string
+                          description: Название фильма
+                        shortDesc:
+                          type: string
+                          description: Краткое описание
+                        ageLevel:
+                          type: string
+                          description: Возрастное ограничение
+                        dateReleased:
+                          type: Date
+                          description: Дата релиза
+                        categoryAlias:
+                          type: string
+                          description: Вид категориии. Может быть films, serials или collections
+                        poster:
+                          type: object
+                          properties:
+                            src:
+                              type: string
+                              description: Путь к файлу изображению
+                        rating:
+                          type: number
+                          description: Рейтинг от 0 до 10
+                        duration:
+                          type: string
+                          description: Длительность фильма в секундах
+                        url:
+                          type: string
+                          description: Url к фильму
+                        badge:
+                          type: object
+                          description: Бейдж
+                          required: false
+                          properties:
+                            type:
+                              type: string
+                              descriptipn: newSeason - новый сезон, premiere - премьера
+                            startAt:
+                              type: date
+                              descriptipn: дата начала показа бейджа
+                            finishAt:
+                              type: date
+                              descriptipn: дата окончания показа бейджа
+                        genres:
+                          type: array
+                          uniqueItems: true
+                          description: Список жанров
+                          items:
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                                description: Название жанра
+                              alias:
+                                type: string
+                                description: Алиас жанра
+
+              examples:
+                example:
+                  value:
+                    totalSize: 2
+                    items:
+                      - _id: 63f16d8ed4df293c6a8f839c
+                        name: Город пингвинов
+                        origName: Penguin Town
+                        poster:
+                          _id: 6421ca400f99cfdac6fb8ea8
+                          src: '/images/6421ca400f99cfdac6fb8ea9.jpg'
+                        dateReleased: '2021-06-16'
+                        duration: 13273.642667
+                        shortDesc:
+                          В живописном южноафриканском городке несколько вымирающих видов пингвинов
+                          сбиваются в стаю, чтобы искать партнеров, растить птенцов и контактировать с местными
+                          жителями.
+                        ageLevel: 6
+                        rating:
+                        badge:
+                        url: '/p/gorod-pingvinov'
+                        categoryAlias: serials
+                        genres:
+                          - Документальные
+                          - Драмы
+                          - Триллеры
+                          - Комедии
+                      - _id: 641e14640073f02ab65e75cd
+                        name: 'Город страха: Нью-Йорк против мафии'
+                        origName: 'Fear City: New York vs the Mafia'
+                        poster:
+                          _id: 641e146a0073f02ab65e7605
+                          src: '/images/641e146a0073f02ab65e7606.jpg'
+                        dateReleased: '2020-07-22'
+                        duration: 0
+                        shortDesc:
+                          'Пять мафиозных семей правили Нью-Йорком в 1970-х и 1980-х годах, пока
+                          группа федеральных агентов не попыталась совершить немыслимое: уничтожить их.'
+                        ageLevel: 16
+                        rating:
+                        badge:
+                        url: '/p/gorod-straha-nyu-york-protiv-mafii'
+                        categoryAlias: serials
+                        genres:
+                          - Документальные
+                          - Криминал
+
+  /search/recentlySeek:
+    get:
+      summary: Поиск > То что искал сам пользователь
+      tags:
+        - Search
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - in: query
+          name: limit
+          schema:
+            type: number
+          description: Ограничение на максимальное количество элементов в теле ответа
+        - in: query
+          name: skip
+          schema:
+            type: number
+          description: Количество пропускаемых элементов из начала выборки
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalSize:
+                    type: number
+                    description: Общее количество документов(фильмов) в БД в коллекции movies
+                  items:
+                    type: array
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          description: Id фильма (mongoose.ObjectId)
+                        name:
+                          type: string
+                          description: Название фильма
+                        shortDesc:
+                          type: string
+                          description: Краткое описание
+                        ageLevel:
+                          type: string
+                          description: Возрастное ограничение
+                        dateReleased:
+                          type: Date
+                          description: Дата релиза
+                        categoryAlias:
+                          type: string
+                          description: Вид категориии. Может быть films, serials или collections
+                        poster:
+                          type: object
+                          properties:
+                            src:
+                              type: string
+                              description: Путь к файлу изображению
+                        rating:
+                          type: number
+                          description: Рейтинг от 0 до 10
+                        duration:
+                          type: string
+                          description: Длительность фильма в секундах
+                        url:
+                          type: string
+                          description: Url к фильму
+                        badge:
+                          type: object
+                          description: Бейдж
+                          required: false
+                          properties:
+                            type:
+                              type: string
+                              descriptipn: newSeason - новый сезон, premiere - премьера
+                            startAt:
+                              type: date
+                              descriptipn: дата начала показа бейджа
+                            finishAt:
+                              type: date
+                              descriptipn: дата окончания показа бейджа
+                        genres:
+                          type: array
+                          uniqueItems: true
+                          description: Список жанров
+                          items:
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                                description: Название жанра
+                              alias:
+                                type: string
+                                description: Алиас жанра
+
+            examples:
+              example:
+                value:
+                  totalSize: 5
+                  items:
+                    - _id: 63f16d8ed4df293c6a8f839c
+                      name: Город пингвинов
+                      origName: Penguin Town
+                      poster:
+                        _id: 6421ca400f99cfdac6fb8ea8
+                        src: '/images/6421ca400f99cfdac6fb8ea9.jpg'
+                      dateReleased: '2021-06-16'
+                      duration: 13273.642667
+                      shortDesc:
+                        В живописном южноафриканском городке несколько вымирающих видов пингвинов
+                        сбиваются в стаю, чтобы искать партнеров, растить птенцов и контактировать с местными
+                        жителями.
+                      ageLevel: 6
+                      rating:
+                      badge:
+                      url: '/p/gorod-pingvinov'
+                      categoryAlias: serials
+                      genres:
+                        - Документальные
+                        - Драмы
+                        - Триллеры
+                        - Комедии
+                    - _id: 641e14640073f02ab65e75cd
+                      name: 'Город страха: Нью-Йорк против мафии'
+                      origName: 'Fear City: New York vs the Mafia'
+                      poster:
+                        _id: 641e146a0073f02ab65e7605
+                        src: '/images/641e146a0073f02ab65e7606.jpg'
+                      dateReleased: '2020-07-22'
+                      duration: 0
+                      shortDesc:
+                        'Пять мафиозных семей правили Нью-Йорком в 1970-х и 1980-х годах, пока
+                        группа федеральных агентов не попыталась совершить немыслимое: уничтожить их.'
+                      ageLevel: 16
+                      rating:
+                      badge:
+                      url: '/p/gorod-straha-nyu-york-protiv-mafii'
+                      categoryAlias: serials
+                      genres:
+                        - Документальные
+                        - Криминал
+                    - _id: 63b337846ce1f3a867dfcf9e
+                      name: 'Ведьмак: Происхождение'
+                      origName: 'The Witcher: Blood Origin'
+                      poster:
+                        _id: 63b337936ce1f3a867dfcfcd
+                        src: '/images/63b337936ce1f3a867dfcfce.jpg'
+                      dateReleased: '2022-12-25'
+                      duration: 12383.791666000001
+                      shortDesc:
+                        Более чем за тысячу лет до появления Геральта из Ривии семь изгоев мира
+                        эльфов объединяют свои силы против всемогущей империи.
+                      ageLevel: 16
+                      rating:
+                      badge:
+                      url: '/p/vedmak-proishozhdenie'
+                      categoryAlias: serials
+                      genres:
+                        - Фэнтези
+                        - Боевики
+                        - Драмы
+                    - _id: 63c534491c98adb3690e2506
+                      name: Ведьмак. Кошмар Волка
+                      origName: 'The Witcher: Nightmare of the Wolf'
+                      poster:
+                        _id: 63c95ec56396809788e00958
+                        src: '/images/63c95ec56396809788e00959.jpg'
+                      dateReleased: '2021-08-23'
+                      duration: 5014.333333
+                      shortDesc:
+                        Веcемир вырвался из нищеты и стал ведьмаком. Теперь он убивает монстров
+                        за монету и славу. Но приходит новый враг, и ему придется столкнуться с демонами
+                        своего прошлого.
+                      ageLevel: 18
+                      rating:
+                      badge:
+                      url: '/p/vedmak-koshmar-volka'
+                      categoryAlias: films
+                      genres:
+                        - Мультфильмы
+                        - Фэнтези
+                        - Боевики
+                    - _id: 63c1bf0a23c814afb6099e18
+                      name: Ведьмак
+                      origName: The Witcher
+                      poster:
+                        _id: 63e00a92ccaf134edd216857
+                        src: '/images/63e00a92ccaf134edd216858.jpg'
+                      dateReleased: '2019-12-20'
+                      duration: 56502.375
+                      shortDesc:
+                        Геральт из Ривии, наемный охотник за чудовищами, перенесший мутации,
+                        идет навстречу своей судьбе в неспокойном мире, где люди часто оказываются куда
+                        коварнее чудовищ.
+                      ageLevel: 18
+                      rating: 7.25
+                      badge:
+                      url: '/p/vedmak'
+                      categoryAlias: serials
+                      genres:
+                        - Фэнтези
+                        - Приключения
+                        - Драмы
+                        - Ужасы
+
   /auth/logout:
     post:
       summary: Выход из сессии
       tags:
         - Auth
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           application/json:
@@ -4897,6 +5332,8 @@ paths:
       summary: Авторизация через яндекс
       tags:
         - Auth
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       responses:
         '200':
           description: OK
@@ -5627,6 +6064,7 @@ paths:
       tags:
         - Movies
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: movieId
           schema:
@@ -5655,6 +6093,8 @@ paths:
       summary: Отправка рейтинга(оценки) и отзыва(комментария)
       tags:
         - Movies
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           application/json:
@@ -5702,6 +6142,8 @@ paths:
       summary: Удаления рейтинга и отзыва
       tags:
         - Movies
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           application/json:
@@ -5744,6 +6186,7 @@ paths:
       tags:
         - Movies
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: movieId
           schema:
@@ -5772,6 +6215,8 @@ paths:
       summary: Добавление / удаление из избранного
       tags:
         - Movies
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           application/json:
@@ -5810,6 +6255,7 @@ paths:
       tags:
         - Movies
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: movieId
           schema:
@@ -5838,6 +6284,8 @@ paths:
       summary: Добавление / удаление из закладок
       tags:
         - Movies
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           application/json:
@@ -5876,6 +6324,7 @@ paths:
       tags:
         - Movies
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: movieId
           schema:
@@ -5914,6 +6363,8 @@ paths:
       summary: Добавление записи просмотра фильма / серий сериала в логи
       tags:
         - Movies
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           application/json:
@@ -5945,6 +6396,8 @@ paths:
       summary: Реферальная программа - получение общих данных
       tags:
         - Referral
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       responses:
         '200':
           description: OK
@@ -5986,6 +6439,7 @@ paths:
       tags:
         - Referral
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: limit
           schema:
@@ -6066,6 +6520,7 @@ paths:
       tags:
         - Referral
       parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
         - in: query
           name: limit
           schema:
@@ -6148,6 +6603,8 @@ paths:
       summary: Реферальная программа > Изменить данные карты
       tags:
         - Referral
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       requestBody:
         content:
           application/json:
@@ -6189,6 +6646,8 @@ paths:
       summary: Реферальная программа > Удалить данные карты
       tags:
         - Referral
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       responses:
         '200':
           description: OK
@@ -6216,6 +6675,8 @@ paths:
       summary: Реферальная программа > Создание заявки на вывод c обнулением баланса
       tags:
         - Referral
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
       responses:
         '200':
           description: OK
