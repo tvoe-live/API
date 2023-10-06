@@ -4,7 +4,6 @@ const Movie = require('../models/movie')
 const verify = require('../middlewares/verify')
 const resError = require('../helpers/resError')
 const searchLog = require('../models/searchLog')
-const movieOperations = require('../helpers/movieOperations')
 const getSearchQuery = require('../middlewares/getSearchQuery')
 const ru = require('convert-layout/ru')
 
@@ -595,7 +594,13 @@ router.get('/', getSearchQuery, async (req, res) => {
 
 	if (!req.searchQuery) return resError({ res, msg: 'Параметр query не может быть пустой' })
 
-	const query = req.searchQuery?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+	let query = req.searchQuery?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+	if (
+		(query[0] === '"' && query[query.length - 1] === '"') ||
+		(query[0] === "'" && query[query.length - 1 === "'"])
+	)
+		query = query.slice(1, query.length - 1)
+
 	const editSpace = query?.replace(/ /gi, '\\s.*')
 	const RegExpQuery = new RegExp(editSpace?.replace(/[eё]/gi, '[её]'), 'i')
 
