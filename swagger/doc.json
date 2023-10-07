@@ -12,7 +12,8 @@
 		{ "name": "Search", "description": "Поиск" },
 		{ "name": "Auth", "description": "Авторизация / регистрация через Яндекс и разрушение сессии" },
 		{ "name": "Movies", "description": "Фильмы и сериалы" },
-		{ "name": "Referral", "description": "Реферальная программа" }
+		{ "name": "Referral", "description": "Реферальная программа" },
+		{ "name": "Promocode", "description": "Промокоды" }
 	],
 	"paths": {
 		"/profile": {
@@ -4189,6 +4190,725 @@
 				}
 			}
 		},
+		"/admin/promocodes": {
+			"get": {
+				"summary": "Админ-панель > Cписок всех промокодов",
+				"tags": ["Admin"],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"schema": { "type": "number" },
+						"description": "Ограничение на максимальное количество элементов в теле ответа"
+					},
+					{
+						"in": "query",
+						"name": "skip",
+						"schema": { "type": "number" },
+						"description": "Кол-во пропускаемых элементов из начала выборки"
+					},
+					{
+						"in": "query",
+						"name": "isActive",
+						"schema": { "type": "boolean" },
+						"description": "Поиск по действующим ( или недействующим) в данный момент промокодам"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"totalSize": { "type": "number", "description": "Всего промокодов" },
+										"items": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"_id": { "type": "string", "description": "Id промокода" },
+													"maxAmountActivation": {
+														"type": "number",
+														"description": "Максимальное количество возможных активаций этого промокода пользователями вместе взятыми"
+													},
+													"currentAmountActivation": {
+														"type": "number",
+														"description": "Количество активаций промокода всеми пользователями"
+													},
+													"isOnlyForNewUsers": {
+														"type": "boolean",
+														"description": "Доступен ли промокод только новым пользователм или всем"
+													},
+													"isActive": {
+														"type": "boolean",
+														"description": "Является ли промокод активным в данный момент времени"
+													},
+													"tariffName": {
+														"type": "string",
+														"description": "Название тарифа - '1 месяц', '3 месяца', '6 месяцев'"
+													},
+													"discountFormat": {
+														"type": "string",
+														"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+													},
+													"sizeDiscount": {
+														"type": "number",
+														"description": "Размер скидки. Если discountFormat = percentages, то sizeDiscount выражается в процентах. Если discountFormat = rubles, то sizeDiscount - в рублях"
+													},
+													"value": { "type": "string", "description": "Значение промокода" },
+													"startAt": {
+														"type": "date",
+														"description": "Дата и время начала действия промокода. В формате YYYY-MM-DD HH:mm"
+													},
+													"finishAt": {
+														"type": "date",
+														"description": "Дата и время окончания действия промокода. В формате YYYY-MM-DD HH:mm"
+													},
+													"createdAt": {
+														"type": "date",
+														"description": "Дата и время создания промокода"
+													}
+												}
+											}
+										}
+									},
+									"example": {
+										"totalSize": 3,
+										"items": [
+											{
+												"_id": "650d914b7f0867e591ebc0c9",
+												"maxAmountActivation": 33,
+												"currentAmountActivation": 1,
+												"isOnlyForNewUsers": false,
+												"isActive": true,
+												"tariffName": "3 месяца",
+												"discountFormat": "rubles",
+												"sizeDiscount": 201,
+												"value": "test10",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T13:06:19.295Z"
+											},
+											{
+												"_id": "650d80c410211d9425bd8d54",
+												"maxAmountActivation": 33,
+												"currentAmountActivation": 1,
+												"isOnlyForNewUsers": false,
+												"isActive": true,
+												"tariffName": "3 месяца",
+												"discountFormat": "percentages",
+												"sizeDiscount": 40,
+												"value": "test7",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T11:55:48.227Z"
+											},
+											{
+												"_id": "650d80b710211d9425bd8d30",
+												"maxAmountActivation": 33,
+												"currentAmountActivation": 1,
+												"isOnlyForNewUsers": false,
+												"isActive": true,
+												"tariffName": "6 месяцев",
+												"discountFormat": "percentages",
+												"sizeDiscount": 50,
+												"value": "test6",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T11:55:35.103Z"
+											}
+										]
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"post": {
+				"summary": "Админ панель => Создание промокода",
+				"tags": ["Admin"],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"maxAmountActivation": {
+										"type": "number",
+										"description": "Максимальное количество возможных активаций этого промокода пользователями вместе взятыми"
+									},
+									"isOnlyForNewUsers": {
+										"type": "boolean",
+										"description": "Доступен ли промокод только новым пользователм или всем. По умолчанию true - только для новых пользователей"
+									},
+									"isActive": {
+										"type": "boolean",
+										"description": "Является ли промокод активным в данный момент времени. По умолчанию false"
+									},
+									"tariffName": {
+										"type": "string",
+										"description": "Название тарифа - '1 месяц', '3 месяца', '6 месяцев'"
+									},
+									"discountFormat": {
+										"type": "string",
+										"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+									},
+									"sizeDiscount": {
+										"type": "number",
+										"description": "Размер скидки. Если discountFormat = percentages, то sizeDiscount выражается в процентах. Если discountFormat = rubles, то sizeDiscount - в рублях"
+									},
+									"value": { "type": "string", "description": "Значение промокода" },
+									"startAt": {
+										"type": "date",
+										"description": "Дата и время начала действия промокода. В формате YYYY-MM-DD HH:mm"
+									},
+									"finishAt": {
+										"type": "date",
+										"description": "Дата и время окончания действия промокода. В формате YYYY-MM-DD HH:mm"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"success": { "type": "boolean", "description": "Значение true" },
+										"msg": {
+											"type": "string",
+											"description": "Надпись \"Промокод успешно создан\""
+										}
+									},
+									"example": { "success": true, "msg": "Промокод успешно создан" }
+								}
+							}
+						}
+					}
+				}
+			},
+			"patch": {
+				"summary": "Админ панель => Изменение промокода",
+				"tags": ["Admin"],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"maxAmountActivation": {
+										"type": "number",
+										"description": "Максимальное количество возможных активаций этого промокода пользователями вместе взятыми"
+									},
+									"isOnlyForNewUsers": {
+										"type": "boolean",
+										"description": "Доступен ли промокод только новым пользователм или всем. По умолчанию true - только для новых пользователей"
+									},
+									"isActive": {
+										"type": "boolean",
+										"description": "Является ли промокод активным в данный момент времени. По умолчанию false"
+									},
+									"tariffName": {
+										"type": "string",
+										"description": "Название тарифа - '1 месяц', '3 месяца', '6 месяцев'"
+									},
+									"discountFormat": {
+										"type": "string",
+										"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+									},
+									"sizeDiscount": {
+										"type": "number",
+										"description": "Размер скидки. Если discountFormat = percentages, то sizeDiscount выражается в процентах. Если discountFormat = rubles, то sizeDiscount - в рублях"
+									},
+									"value": { "type": "string", "description": "Значение промокода" },
+									"startAt": {
+										"type": "date",
+										"description": "Дата и время начала действия промокода. В формате YYYY-MM-DD HH:mm"
+									},
+									"finishAt": {
+										"type": "date",
+										"description": "Дата и время окончания действия промокода. В формате YYYY-MM-DD HH:mm"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"alert": { "type": "boolean", "description": "Значение true" },
+										"type": { "type": "string", "description": "надпись 'success'" },
+										"msg": { "type": "string", "description": "Надпись \"Промокод обновлен\"" }
+									},
+									"example": { "alert": true, "type": "sucess", "msg": "Промокод обновлен" }
+								}
+							}
+						}
+					}
+				}
+			},
+			"delete": {
+				"summary": "Удаления промокода",
+				"tags": ["Admin"],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"_id": {
+										"type": "string",
+										"description": "Id промокода (mongoose.ObjectId)",
+										"required": true
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"type": { "type": "string", "description": "Надпись \"success\"" },
+										"alert": { "type": "boolean", "description": "Значение true" },
+										"_id": {
+											"type": "string",
+											"description": "Id удаленного фильма или сериала (mongoose.ObjectId)"
+										},
+										"msg": { "type": "string", "description": "Надпись \"Успешно удалено\"" }
+									},
+									"example": {
+										"type": "success",
+										"alert": true,
+										"id": "63ac7d6ab2c93ed221218186",
+										"msg": "Успешно удалено"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/admin/promocodes/count": {
+			"get": {
+				"summary": "Админ-панель > Информация про промокод и логи его активаций разными пользователями",
+				"tags": ["Admin"],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"schema": { "type": "number" },
+						"description": "Ограничение на максимальное количество элементов в теле ответа"
+					},
+					{
+						"in": "query",
+						"name": "skip",
+						"schema": { "type": "number" },
+						"description": "Кол-во пропускаемых элементов из начала выборки"
+					},
+					{
+						"in": "query",
+						"name": "_id",
+						"schema": { "type": "string" },
+						"description": "Id промокода",
+						"required": true
+					},
+					{
+						"in": "query",
+						"name": "userId",
+						"schema": { "type": "string" },
+						"description": "Id пользователя для поиска пользователей, активировавших указанный промокод"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"sizeLogs": {
+											"type": "number",
+											"description": "Количество логов активаций данного промокода"
+										},
+										"_id": { "type": "string", "description": "Id промокода" },
+										"maxAmountActivation": {
+											"type": "number",
+											"description": "Максимальное количество возможных активаций этого промокода пользователями вместе взятыми"
+										},
+										"currentAmountActivation": {
+											"type": "number",
+											"description": "Количество активаций промокода всеми пользователями"
+										},
+										"isOnlyForNewUsers": {
+											"type": "boolean",
+											"description": "Доступен ли промокод только новым пользователм или всем"
+										},
+										"isActive": {
+											"type": "boolean",
+											"description": "Является ли промокод активным в данный момент времени"
+										},
+										"tariffName": {
+											"type": "string",
+											"description": "Название тарифа - '1 месяц', '3 месяца', '6 месяцев'"
+										},
+										"discountFormat": {
+											"type": "string",
+											"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+										},
+										"sizeDiscount": {
+											"type": "number",
+											"description": "Размер скидки. Если discountFormat = percentages, то sizeDiscount выражается в процентах. Если discountFormat = rubles, то sizeDiscount - в рублях"
+										},
+										"value": { "type": "string", "description": "Значение промокода" },
+										"startAt": {
+											"type": "date",
+											"description": "Дата и время начала действия промокода. В формате YYYY-MM-DD HH:mm"
+										},
+										"finishAt": {
+											"type": "date",
+											"description": "Дата и время окончания действия промокода. В формате YYYY-MM-DD HH:mm"
+										},
+										"createdAt": {
+											"type": "date",
+											"description": "Дата и время создания промокода"
+										},
+										"promocodeslogs": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"_id": {
+														"type": "string",
+														"description": "Id документа коллекции promocodelogs"
+													},
+													"createdAt": {
+														"type": "date",
+														"description": "Дата активации промокода"
+													},
+													"isExpired": {
+														"type": "boolean",
+														"description": "Истек ли срок действия промокода на текущий момент времени"
+													},
+													"user": {
+														"type": "object",
+														"properties": {
+															"_id": { "type": "string", "description": "Id пользователя" },
+															"email": {
+																"type": "string",
+																"description": "Электронная почта пользователя"
+															},
+															"firstname": { "type": "string", "description": "Имя пользователя" },
+															"lastname": {
+																"type": "string",
+																"description": "Фамилия пользователя"
+															}
+														}
+													}
+												}
+											}
+										}
+									},
+									"example": {
+										"_id": "650d5d3e981100537fb33ecd",
+										"maxAmountActivation": 20,
+										"currentAmountActivation": 1,
+										"isOnlyForNewUsers": false,
+										"isActive": false,
+										"tariffName": "6 месяцев",
+										"discountFormat": "rubles",
+										"sizeDiscount": 150,
+										"value": "AUTUMN2023",
+										"startAt": "2023-09-01T00:00:00.000Z",
+										"finishAt": "2023-10-01T00:00:00.000Z",
+										"createdAt": "2023-09-22T09:24:14.077Z",
+										"promocodeslogs": [
+											{
+												"_id": "650d5db6981100537fb33f7e",
+												"createdAt": "2023-04-01T09:26:14.932Z",
+												"user": {
+													"_id": "63bfe1f923c814afb6093783",
+													"email": "me@stwinnie.com",
+													"firstname": "Mikhail",
+													"lastname": "Zakharovskiy"
+												},
+												"isExpired": true
+											},
+											{
+												"_id": "651fea6752c6d5f1209707d7",
+												"createdAt": "2023-09-22T09:26:14.932Z",
+												"user": {
+													"_id": "6480807e904d20e5d4c1b6db",
+													"email": "7on999@gmail.com",
+													"lastname": "Папин",
+													"firstname": "Семённн"
+												},
+												"isExpired": false
+											}
+										],
+										"sizeLogs": 2
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/admin/promocodes/countAll": {
+			"get": {
+				"summary": "Админ-панель > Список всех промокодов и общая аналитическая информация",
+				"tags": ["Admin"],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"schema": { "type": "number" },
+						"description": "Ограничение на максимальное количество элементов в теле ответа"
+					},
+					{
+						"in": "query",
+						"name": "skip",
+						"schema": { "type": "number" },
+						"description": "Кол-во пропускаемых элементов из начала выборки"
+					},
+					{
+						"in": "query",
+						"name": "query",
+						"schema": { "type": "string" },
+						"description": "Поиск по названию промокода",
+						"required": true
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"activatedPromocodesAmount": {
+											"type": "number",
+											"description": "Общее количество когда либо активированных промокодов"
+										},
+										"totalSize": {
+											"type": "number",
+											"description": "Oбщее количество созданных промокодов"
+										},
+										"totalSizeWithMatch": {
+											"type": "number",
+											"description": "Oбщее количество созданных промокодов с учетом фильтра query, отвечающий за поиск по названию промокодов"
+										},
+										"totalSizeActiveNow": {
+											"type": "number",
+											"description": "Количество действующих в данный момент времени промокодов"
+										},
+										"totalSizeNotPublishedNow": {
+											"type": "number",
+											"description": "Количество неопубликованных промокодов"
+										},
+										"items": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"_id": { "type": "string", "description": "Id промокода" },
+													"maxAmountActivation": {
+														"type": "number",
+														"description": "Максимально возможное количество активаций данного промокода в совокупности всеми пользователями"
+													},
+													"currentAmountActivation": {
+														"type": "number",
+														"description": "Количество активаций этого промокода всеми пользователями всего"
+													},
+													"isActive": {
+														"type": "boolean",
+														"description": "Является ли промокод активным в данный момент времени"
+													},
+													"tariffName": {
+														"type": "string",
+														"description": "Название тарифа - '1 месяц', '3 месяца', '6 месяцев'"
+													},
+													"discountFormat": {
+														"type": "string",
+														"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+													},
+													"sizeDiscount": {
+														"type": "number",
+														"description": "Размер скидки. Если discountFormat = percentages, то sizeDiscount выражается в процентах. Если discountFormat = rubles, то sizeDiscount - в рублях"
+													},
+													"value": { "type": "string", "description": "Значение промокода" },
+													"startAt": {
+														"type": "date",
+														"description": "Дата и время начала действия промокода. В формате YYYY-MM-DD HH:mm"
+													},
+													"finishAt": {
+														"type": "date",
+														"description": "Дата и время окончания действия промокода. В формате YYYY-MM-DD HH:mm"
+													},
+													"createdAt": {
+														"type": "date",
+														"description": "Дата и время создания промокода"
+													}
+												}
+											}
+										}
+									},
+									"example": {
+										"activatedPromocodesAmount": 13,
+										"totalSize": 11,
+										"totalSizeWithMatch": 9,
+										"totalSizeActiveNow": 0,
+										"totalSizeNotPublishedNow": 1,
+										"items": [
+											{
+												"_id": "650d914b7f0867e591ebc0c9",
+												"maxAmountActivation": 33,
+												"currentAmountActivation": 1,
+												"isActive": true,
+												"tariffName": "3 месяца",
+												"discountFormat": "rubles",
+												"sizeDiscount": 201,
+												"value": "test10",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T13:06:19.295Z"
+											},
+											{
+												"_id": "650d807c10211d9425bd8ca3",
+												"maxAmountActivation": 33,
+												"currentAmountActivation": 1,
+												"isActive": true,
+												"tariffName": "6 месяцев",
+												"discountFormat": "percentages",
+												"sizeDiscount": 60,
+												"value": "test4",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T11:54:36.855Z"
+											},
+											{
+												"_id": "650d809a10211d9425bd8ce9",
+												"maxAmountActivation": 33,
+												"currentAmountActivation": 1,
+												"isActive": true,
+												"tariffName": "6 месяцев",
+												"discountFormat": "rubles",
+												"sizeDiscount": 151,
+												"value": "test5",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T11:55:06.550Z"
+											},
+											{
+												"_id": "650d80b710211d9425bd8d30",
+												"maxAmountActivation": 33,
+												"currentAmountActivation": 1,
+												"isActive": true,
+												"tariffName": "6 месяцев",
+												"discountFormat": "percentages",
+												"sizeDiscount": 50,
+												"value": "test6",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T11:55:35.103Z"
+											},
+											{
+												"_id": "650d80c410211d9425bd8d54",
+												"maxAmountActivation": 33,
+												"currentAmountActivation": 1,
+												"isActive": true,
+												"tariffName": "3 месяца",
+												"discountFormat": "percentages",
+												"sizeDiscount": 40,
+												"value": "test7",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T11:55:48.227Z"
+											},
+											{
+												"_id": "650d7f8c10211d9425bd8b5c",
+												"maxAmountActivation": 20,
+												"currentAmountActivation": 1,
+												"isActive": true,
+												"tariffName": "3 месяца",
+												"discountFormat": "rubles",
+												"sizeDiscount": 50,
+												"value": "test1",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T11:50:36.061Z"
+											},
+											{
+												"_id": "650d7fb410211d9425bd8bc6",
+												"maxAmountActivation": 20,
+												"currentAmountActivation": 1,
+												"isActive": true,
+												"tariffName": "6 месяцев",
+												"discountFormat": "rubles",
+												"sizeDiscount": 55,
+												"value": "test2",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T11:51:16.865Z"
+											},
+											{
+												"_id": "650d7fd610211d9425bd8bea",
+												"maxAmountActivation": 33,
+												"currentAmountActivation": 1,
+												"isActive": true,
+												"tariffName": "6 месяцев",
+												"discountFormat": "percentages",
+												"sizeDiscount": 55,
+												"value": "test3",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T11:51:50.149Z"
+											},
+											{
+												"_id": "650d5d6d981100537fb33f13",
+												"maxAmountActivation": 20,
+												"currentAmountActivation": 1,
+												"isActive": true,
+												"tariffName": "3 месяца",
+												"discountFormat": "percentages",
+												"sizeDiscount": 20,
+												"value": "SEPTEMBER2023",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T09:25:01.398Z"
+											}
+										]
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
 		"/collections": {
 			"get": {
 				"summary": "Подборки и жанры для главной страницы",
@@ -7073,6 +7793,43 @@
 										"alert": true,
 										"msg": "Создана заявка на вывод средств"
 									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"promocodes/activate": {
+			"patch": {
+				"summary": "Активация промокода",
+				"tags": ["Promocode"],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": { "value": { "type": "string", "description": "Значение промокода" } }
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"alert": { "type": "boolean", "description": "Значение true" },
+										"type": { "type": "string", "description": "надпись 'success'" },
+										"msg": {
+											"type": "string",
+											"description": "Надпись \"Промокод успешно активирован\""
+										}
+									},
+									"example": { "alert": true, "type": "sucess", "msg": "Промокод обновлен" }
 								}
 							}
 						}
