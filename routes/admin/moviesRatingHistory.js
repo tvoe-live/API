@@ -4,6 +4,7 @@ const mongoose = require('mongoose')
 const verify = require('../../middlewares/verify')
 const resError = require('../../helpers/resError')
 const MovieRating = require('../../models/movieRating')
+const Movie = require('../../models/movie')
 const getSearchQuery = require('../../middlewares/getSearchQuery')
 const getBoolean = require('../../helpers/getBoolean')
 const resSuccess = require('../../helpers/resSuccess')
@@ -140,19 +141,31 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 	const isPublished = getBoolean(req.query.is_published)
 	const isDeleted = getBoolean(req.query.is_deleted)
 
+	const match = {
+		$match: {
+			$and: [
+				{
+					review: { $ne: null },
+				},
+
+				...(isPublished ? [{ isPublished: true }] : []),
+
+				...(typeof isPublished !== 'undefined' && !isPublished
+					? [{ $or: [{ isPublished: { $eq: false } }, { isPublished: { $exists: false } }] }]
+					: []),
+
+				...(isDeleted ? [{ isDeleted: true }] : [{ isDeleted: { $ne: true } }]),
+			],
+		},
+	}
+
 	try {
 		const result = await MovieRating.aggregate([
 			{
 				$facet: {
 					// Всего записей
 					totalSize: [
-						{
-							$match: {
-								review: { $ne: null },
-								...(typeof isPublished !== 'undefined' && { isPublished: isPublished }),
-								isDeleted: isDeleted ? true : { $ne: true },
-							},
-						},
+						match,
 						{
 							$lookup: {
 								from: 'movies',
@@ -180,13 +193,7 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 					],
 					// Список
 					items: [
-						{
-							$match: {
-								review: { $ne: null },
-								isDeleted: isDeleted ? true : { $ne: true },
-								...(typeof isPublished !== 'undefined' && { isPublished: isPublished }),
-							},
-						},
+						match,
 						{
 							$lookup: {
 								from: 'movies',
@@ -214,12 +221,24 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 								foreignField: '_id',
 								pipeline: [
 									{
+										$addFields: {
+											phone: {
+												$cond: {
+													if: { $ifNull: ['$phone', true] },
+													then: '$initial_phone',
+													else: '$phone',
+												},
+											},
+										},
+									},
+									{
 										$project: {
 											role: true,
 											email: true,
 											avatar: true,
 											subscribe: true,
 											firstname: true,
+											phone: true,
 										},
 									},
 								],
@@ -236,6 +255,9 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 							$project: {
 								userId: false,
 								movieId: false,
+								__v: false,
+								createdAt: false,
+								updatedAt: false,
 							},
 						},
 						{ $sort: { _id: -1 } }, // Была сортировка updatedAt
@@ -287,6 +309,75 @@ router.post('/publish', verify.token, verify.isAdmin, async (req, res) => {
 			_id,
 			alert: true,
 			msg: set.isPublished ? 'Успешно опубликовано' : 'Успешно снято с публикации',
+		})
+	} catch (err) {
+		return resError({ res, msg: err })
+	}
+})
+
+// Удаление рейтинга и комментария
+router.delete('/rating', verify.token, async (req, res) => {
+	let { reviewId } = req.body
+
+	if (!reviewId) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Ожидается reviewId',
+		})
+	}
+
+	reviewId = mongoose.Types.ObjectId(reviewId)
+
+	try {
+		// Обнуление записи из БД
+		const movieRating = await MovieRating.findOneAndUpdate(
+			{
+				_id: reviewId,
+			},
+			{
+				$set: {
+					isDeleted: true,
+				},
+				$inc: { __v: 1 },
+			}
+		)
+		console.log('movieRating:', movieRating)
+		// return
+
+		// Получить все оценки фильма
+		const movieRatingLogs = await MovieRating.aggregate([
+			{
+				$match: {
+					movieId: movieRating.movieId,
+					isDeleted: { $ne: true },
+				},
+			},
+			{
+				$group: {
+					_id: null,
+					avg: { $avg: '$rating' },
+				},
+			},
+			{
+				$project: {
+					_id: false,
+					avg: true,
+				},
+			},
+		])
+
+		const newMovieRating = movieRatingLogs[0]?.avg || null
+
+		// Обновить среднюю оценку фильма
+		await Movie.updateOne({ _id: movieRating.movieId }, { $set: { rating: newMovieRating } })
+
+		return resSuccess({
+			res,
+			alert: true,
+			movieId: movieRating.movieId,
+			newMovieRating,
+			msg: 'Успешно удалено',
 		})
 	} catch (err) {
 		return resError({ res, msg: err })

@@ -4032,6 +4032,279 @@
 						}
 					}
 				}
+			},
+			"delete": {
+				"summary": "Админ панель удаление отзывов",
+				"tags": ["Admin"],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"reviewId": { "type": "string", "description": "Id отзыва", "required": true }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"type": { "type": "string", "description": "Надпись success" },
+										"movieId": { "type": "string", "description": "Id фильма (mongoose.ObjectId)" },
+										"newMovieRating": {
+											"type": "number",
+											"description": "Новый рейтинг фильма после удаления оценки"
+										},
+										"alert": {
+											"type": "boolean",
+											"description": "Показывать ли уведомление на сайте"
+										},
+										"msg": { "type": "string", "description": "надпись Успешно удалено" }
+									},
+									"example": {
+										"type": "success",
+										"alert": true,
+										"msg": "Успешно удалено",
+										"newMovieRating": 9,
+										"movieId": "63ac8aa1b2c93ed2212186e7"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/admin/moviesRatingHistory/reviews": {
+			"get": {
+				"summary": "Админ-панель > История рейтингов",
+				"tags": ["Admin"],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"schema": { "type": "number" },
+						"description": "Ограничение на максимальное количество элементов в теле ответа"
+					},
+					{
+						"in": "query",
+						"name": "skip",
+						"schema": { "type": "number" },
+						"description": "Кол-во пропускаемых элементов из начала выборки"
+					},
+					{
+						"in": "query",
+						"name": "is_published",
+						"schema": { "type": "boolean" },
+						"description": "Принимает значение true или false. Отвечает за поиск только опубликованных отзывов или только неопубликованных"
+					},
+					{
+						"in": "query",
+						"name": "is_deleted",
+						"schema": { "type": "boolean" },
+						"description": "Принимает значение true или false. Отвечает за поиск только удаленных отзывов или только неудаленных"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"totalSize": {
+											"type": "number",
+											"description": "Общее количество сущностей в БД (документов коллекции movieRating)"
+										},
+										"items": {
+											"type": "array",
+											"uniqueItems": true,
+											"minItems": 0,
+											"items": {
+												"type": "object",
+												"properties": {
+													"_id": {
+														"type": "string",
+														"description": "Id (mongoose.ObjectId) оценки фильма пользователем (документа коллекции MovieRating)"
+													},
+													"isPublish": {
+														"type": "boolean",
+														"description": "Опубликован ли комментарий"
+													},
+													"isDeleted": {
+														"type": "boolean",
+														"description": "Удалена ли оценка пользователя"
+													},
+													"rating": {
+														"type": "number",
+														"description": "Оценка фильма пользователем"
+													},
+													"movie": {
+														"type": "object",
+														"properties": {
+															"name": { "type": "string", "description": "Название фильма" },
+															"poster": {
+																"type": "object",
+																"properties": {
+																	"src": {
+																		"type": "string",
+																		"description": "Путь к постеру (файлу картинке)"
+																	}
+																}
+															}
+														}
+													},
+													"user": {
+														"type": "object",
+														"properties": {
+															"_id": { "type": "string", "description": "Profile id" },
+															"email": { "type": "string", "description": "Email user" },
+															"phone": {
+																"type": "string",
+																"description": "Номер телефона пользователя. Это поле может отсутствовать",
+																"required": false
+															},
+															"avatar": {
+																"type": "string",
+																"description": "Path to img src profile user"
+															},
+															"firstname": {
+																"type": "string",
+																"description": "Имя этого человека"
+															},
+															"subscribe": {
+																"type": "object",
+																"description": "Информация по подписке. Если подписки нет, в этом поле null",
+																"properties": {
+																	"startAt": {
+																		"type": "Date",
+																		"description": "Дата начала подписки"
+																	},
+																	"finishAt": {
+																		"type": "Date",
+																		"description": "Дата окончания подписки"
+																	},
+																	"tariffId": {
+																		"type": "string",
+																		"description": "Id тарифа (mongoose.ObjectId)"
+																	}
+																}
+															},
+															"role": {
+																"type": "string",
+																"description": "Admin, manager или если это обычный пользователь то это поле отсуствует."
+															}
+														}
+													}
+												}
+											}
+										}
+									},
+									"example": {
+										"value": {
+											"totalSize": 59,
+											"items": [
+												{
+													"_id": "651f09e2bf5691f203899f2f",
+													"rating": 1,
+													"isPublished": true,
+													"isDeleted": false,
+													"review": "12",
+													"movie": { "name": "HLS" },
+													"user": {
+														"_id": "63c952c66396809788e004a6",
+														"email": "agdias@yandex.ru",
+														"avatar": null,
+														"firstname": "Агдас",
+														"role": "admin"
+													}
+												},
+												{
+													"_id": "651f09aabf5691f203899d9c",
+													"rating": 6,
+													"isPublished": false,
+													"isDeleted": false,
+													"review": "1",
+													"movie": {
+														"name": "Название",
+														"poster": { "src": "/images/651c249e3d51bdf82b354936.jpg" }
+													},
+													"user": {
+														"_id": "63c952c66396809788e004a6",
+														"email": "agdias@yandex.ru",
+														"avatar": null,
+														"firstname": "Агдас",
+														"role": "admin"
+													}
+												}
+											]
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/admin/moviesRatingHistory/publish": {
+			"post": {
+				"summary": "Админ-панель > Опубликовать / снять с публикациикомментарий к фильму от пользователя",
+				"tags": ["Admin"],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"_id": {
+										"type": "string",
+										"description": "Id документа(фильма или сериала) (mongoose.ObjectId)",
+										"required": true
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"_id": {
+											"type": "string",
+											"description": "Id документа(фильма или сериала) (mongoose.ObjectId)"
+										},
+										"type": { "type": "string", "description": "Надпись \"success\"" },
+										"alert": { "type": "boolean", "description": true },
+										"msg": {
+											"type": "string",
+											"description": "Надпись об 'успешной публикации или снятии с публикации"
+										}
+									},
+									"example": {
+										"type": "success",
+										"_id": "6499bdbe9c45fd3d06d89094",
+										"alert": true,
+										"msg": "Успешно опубликовано"
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 		},
 		"/admin/moviesViewingHistory": {
