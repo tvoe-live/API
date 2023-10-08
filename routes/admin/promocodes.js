@@ -1,14 +1,19 @@
 const express = require('express')
-const router = express.Router()
-
 const mongoose = require('mongoose')
+
 const Tariff = require('../../models/tariff')
-const verify = require('../../middlewares/verify')
-const resError = require('../../helpers/resError')
 const Promocode = require('../../models/promocode')
+const PromocodesLog = require('../../models/promocodeLog')
+
+const verify = require('../../middlewares/verify')
+const getSearchQuery = require('../../middlewares/getSearchQuery')
+
+const resError = require('../../helpers/resError')
 const resSuccess = require('../../helpers/resSuccess')
 const getBoolean = require('../../helpers/getBoolean')
-const PromocodesLog = require('../../models/promocodeLog')
+const isValidObjectId = require('../../helpers/isValidObjectId')
+
+const router = express.Router()
 
 /*
  * Промокоды
@@ -149,7 +154,17 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
  * Изменить промокод
  */
 router.patch('/', verify.token, verify.isAdmin, async (req, res) => {
-	const { _id, title, value, type, startAt, finishAt } = req.body
+	const {
+		value,
+		startAt,
+		finishAt,
+		maxAmountActivation,
+		tariffName,
+		discountFormat,
+		sizeDiscount,
+		isActive = false,
+		isOnlyForNewUsers = true,
+	} = req.body
 
 	try {
 		const promocode = await Promocode.findOne({ _id })
@@ -158,11 +173,15 @@ router.patch('/', verify.token, verify.isAdmin, async (req, res) => {
 			return resError({ res, msg: 'Промокода с указанным _id не найдено' })
 		}
 
-		if (title) promocode.title = title
 		if (value) promocode.value = value
-		if (type) promocode.type = type
 		if (startAt) promocode.startAt = new Date(startAt)
 		if (finishAt) promocode.finishAt = new Date(finishAt)
+		if (maxAmountActivation) promocode.maxAmountActivation = maxAmountActivation
+		if (tariffName) promocode.tariffName = tariffName
+		if (discountFormat) promocode.discountFormat = discountFormat
+		if (sizeDiscount) promocode.sizeDiscount = sizeDiscount
+		if (isActive) promocode.isActive = isActive
+		if (isOnlyForNewUsers) promocode.isOnlyForNewUsers = isOnlyForNewUsers
 
 		promocode.save()
 
@@ -206,43 +225,113 @@ router.delete('/', verify.token, verify.isAdmin, async (req, res) => {
 })
 
 /*
- *  Количество активаций у одного промокода
+ *  Общие данные и аналитика об одном конкретном промокоде
  */
 router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
-	const { _id } = req.query
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
+
+	const { _id, userId } = req.query
 
 	if (!_id) return resError({ res, msg: 'Не передан _id' })
+	if (!isValidObjectId(_id)) return resError({ res, msg: 'Не валидный _id' })
+
+	if (userId && !isValidObjectId(userId)) return resError({ res, msg: 'Не валидный userId' })
 
 	try {
-		const result = await PromocodesLog.aggregate([
+		const result = await Promocode.aggregate([
 			{
-				$facet: {
-					totalSize: [
-						{
-							$match: {
-								promocodeId: mongoose.Types.ObjectId(_id),
-							},
-						},
-						{
-							$group: {
-								_id: null,
-								count: { $sum: 1 },
-							},
-						},
-						{ $limit: 1 },
-					],
+				$match: {
+					_id: mongoose.Types.ObjectId(_id),
 				},
 			},
-			{ $limit: 1 },
-			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
+			{
+				$lookup: {
+					from: 'tariffs',
+					localField: 'tariffName',
+					foreignField: 'name',
+					pipeline: [
+						{
+							$project: {
+								duration: true,
+								_id: false,
+							},
+						},
+					],
+					as: 'tariff',
+				},
+			},
+			{ $unwind: { path: '$tariff' } },
+			{
+				$lookup: {
+					from: 'promocodeslogs',
+					localField: '_id',
+					foreignField: 'promocodeId',
+					let: { tariffDuration: '$tariff.duration' },
+					pipeline: [
+						{
+							$match: {
+								...(userId && {
+									userId: mongoose.Types.ObjectId(userId),
+								}),
+							},
+						},
+						{ $skip: skip },
+						{ $limit: limit },
+						{
+							$lookup: {
+								from: 'users',
+								localField: 'userId',
+								foreignField: '_id',
+								pipeline: [
+									{
+										$project: {
+											firstname: true,
+											phone: true,
+											email: true,
+											lastname: true,
+										},
+									},
+								],
+								as: 'user',
+							},
+						},
+						{ $unwind: { path: '$user' } },
+						{
+							$addFields: {
+								isExpired: {
+									$lt: [{ $add: ['$createdAt', '$$tariffDuration'] }, new Date()],
+								},
+							},
+						},
+						{
+							$project: {
+								userId: false,
+								__v: false,
+								updatedAt: false,
+								promocodeId: false,
+							},
+						},
+					],
+
+					as: 'promocodeslogs',
+				},
+			},
+			{
+				$addFields: {
+					sizeLogs: {
+						$size: '$promocodeslogs',
+					},
+				},
+			},
 			{
 				$project: {
-					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
-					id: _id,
+					updatedAt: false,
+					__v: false,
+					tariff: false,
 				},
 			},
 		])
-
 		return res.status(200).json(result[0])
 	} catch (err) {
 		return resError({ res, msg: err })
@@ -252,9 +341,13 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 /*
  *  Количество активаций у всех промокодов
  */
-router.get('/countAll', verify.token, verify.isAdmin, async (req, res) => {
+router.get('/countAll', verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
+
+	const searchMatch = req.RegExpQuery && {
+		value: req.RegExpQuery,
+	}
 
 	try {
 		const activatedPromocodesAmount = await PromocodesLog.countDocuments({}) // Общее количество активированных когда либо промокодов
@@ -264,6 +357,21 @@ router.get('/countAll', verify.token, verify.isAdmin, async (req, res) => {
 				{
 					$facet: {
 						totalSize: [
+							{
+								$group: {
+									_id: null,
+									count: { $sum: 1 },
+								},
+							},
+							{ $project: { _id: false } },
+							{ $limit: 1 },
+						],
+						totalSizeWithMatch: [
+							{
+								$match: {
+									...searchMatch,
+								},
+							},
 							{
 								$group: {
 									_id: null,
@@ -309,13 +417,21 @@ router.get('/countAll', verify.token, verify.isAdmin, async (req, res) => {
 							{ $sort: { updatedAt: -1 } },
 							{
 								$project: {
-									updatedAt: true,
+									createdAt: true,
 									value: true,
 									startAt: true,
 									finishAt: true,
 									isActive: true,
 									maxAmountActivation: true,
 									currentAmountActivation: true,
+									tariffName: true,
+									discountFormat: true,
+									sizeDiscount: true,
+								},
+							},
+							{
+								$match: {
+									...searchMatch,
 								},
 							},
 							{ $skip: skip },
@@ -325,11 +441,15 @@ router.get('/countAll', verify.token, verify.isAdmin, async (req, res) => {
 				},
 				{ $limit: 1 },
 				{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
+				{ $unwind: { path: '$totalSizeWithMatch', preserveNullAndEmptyArrays: true } },
 				{ $unwind: { path: '$totalSizeActiveNow', preserveNullAndEmptyArrays: true } },
 				{ $unwind: { path: '$totalSizeNotPublishedNow', preserveNullAndEmptyArrays: true } },
 				{
 					$project: {
 						totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+						totalSizeWithMatch: {
+							$cond: ['$totalSizeWithMatch.count', '$totalSizeWithMatch.count', 0],
+						},
 						totalSizeActiveNow: {
 							$cond: ['$totalSizeActiveNow.count', '$totalSizeActiveNow.count', 0],
 						},
