@@ -15,18 +15,22 @@ require('dotenv').config()
 /*
  * Получение общих данных
  */
-router.get('/', verify.token, async (req, res) => {
-	const link = `${CLIENT_URL}/?r=${req.user._id}` // Реферальная ссылка
-	const referralPercentBonuse = +REFERRAL_PERCENT_BONUSE // Бонус в процентах от реферала
+router.get('/', async (req, res) => {
+	// Получение данных пользователя, если он авторизован
+	await verify.token(req)
 
-	const balance = req.user.referral.balance // Текущий баланс с подписок рефералов
-	const card = req.user.referral.card // Данные карты для вывода баланса
+	const authedUser = !!req.user // Авторизован ли пользователь? true / false
+	const link = authedUser ? `${CLIENT_URL}/?r=${req.user._id}` : null // Реферальная ссылка
+	const card = authedUser ? req.user.referral.card : '' // Данные карты для вывода баланса
+	const balance = authedUser ? req.user.referral.balance : 0 // Текущий баланс с подписок рефералов
+	const referralPercentBonuse = +REFERRAL_PERCENT_BONUSE // Бонус в процентах от реферала
 
 	return res.status(200).json({
 		link,
-		referralPercentBonuse,
-		balance,
 		card,
+		balance,
+		authedUser,
+		referralPercentBonuse,
 	})
 })
 
