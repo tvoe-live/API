@@ -67,6 +67,8 @@ const deleteVideoExecute = async (video, createLog = true) => {
 	if (createLog) {
 		const item = await CleanupLog.create({ src, thumbnail })
 		_id = item._id
+	} else {
+		_id = video._id
 	}
 
 	try {
@@ -82,9 +84,7 @@ const deleteVideoExecute = async (video, createLog = true) => {
 		} catch {}
 
 		// Удалить ресурсы из базы, так как они уже наверняка удалены с S3
-		if (createLog) {
-			await CleanupLog.deleteOne({ _id })
-		}
+		await CleanupLog.deleteOne({ _id })
 	}, 300000)
 }
 
