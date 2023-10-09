@@ -3,6 +3,7 @@ const router = express.Router()
 const resError = require('../../helpers/resError')
 const Notification = require('../../models/notification')
 const getSearchQuery = require('../../middlewares/getSearchQuery')
+const verify = require('../../middlewares/verify')
 
 // const resSuccess = require('../../helpers/resSuccess')
 // const getBoolean = require('../../helpers/getBoolean')
@@ -15,8 +16,7 @@ const getSearchQuery = require('../../middlewares/getSearchQuery')
 /*
  * Список всех уведомлений
  */
-// router.get('/', verify.token, verify.isAdmin, async (req, res) => {
-router.get('/', getSearchQuery, async (req, res) => {
+router.get('/', getSearchQuery, verify.token, verify.isAdmin, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
 
@@ -31,8 +31,9 @@ router.get('/', getSearchQuery, async (req, res) => {
 					$facet: {
 						totalSize: [
 							{
-								$match: RegExpQuery && {
-									title: RegExpQuery,
+								$match: {
+									deleted: { $ne: true },
+									...(RegExpQuery && { title: RegExpQuery }),
 								},
 							},
 							{
@@ -46,8 +47,9 @@ router.get('/', getSearchQuery, async (req, res) => {
 						],
 						items: [
 							{
-								$match: RegExpQuery && {
-									title: RegExpQuery,
+								$match: {
+									deleted: { $ne: true },
+									...(RegExpQuery && { title: RegExpQuery }),
 								},
 							},
 							{
@@ -55,6 +57,29 @@ router.get('/', getSearchQuery, async (req, res) => {
 									receiversIds: false,
 									__v: false,
 									createdAt: false,
+								},
+							},
+							{
+								$addFields: {
+									status: {
+										$cond: {
+											if: {
+												$or: [
+													// Если этого поля не существует или оно равно null
+													{ $eq: ['$willPublishedAt', null] },
+													{ $eq: [{ $ifNull: ['$willPublishedAt', null] }, null] },
+												],
+											},
+											then: 'сохранено',
+											else: {
+												$cond: {
+													if: { $gt: ['$willPublishedAt', new Date()] },
+													then: 'отложено',
+													else: 'опубликовано',
+												},
+											},
+										},
+									},
 								},
 							},
 							{ $skip: skip },
