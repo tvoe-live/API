@@ -3,13 +3,15 @@ const router = express.Router()
 
 const User = require('../models/user')
 const Tariff = require('../models/tariff')
-const verify = require('../middlewares/verify')
-const resError = require('../helpers/resError')
 const Promocode = require('../models/promocode')
 const PaymentLog = require('../models/paymentLog')
-const resSuccess = require('../helpers/resSuccess')
 const PromocodesLog = require('../models/promocodeLog')
 
+const verify = require('../middlewares/verify')
+
+const resError = require('../helpers/resError')
+const resSuccess = require('../helpers/resSuccess')
+const getTrimDate = require('../helpers/getTrimDate')
 /*
  * Промокоды
  */
@@ -22,7 +24,6 @@ router.patch('/activate', verify.token, async (req, res) => {
 
 	try {
 		const promocode = await Promocode.findOne({ value })
-
 		if (!promocode || promocode.deleted || promocode.startAt > new Date() || !promocode.isActive) {
 			return resError({ res, msg: 'Данный промокод не существует' })
 		}
@@ -55,9 +56,9 @@ router.patch('/activate', verify.token, async (req, res) => {
 		promocode.currentAmountActivation += 1
 		promocode.save()
 
-		if ((promocode.discountFormat = 'free-month')) {
-			const tariff = Tariff.find({ name: '1 месяц' })
-			const user = User.find({ _id: req.user._id })
+		if (promocode.discountFormat === 'free-month') {
+			const tariff = await Tariff.findOne({ name: '1 месяц' })
+			const user = await User.findOne({ _id: req.user._id })
 
 			if (!req.user.subscribe) {
 				const startAt = new Date()
@@ -74,12 +75,28 @@ router.patch('/activate', verify.token, async (req, res) => {
 				)
 			}
 			user.save()
+
+			const today = new Date()
+			const year = today.getFullYear()
+			const month = today.getMonth()
+			const day = today.getDate()
+			const monthForward = new Date(year, month + 1, day)
+
+			return resSuccess({
+				res,
+				alert: true,
+				msg: 'Промокод успешно активирован',
+				startAt: getTrimDate(today),
+				finishAt: getTrimDate(monthForward),
+			})
 		}
 
 		return resSuccess({
 			res,
 			alert: true,
 			msg: 'Промокод успешно активирован',
+			startAt: getTrimDate(promocode.startAt),
+			finishAt: getTrimDate(promocode.finishAt),
 		})
 	} catch (err) {
 		return resError({ res, msg: err })
