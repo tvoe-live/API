@@ -1,7 +1,7 @@
 {
 	"openapi": "3.0.1",
 	"info": { "title": "API https://tvoe-dev.ru/", "version": "v1" },
-	"servers": [{ "url": "http://localhost:4000/" }],
+	"servers": [{ "url": "https://api.1390760-cu92735.tw1.ru/" }],
 	"components": {
 		"parameters": {
 			"AuthorizationHeader": {
@@ -11,7 +11,7 @@
 				"required": true,
 				"schema": {
 					"type": "string",
-					"default": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY1MDQ1ZjRiMWJkNmRkYzM2NDI5MDlmYiIsImlhdCI6MTY5NjQ5NDUxMSwiZXhwIjoxNzI4MDUyMTExfQ.KOR2bayuUDQn2H-lrbtIjYucFyW2RaO-9kkHZfGFlOg"
+					"default": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY1MDQ1ZjRiMWJkNmRkYzM2NDI5MDlmYiIsImlhdCI6MTY5NjQ4OTA0MCwiZXhwIjoxNzI4MDQ2NjQwfQ.hhoCzqDtsVMlXZ1BBzwJOgqwJPGGQr-kTNl05aNWQ_Q"
 				}
 			}
 		}
