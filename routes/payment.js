@@ -701,13 +701,19 @@ router.get('/status', async (req, res) => {
 		const paymentLog = await PaymentLog.findOne(
 			{ _id: id },
 			{
+				tariffId: true,
 				type: true,
 				status: true,
 				finishAt: true,
 			}
 		)
 
-		return res.status(200).json(paymentLog)
+		const tariff = await Tariff.findOne({ _id: paymentLog.tariffId })
+
+		return res.status(200).json({
+			...paymentLog,
+			tariff,
+		})
 	} catch (err) {
 		return resError({ res, msg: err })
 	}
