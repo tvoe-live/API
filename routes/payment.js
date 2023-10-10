@@ -567,6 +567,7 @@ router.post('/notification', async (req, res) => {
 			{ _id: paymentLogId },
 			{
 				$set: {
+					isChecked: false,
 					status,
 				},
 			}
@@ -580,6 +581,7 @@ router.post('/notification', async (req, res) => {
 		{ _id: paymentLogId },
 		{
 			$set: {
+				isChecked: false,
 				finishAt,
 				startAt: paymentStartAt,
 				pan,
