@@ -1650,6 +1650,115 @@
 				}
 			}
 		},
+		"/admin/notifications": {
+			"get": {
+				"summary": "Получение списка уведомлений",
+				"tags": ["Admin"],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"schema": { "type": "number" },
+						"description": "Ограничение на максимальное количество элементов в теле ответа"
+					},
+					{
+						"in": "query",
+						"name": "skip",
+						"schema": { "type": "number" },
+						"description": "Кол-во пропускаемых элементов из начала выборки"
+					},
+					{
+						"in": "query",
+						"name": "query",
+						"schema": { "type": "number" },
+						"description": "Для поиска документов (сущностей таблицы notifications) по совпадению названия"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"totalSize": {
+											"type": "number",
+											"description": "Общее количество сущностей в БД"
+										},
+										"items": {
+											"type": "array",
+											"uniqueItems": true,
+											"minItems": 0,
+											"items": {
+												"type": "object",
+												"properties": {
+													"_id": { "type": "string", "description": "Id уведомления" },
+													"title": { "type": "string", "description": "Название уведомления" },
+													"description": { "type": "string", "description": "Текст уведомления" },
+													"type": {
+														"type": "string",
+														"description": "Тип уведомления  - 'SERVICE_NEWS', 'GIFTS_AND_PROMOTIONS','PROFILE', 'CINEMA_NEWS', 'SERVICE_NEWS','FAVOTITES_AND_BOOKMARKS_NEWS'"
+													},
+													"willPublishedAt": {
+														"type": "date",
+														"description": "Планируемая дата публикации"
+													},
+													"updatedAt": {
+														"type": "date",
+														"description": "Дата последнего изменения уведомления"
+													},
+													"status": {
+														"type": "string",
+														"description": "отложено если не указана дата публикации, сохранено если дата публикации еще наступила или опубликовано"
+													}
+												}
+											}
+										}
+									}
+								},
+								"examples": {
+									"example": {
+										"value": {
+											"totalSize": 3,
+											"items": [
+												{
+													"_id": "651c20546cc459f4ec4818e9",
+													"title": "Премьера нового сезона дома дракона",
+													"description": "Не пропустите!",
+													"type": "PROFILE",
+													"willPublishedAt": "2023-12-20T00:00:00.000Z",
+													"updatedAt": "2023-10-03T14:08:20.551Z",
+													"status": "отложено"
+												},
+												{
+													"_id": "651f2a4dbf5691f20389f6f4",
+													"title": "Премьера нового сезона сорвиголовы",
+													"description": "Не пропустите!",
+													"type": "PROFILE",
+													"updatedAt": "2023-10-05T21:27:41.343Z",
+													"willPublishedAt": null,
+													"status": "сохранено"
+												},
+												{
+													"_id": "651f2b8abf5691f20389fb41",
+													"title": "Премьера нового сезона ведьмака",
+													"description": "Не пропустите!",
+													"type": "PROFILE",
+													"willPublishedAt": "2023-08-20T00:00:00.000Z",
+													"updatedAt": "2023-10-05T21:32:58.489Z",
+													"status": "опубликовано"
+												}
+											]
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
 		"/admin/users": {
 			"get": {
 				"summary": "Админ-панель > Пользователи",
