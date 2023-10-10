@@ -402,6 +402,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 			type: 'trial',
 			userId: req.user._id,
 			tariffId: selectedTariff._id,
+			isChecked: false,
 		}).save()
 
 		// В url успешной страницы передать id созданного лога
@@ -431,6 +432,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		type: 'paid',
 		userId: req.user._id,
 		tariffId: selectedTariff._id,
+		isChecked: false,
 	}).save()
 
 	// В url успешной страницы передать id созданного лога
@@ -698,10 +700,12 @@ router.get('/status', async (req, res) => {
 	const { id } = req.query
 
 	try {
-		const paymentLog = await PaymentLog.findOne(
+		const paymentLog = await PaymentLog.findOneAndUpdate(
 			{ _id: id },
+			{ $set: { isChecked: true } },
 			{
 				tariffId: true,
+				isChecked: true,
 				type: true,
 				status: true,
 				finishAt: true,
@@ -711,7 +715,14 @@ router.get('/status', async (req, res) => {
 		const tariff = await Tariff.findOne({ _id: paymentLog.tariffId })
 
 		return res.status(200).json({
-			...paymentLog,
+			_id: paymentLog._id,
+			userId: paymentLog.userId,
+			type: paymentLog.type,
+			status: paymentLog.status,
+			isChecked: paymentLog.isChecked ?? true,
+			createdAt: paymentLog.createdAt,
+			updatedAt: paymentLog.updatedAt,
+			__v: paymentLog.__v,
 			tariff,
 		})
 	} catch (err) {
