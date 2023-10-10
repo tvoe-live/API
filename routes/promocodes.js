@@ -88,6 +88,7 @@ router.patch('/activate', verify.token, async (req, res) => {
 				msg: 'Промокод успешно активирован',
 				startAt: getTrimDate(today),
 				finishAt: getTrimDate(monthForward),
+				discountFormat: 'free-month',
 			})
 		}
 
@@ -97,6 +98,45 @@ router.patch('/activate', verify.token, async (req, res) => {
 			msg: 'Промокод успешно активирован',
 			startAt: getTrimDate(promocode.startAt),
 			finishAt: getTrimDate(promocode.finishAt),
+			tariffName: promocode.tariffName,
+			discountFormat: promocode.discountFormat,
+			sizeDiscount: promocode.sizeDiscount,
+		})
+	} catch (err) {
+		return resError({ res, msg: err })
+	}
+})
+
+/*
+ *  Отменить действие промокода
+ */
+router.patch('/cancel', verify.token, async (req, res) => {
+	const { promocodeId } = req.body
+
+	try {
+		const promocodeLog = await PromocodesLog.findOne({
+			promocodeId: promocodeId,
+			userId: req.user._id,
+		})
+
+		if (!promocodeLog) {
+			return resError({
+				res,
+				msg: 'Невозможно отменить действие промокода, так как данный промокод не был активирован',
+			})
+		}
+
+		if (promocodeLog.isCancelled) {
+			return resError({ res, msg: 'Промокод уже был отменен ранее' })
+		}
+
+		promocodeLog.isCancelled = true
+		promocodeLog.save()
+
+		return resSuccess({
+			res,
+			alert: true,
+			msg: 'Действие промокода отменено',
 		})
 	} catch (err) {
 		return resError({ res, msg: err })

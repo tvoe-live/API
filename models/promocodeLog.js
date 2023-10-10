@@ -8,6 +8,7 @@ const promocodesLogSchema = new mongoose.Schema(
 	{
 		promocodeId: mongoose.Schema.Types.ObjectId,
 		userId: mongoose.Schema.Types.ObjectId,
+		isCancelled: Boolean,
 	},
 	{
 		timestamps: true,
