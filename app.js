@@ -75,6 +75,8 @@ const adminMoviesRatingHistory = require('./routes/admin/moviesRatingHistory')
 const adminMoviesViewingHistory = require('./routes/admin/moviesViewingHistory')
 const adminPromocodes = require('./routes/admin/promocodes')
 
+app.use('/admin/referral', require('./routes/admin/referral'))
+
 app.use('/auth', auth) // Авторизация / регистрация через Яндекс и разрушение сессии
 app.use('/movies', movies) // Фильмы и сериалы
 app.use('/search', search) // Поиск
