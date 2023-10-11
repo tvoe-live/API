@@ -6246,25 +6246,33 @@
 													"finishOfSubscriptionIn": {
 														"type": "string",
 														"description": "Финиш подписки"
-													}
-												}
-											}
-										},
-										"popularMovies": {
-											"type": "array",
-											"uniqueItems": true,
-											"minItems": 0,
-											"items": {
-												"type": "object",
-												"properties": {
-													"name": { "type": "string", "description": "Название фильма" },
-													"poster": {
+													},
+													"bonucesPromocodes": {
 														"type": "object",
 														"properties": {
-															"src": { "type": "string", "description": "Путь к файлу изображению" }
+															"bestPrice": {
+																"type": "number",
+																"description": "Наиболее выгодная для пользователя цена"
+															},
+															"info": {
+																"type": "object",
+																"properties": {
+																	"sizeDiscount": {
+																		"type": "number",
+																		"description": "Размер скидки"
+																	},
+																	"discountFormat": {
+																		"type": "number",
+																		"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+																	},
+																	"promocodeId": {
+																		"type": "number",
+																		"description": "Id применного наиболее выгодного для пользователя промокода"
+																	}
+																}
+															}
 														}
-													},
-													"rating": { "type": "number", "description": "Рейтинг от 0 до 10" }
+													}
 												}
 											}
 										}
@@ -6296,22 +6304,15 @@
 													"discount": 25,
 													"sort": 4,
 													"allowSubscribe": false,
-													"finishOfSubscriptionIn": "2023-12-04T15:33:23.068Z"
-												}
-											],
-											"popularMovies": [
-												{
-													"name": "Белый шум",
-													"poster": { "src": "/images/6405fe000a569a75e15129f4.jpg" }
-												},
-												{
-													"name": "Армия воров",
-													"poster": { "src": "/images/63ac7d7fb2c93ed2212181a8.jpg" },
-													"rating": 10
-												},
-												{
-													"name": "Уэнделл и Уайлд",
-													"poster": { "src": "/images/63ad6f76b2c93ed22121a059.jpg" }
+													"finishOfSubscriptionIn": "2023-12-04T15:33:23.068Z",
+													"bonucesPromocodes": {
+														"bestPrice": 749,
+														"info": {
+															"sizeDiscount": 150,
+															"discountFormat": "rubles",
+															"promocodeId": "650d5d3e981100537fb33ecd"
+														}
+													}
 												}
 											]
 										}
@@ -6426,7 +6427,7 @@
 				"responses": { "200": { "description": "OK" } }
 			}
 		},
-		"/payment/success": {
+		"/payment/status": {
 			"get": {
 				"summary": "Показать пользователю страницу об успешном совершении платежа",
 				"tags": ["Payment"],
@@ -6455,12 +6456,39 @@
 											"type": "string",
 											"description": "Тип платежа - paid, trial или issued-by-admin"
 										},
-										"finishAt": { "type": "string", "description": "Дата окончания тарифа" }
+										"finishAt": { "type": "string", "description": "Дата окончания тарифа" },
+										"tariffId": { "type": "string", "description": "Id тарифа" },
+										"tariff": {
+											"type": "object",
+											"properties": {
+												"_id": { "type": "string", "description": "Id тарифа" },
+												"name": { "type": "string", "description": "Название тарифа" },
+												"price": { "type": "number", "description": "Цена тарифа" },
+												"duration": {
+													"type": "number",
+													"descripton": "Длительность подписки в мили секундах"
+												},
+												"discount": { "type": "number", "description": "Cкидка" },
+												"sort": {
+													"type": "number",
+													"description": "Сорт тарифа ( номер для сортировки )"
+												}
+											}
+										}
 									},
 									"example": {
 										"_id": "63e864ae801189b4df7ea04d",
 										"type": "paid",
-										"finishAt": "2023-03-14T04:02:45.100Z"
+										"finishAt": "2023-03-14T04:02:45.100Z",
+										"tariffId": "63dbe1687f457bc81bc920cb",
+										"tariff": {
+											"id": "63f7537f841f04f2348f8de5",
+											"name": "7 дней",
+											"price": 0,
+											"duration": 604800000,
+											"sort": 0,
+											"allowSubscribe": false
+										}
 									}
 								}
 							}
@@ -8647,9 +8675,81 @@
 										"msg": {
 											"type": "string",
 											"description": "Надпись \"Промокод успешно активирован\""
+										},
+										"startAt": {
+											"type": "date",
+											"description": "Начало времени действия активированного промокода"
+										},
+										"finishAt": {
+											"type": "date",
+											"description": "Окончание времени действия активированного промокода"
+										},
+										"tariffName": {
+											"type": "string",
+											"description": "Название тарифа, скидку на который дает промокод. Если discountFormat = 'free-month', то это поле отсутсвует",
+											"required": false
+										},
+										"discountFormat": {
+											"type": "number",
+											"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+										},
+										"sizeDiscount": {
+											"type": "number",
+											"description": "Размер скидки. Если discountFormat = 'free-month', то это поле отсутсвует",
+											"required": false
 										}
 									},
-									"example": { "alert": true, "type": "sucess", "msg": "Промокод обновлен" }
+									"example": {
+										"type": "success",
+										"alert": true,
+										"msg": "Промокод успешно активирован",
+										"startAt": "01.09.2023",
+										"finishAt": "01.12.2023",
+										"tariffName": "3 месяца",
+										"discountFormat": "percentages",
+										"sizeDiscount": 40
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"promocodes/cancel": {
+			"patch": {
+				"summary": "Отмена промокода",
+				"tags": ["Promocode"],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": { "promocodeId": { "type": "string", "description": "Id промокода" } }
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"alert": { "type": "boolean", "description": "Значение true" },
+										"type": { "type": "string", "description": "надпись 'success'" },
+										"msg": {
+											"type": "string",
+											"description": "Надпись \"Действие промокода отменено\""
+										}
+									},
+									"example": {
+										"type": "success",
+										"alert": true,
+										"msg": "Действие промокода отменено"
+									}
 								}
 							}
 						}

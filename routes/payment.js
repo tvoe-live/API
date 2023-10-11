@@ -69,7 +69,10 @@ router.get('/tariffs', async (req, res) => {
 
 			const benefitsFromPromocodes = await PromocodeLog.aggregate([
 				{
-					$match: { userId: req.user._id },
+					$match: {
+						userId: req.user._id,
+						isCancelled: { $ne: true },
+					},
 				},
 				{
 					$lookup: {
@@ -90,6 +93,7 @@ router.get('/tariffs', async (req, res) => {
 							},
 							{
 								$project: {
+									_id: true,
 									tariffName: true,
 									discountFormat: true,
 									sizeDiscount: true,
@@ -105,12 +109,34 @@ router.get('/tariffs', async (req, res) => {
 						tariffName: '$promocode.tariffName',
 						discountFormat: '$promocode.discountFormat',
 						sizeDiscount: '$promocode.sizeDiscount',
+						promocodeId: '$promocode._id',
 					},
 				},
 				{
 					$group: {
-						_id: { tariffName: '$tariffName', discountFormat: '$discountFormat' }, // группируем по уникальным значениям полей _id и discountFormat
+						_id: { tariffName: '$tariffName', discountFormat: '$discountFormat' }, // группируем по уникальным значениям полей tariffName и discountFormat
 						maxDiscount: { $max: '$sizeDiscount' }, // находим максимальное значение поля sizeDiscount
+						documents: { $push: '$$ROOT' },
+					},
+				},
+				{
+					$addFields: {
+						promocodeId: {
+							$let: {
+								vars: {
+									documentWithMaxDiscount: {
+										$first: {
+											$filter: {
+												input: '$documents',
+												as: 'document',
+												cond: { $eq: ['$$document.sizeDiscount', '$maxDiscount'] },
+											},
+										},
+									},
+								},
+								in: '$$documentWithMaxDiscount.promocodeId',
+							},
+						},
 					},
 				},
 				{
@@ -120,6 +146,7 @@ router.get('/tariffs', async (req, res) => {
 							$push: {
 								discountFormat: '$_id.discountFormat',
 								sizeDiscount: '$maxDiscount',
+								promocodeId: '$promocodeId',
 							},
 						},
 					},
@@ -147,6 +174,7 @@ router.get('/tariffs', async (req, res) => {
 										acc.info = {
 											sizeDiscount: item.sizeDiscount,
 											discountFormat: item.discountFormat,
+											promocodeId: item.promocodeId,
 										}
 									}
 									return acc
@@ -158,6 +186,7 @@ router.get('/tariffs', async (req, res) => {
 										acc.info = {
 											sizeDiscount: item.sizeDiscount,
 											discountFormat: item.discountFormat,
+											promocodeId: item.promocodeId,
 										}
 									}
 									return acc
@@ -222,7 +251,10 @@ router.post('/createPayment', verify.token, async (req, res) => {
 
 	const benefitsFromPromocodes = await PromocodeLog.aggregate([
 		{
-			$match: { userId: req.user._id },
+			$match: {
+				userId: req.user._id,
+				isCancelled: { $ne: true },
+			},
 		},
 		{
 			$lookup: {
