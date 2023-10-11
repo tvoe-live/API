@@ -72,6 +72,7 @@ router.get('/tariffs', async (req, res) => {
 					$match: {
 						userId: req.user._id,
 						isCancelled: { $ne: true },
+						isPurchaseCompleted: { $ne: true },
 					},
 				},
 				{
@@ -254,6 +255,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 			$match: {
 				userId: req.user._id,
 				isCancelled: { $ne: true },
+				isPurchaseCompleted: { $ne: true },
 			},
 		},
 		{
@@ -308,6 +310,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		{ $unwind: { path: '$promocode' } },
 		{
 			$project: {
+				promocodeId: '$promocodeId',
 				tariffName: '$promocode.tariffName',
 				discountFormat: '$promocode.discountFormat',
 				sizeDiscount: '$promocode.sizeDiscount',
@@ -321,6 +324,27 @@ router.post('/createPayment', verify.token, async (req, res) => {
 				_id: { tariffName: '$tariffName', discountFormat: '$discountFormat' }, // группируем по уникальным значениям полей _id и discountFormat
 				maxDiscount: { $max: '$sizeDiscount' }, // находим максимальное значение поля sizeDiscount
 				price: { $first: '$price' },
+				documents: { $push: '$$ROOT' },
+			},
+		},
+		{
+			$addFields: {
+				promocodeId: {
+					$let: {
+						vars: {
+							documentWithMaxDiscount: {
+								$first: {
+									$filter: {
+										input: '$documents',
+										as: 'document',
+										cond: { $eq: ['$$document.sizeDiscount', '$maxDiscount'] },
+									},
+								},
+							},
+						},
+						in: '$$documentWithMaxDiscount.promocodeId',
+					},
+				},
 			},
 		},
 		{
@@ -331,6 +355,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 					$push: {
 						discountFormat: '$_id.discountFormat',
 						sizeDiscount: '$maxDiscount',
+						promocodeId: '$promocodeId',
 					},
 				},
 			},
@@ -338,35 +363,49 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		{
 			$addFields: {
 				bestPrice: {
-					$reduce: {
-						input: '$benefits',
-						initialValue: '$initialPrice',
-						in: {
-							$switch: {
-								branches: [
-									{
-										case: { $eq: ['$$this.discountFormat', 'rubles'] },
-										then: {
-											$min: ['$$value', { $subtract: ['$initialPrice', '$$this.sizeDiscount'] }],
-										},
+					$let: {
+						vars: {
+							bestDiscount: {
+								$reduce: {
+									input: '$benefits',
+									initialValue: {
+										price: '$initialPrice',
+										promocodeId: null,
 									},
-									{
-										case: { $eq: ['$$this.discountFormat', 'percentages'] },
-										then: {
-											$min: [
-												'$$value',
-												{
-													$multiply: [
-														'$initialPrice',
-														{ $divide: [{ $subtract: [100, '$$this.sizeDiscount'] }, 100] },
+									in: {
+										$let: {
+											vars: {
+												currentPrice: {
+													$cond: [
+														{ $eq: ['$$this.discountFormat', 'rubles'] },
+														{ $subtract: ['$initialPrice', '$$this.sizeDiscount'] },
+														{
+															$multiply: [
+																'$initialPrice',
+																{ $divide: [{ $subtract: [100, '$$this.sizeDiscount'] }, 100] },
+															],
+														},
 													],
 												},
-											],
+											},
+											in: {
+												$cond: [
+													{ $lt: ['$$currentPrice', '$$value.price'] },
+													{
+														price: '$$currentPrice',
+														promocodeId: '$$this.promocodeId',
+													},
+													'$$value',
+												],
+											},
 										},
 									},
-								],
-								default: '$$value',
+								},
 							},
+						},
+						in: {
+							value: '$$bestDiscount.price',
+							promocodeId: '$$bestDiscount.promocodeId',
 						},
 					},
 				},
@@ -374,7 +413,8 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		},
 	])
 
-	const priceAfterDiscount = benefitsFromPromocodes[0]?.bestPrice
+	const priceAfterDiscount = benefitsFromPromocodes[0]?.bestPrice?.value
+	const promocodeId = benefitsFromPromocodes[0]?.bestPrice?.promocodeId
 
 	const successURL = new URL(`${CLIENT_URL}/payment/status`)
 	const failURL = new URL(`${CLIENT_URL}/payment/status`)
@@ -401,7 +441,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		})
 	}
 
-	const price = priceAfterDiscount || selectedTariff.price
+	const price = priceAfterDiscount?.toFixed(2) || selectedTariff.price
 
 	// Если оформлена подписка, можно только увеличить тариф большей длительности
 	if (subscribeTariff) {
@@ -466,6 +506,22 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		tariffId: selectedTariff._id,
 		isChecked: false,
 	}).save()
+
+	// findOneAndUpdate
+	if (promocodeId) {
+		await PromocodeLog.findOneAndUpdate(
+			{
+				promocodeId,
+				userId: req.user._id,
+			},
+			{
+				$set: {
+					isPurchaseCompleted: true,
+				},
+				$inc: { __v: 1 },
+			}
+		)
+	}
 
 	// В url успешной страницы передать id созданного лога
 	successURL.searchParams.set('id', paymentLog._id)
