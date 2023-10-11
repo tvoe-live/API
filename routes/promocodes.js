@@ -47,7 +47,7 @@ router.patch('/activate', verify.token, async (req, res) => {
 		})
 
 		if (promocodeLog) {
-			return resError({ res, msg: 'Даннный промокод уже применен' })
+			return resError({ res, msg: 'Данный промокод уже применен' })
 		}
 
 		// Создание лога об активации промокода
