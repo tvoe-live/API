@@ -6457,7 +6457,10 @@
 											"description": "Тип платежа - paid, trial или issued-by-admin"
 										},
 										"finishAt": { "type": "string", "description": "Дата окончания тарифа" },
-										"tariffId": { "type": "string", "description": "Id тарифа" },
+										"isChecked": {
+											"type": "boolean",
+											"description": "Проверен ли пользователем статус подписки"
+										},
 										"tariff": {
 											"type": "object",
 											"properties": {
@@ -6480,7 +6483,7 @@
 										"_id": "63e864ae801189b4df7ea04d",
 										"type": "paid",
 										"finishAt": "2023-03-14T04:02:45.100Z",
-										"tariffId": "63dbe1687f457bc81bc920cb",
+										"isChecked": true,
 										"tariff": {
 											"id": "63f7537f841f04f2348f8de5",
 											"name": "7 дней",
