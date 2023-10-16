@@ -629,7 +629,7 @@ CleanupLog.find((err, data) => {
 })
 
 // !!!ОПАСНО!!!: Трансформация базы данных
-if (false) {
+if (true) {
 	Movie.find(async (err, data) => {
 		for (const item of data) {
 			const {
