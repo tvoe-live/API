@@ -3,44 +3,138 @@ const router = express.Router()
 const Movie = require('../../models/movie')
 const verify = require('../../middlewares/verify')
 const resError = require('../../helpers/resError')
-const movieOperations = require('../../helpers/movieOperations')
+const movieBookmark = require('../../models/movieBookmark')
 
 /*
  * Профиль > Закладки
  */
 
+//  Переделал по образу и подобию истории просмотров
 router.get('/', verify.token, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
-	const lookup = [
+	const agregationListForTotalSize = [
 		{
-			$lookup: {
-				from: 'moviebookmarks',
-				localField: '_id',
-				foreignField: 'movieId',
-				pipeline: [
-					{
-						$match: {
-							userId: req.user._id,
-							isBookmark: true,
-						},
-					},
-					{ $sort: { updatedAt: -1 } },
-				],
-				as: 'bookmark',
+			// Отбор по userID
+			$match: {
+				userId: req.user._id,
+				isBookmark: true,
 			},
 		},
-		{ $unwind: '$bookmark' },
+		{
+			// Формирования соединения с моделью Movie
+			$lookup: {
+				from: 'movies',
+				localField: 'movieId',
+				foreignField: '_id',
+				pipeline: [{ $project: { persons: false } }],
+				as: 'movie',
+			},
+		},
+
+		//  Документируем полученные соедененные данные
+		{ $unwind: '$movie' },
+
+		// Группируем данные
+		{
+			$group: {
+				_id: '$movie._id',
+				name: { $first: '$movie.name' },
+				rating: { $first: '$movie.rating' },
+				ageLevel: { $first: '$movie.ageLevel' },
+				trailer: { $first: '$movie.trailer' },
+				categoryAlias: { $first: '$movie.categoryAlias' },
+				series: { $first: '$movie.series' },
+				films: { $first: '$movie.films' },
+				poster: { $first: '$movie.poster' },
+				updatedAt: { $max: '$updatedAt' },
+				alias: { $first: '$movie.alias' },
+				dateReleased: { $first: '$movie.dateReleased' },
+			},
+		},
+		{
+			// Добавляем поля
+			$addFields: {
+				// URL фильма/сериала
+				url: { $concat: ['/p/', '$alias'] },
+				duration: {
+					$switch: {
+						branches: [
+							// Если фильм
+							{
+								case: { $eq: ['$categoryAlias', 'films'] },
+								then: {
+									// Забираем фильм
+									$sum: {
+										$map: {
+											input: '$films',
+											as: 'item',
+											in: '$$item.duration',
+										},
+									},
+								},
+							},
+							// Если сериал
+							{
+								case: { $eq: ['$categoryAlias', 'serials'] },
+								then: {
+									// Забираем сезоны сериала
+									$sum: {
+										$map: {
+											input: '$series',
+											as: 'seasons',
+											in: {
+												$sum: {
+													$map: {
+														input: '$$seasons',
+														as: 'item',
+														in: '$$item.duration',
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						],
+						default: 0,
+					},
+				},
+			},
+		},
+		{
+			// Передача на следующий этап полей данных
+			$project: {
+				url: true,
+				duration: true,
+				_id: true,
+				name: true,
+				rating: true,
+				ageLevel: true,
+				trailer: true,
+				categoryAlias: true,
+				dateReleased: true,
+				poster: true,
+				updatedAt: true,
+				series: {
+					$cond: {
+						if: { $eq: ['$categoryAlias', 'serials'] },
+						then: '$series',
+						else: '$$REMOVE',
+					},
+				},
+			},
+		},
 	]
 
 	try {
-		Movie.aggregate(
-			[
+		movieBookmark
+			.aggregate([
 				{
 					$facet: {
 						totalSize: [
-							...lookup,
+							...agregationListForTotalSize,
 							{
 								$group: {
 									_id: null,
@@ -51,16 +145,10 @@ router.get('/', verify.token, async (req, res) => {
 							{ $limit: 1 },
 						],
 						items: [
-							...lookup,
-							...movieOperations({
-								addToProject: {
-									poster: { src: true },
-									addedToBookmarkAt: '$bookmark.updatedAt',
-								},
-								skip,
-								limit,
-							}),
-							{ $sort: { addedToBookmarkAt: -1 } },
+							...agregationListForTotalSize,
+							{ $sort: { updatedAt: -1 } },
+							{ $skip: skip },
+							{ $limit: limit },
 						],
 					},
 				},
@@ -71,11 +159,8 @@ router.get('/', verify.token, async (req, res) => {
 						items: '$items',
 					},
 				},
-			],
-			(err, result) => {
-				return res.status(200).json(result[0])
-			}
-		)
+			])
+			.exec((_, result) => res.status(200).send(result[0]))
 	} catch (err) {
 		return resError({ res, msg: err })
 	}

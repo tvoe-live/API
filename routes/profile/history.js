@@ -4,7 +4,6 @@ const Movie = require('../../models/movie')
 const MoviePageLog = require('../../models/moviePageLog')
 const verify = require('../../middlewares/verify')
 const resError = require('../../helpers/resError')
-const movieOperations = require('../../helpers/movieOperations')
 
 /*
  * Профиль > История просмотров

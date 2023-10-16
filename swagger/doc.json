@@ -2,6 +2,20 @@
 	"openapi": "3.0.1",
 	"info": { "title": "API https://tvoe-dev.ru/", "version": "v1" },
 	"servers": [{ "url": "https://api.1390760-cu92735.tw1.ru/" }],
+	"components": {
+		"parameters": {
+			"AuthorizationHeader": {
+				"name": "token",
+				"in": "header",
+				"description": "Access token только для возможности отправлять запросы из свагера",
+				"required": true,
+				"schema": {
+					"type": "string",
+					"default": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY1MDQ1ZjRiMWJkNmRkYzM2NDI5MDlmYiIsImlhdCI6MTY5NjQ4OTA0MCwiZXhwIjoxNzI4MDQ2NjQwfQ.hhoCzqDtsVMlXZ1BBzwJOgqwJPGGQr-kTNl05aNWQ_Q"
+				}
+			}
+		}
+	},
 	"tags": [
 		{ "name": "Profile", "description": "Профиль" },
 		{ "name": "Admin", "description": "Административная панель" },
@@ -12,13 +26,15 @@
 		{ "name": "Search", "description": "Поиск" },
 		{ "name": "Auth", "description": "Авторизация / регистрация через Яндекс и разрушение сессии" },
 		{ "name": "Movies", "description": "Фильмы и сериалы" },
-		{ "name": "Referral", "description": "Реферальная программа" }
+		{ "name": "Referral", "description": "Реферальная программа" },
+		{ "name": "Promocode", "description": "Промокоды" }
 	],
 	"paths": {
 		"/profile": {
 			"get": {
 				"summary": "Получение профиля",
 				"tags": ["Profile"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"responses": {
 					"200": {
 						"description": "OK",
@@ -81,8 +97,21 @@
 				}
 			},
 			"patch": {
-				"summary": "Обновления профиля",
+				"summary": "Обновление имени профиля",
 				"tags": ["Profile"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"firstname": { "type": "string", "description": "Имя пользователя" }
+								}
+							}
+						}
+					}
+				},
 				"responses": {
 					"200": {
 						"description": "OK",
@@ -112,6 +141,7 @@
 			"delete": {
 				"summary": "Удаление профиля",
 				"tags": ["Profile"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -178,6 +208,7 @@
 			"get": {
 				"summary": "Восстановление профиля",
 				"tags": ["Profile"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"responses": {
 					"200": {
 						"description": "OK",
@@ -200,6 +231,7 @@
 			"post": {
 				"summary": "Загрузка аватарки",
 				"tags": ["Profile"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"multipart/form-data": {
@@ -244,6 +276,7 @@
 			"delete": {
 				"summary": "Удаление аватарки",
 				"tags": ["Profile"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"responses": {
 					"200": {
 						"description": "OK",
@@ -278,6 +311,7 @@
 				"summary": "Профиль > Избранное",
 				"tags": ["Profile"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "limit",
@@ -408,6 +442,7 @@
 				"summary": "Профиль > Закладки",
 				"tags": ["Profile"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "limit",
@@ -541,6 +576,7 @@
 				"summary": "Профиль > История просмотров",
 				"tags": ["Profile"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "limit",
@@ -698,6 +734,7 @@
 				"summary": "Профиль > Подписка",
 				"tags": ["Profile"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "limit",
@@ -851,6 +888,7 @@
 				"summary": "Профиль > Мои устройства",
 				"tags": ["Profile"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "limit",
@@ -959,6 +997,7 @@
 				"summary": "Профиль > Список уведомлений для пользователя",
 				"tags": ["Profile"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "limit",
@@ -1045,6 +1084,7 @@
 			"post": {
 				"summary": "Загрузка уведомления",
 				"tags": ["Profile"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"multipart/form-data": {
@@ -1151,6 +1191,7 @@
 			"patch": {
 				"summary": "Обновление уведомления",
 				"tags": ["Profile"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"multipart/form-data": {
@@ -1218,6 +1259,7 @@
 			"delete": {
 				"summary": "Удаление уведомления",
 				"tags": ["Profile"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -1261,6 +1303,7 @@
 				"summary": "Профиль > Количество просмотров у одного уведомления",
 				"tags": ["Profile"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "id",
@@ -1295,6 +1338,7 @@
 				"summary": "Профиль > Количество просмотров у всех уведомлений",
 				"tags": ["Profile"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "limit",
@@ -1392,6 +1436,7 @@
 			"patch": {
 				"summary": "Профиль > Список уведомлений для пользователя",
 				"tags": ["Profile"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -1429,6 +1474,7 @@
 			"patch": {
 				"summary": "Профиль > Настройка уведомлений ( включение и выключение определенных категорий)",
 				"tags": ["Profile"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -1495,6 +1541,7 @@
 			"get": {
 				"summary": "Получение категорий",
 				"tags": ["Admin"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"responses": {
 					"200": {
 						"description": "OK",
@@ -1603,11 +1650,121 @@
 				}
 			}
 		},
+		"/admin/notifications": {
+			"get": {
+				"summary": "Получение списка уведомлений",
+				"tags": ["Admin"],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"schema": { "type": "number" },
+						"description": "Ограничение на максимальное количество элементов в теле ответа"
+					},
+					{
+						"in": "query",
+						"name": "skip",
+						"schema": { "type": "number" },
+						"description": "Кол-во пропускаемых элементов из начала выборки"
+					},
+					{
+						"in": "query",
+						"name": "query",
+						"schema": { "type": "number" },
+						"description": "Для поиска документов (сущностей таблицы notifications) по совпадению названия"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"totalSize": {
+											"type": "number",
+											"description": "Общее количество сущностей в БД"
+										},
+										"items": {
+											"type": "array",
+											"uniqueItems": true,
+											"minItems": 0,
+											"items": {
+												"type": "object",
+												"properties": {
+													"_id": { "type": "string", "description": "Id уведомления" },
+													"title": { "type": "string", "description": "Название уведомления" },
+													"description": { "type": "string", "description": "Текст уведомления" },
+													"type": {
+														"type": "string",
+														"description": "Тип уведомления  - 'SERVICE_NEWS', 'GIFTS_AND_PROMOTIONS','PROFILE', 'CINEMA_NEWS', 'SERVICE_NEWS','FAVOTITES_AND_BOOKMARKS_NEWS'"
+													},
+													"willPublishedAt": {
+														"type": "date",
+														"description": "Планируемая дата публикации"
+													},
+													"updatedAt": {
+														"type": "date",
+														"description": "Дата последнего изменения уведомления"
+													},
+													"status": {
+														"type": "string",
+														"description": "отложено если не указана дата публикации, сохранено если дата публикации еще наступила или опубликовано"
+													}
+												}
+											}
+										}
+									}
+								},
+								"examples": {
+									"example": {
+										"value": {
+											"totalSize": 3,
+											"items": [
+												{
+													"_id": "651c20546cc459f4ec4818e9",
+													"title": "Премьера нового сезона дома дракона",
+													"description": "Не пропустите!",
+													"type": "PROFILE",
+													"willPublishedAt": "2023-12-20T00:00:00.000Z",
+													"updatedAt": "2023-10-03T14:08:20.551Z",
+													"status": "отложено"
+												},
+												{
+													"_id": "651f2a4dbf5691f20389f6f4",
+													"title": "Премьера нового сезона сорвиголовы",
+													"description": "Не пропустите!",
+													"type": "PROFILE",
+													"updatedAt": "2023-10-05T21:27:41.343Z",
+													"willPublishedAt": null,
+													"status": "сохранено"
+												},
+												{
+													"_id": "651f2b8abf5691f20389fb41",
+													"title": "Премьера нового сезона ведьмака",
+													"description": "Не пропустите!",
+													"type": "PROFILE",
+													"willPublishedAt": "2023-08-20T00:00:00.000Z",
+													"updatedAt": "2023-10-05T21:32:58.489Z",
+													"status": "опубликовано"
+												}
+											]
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
 		"/admin/users": {
 			"get": {
 				"summary": "Админ-панель > Пользователи",
 				"tags": ["Admin"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "limit",
@@ -1733,6 +1890,7 @@
 				"summary": "Админ-панель > Получение пользователя",
 				"tags": ["Admin"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "id",
@@ -1866,6 +2024,7 @@
 			"patch": {
 				"summary": "Админ-панель > Обновления пользователя",
 				"tags": ["Admin"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -1907,6 +2066,7 @@
 				"summary": "Админ-панель > Получение списка фильмов и сериалов",
 				"tags": ["Admin"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "skip",
@@ -2399,6 +2559,7 @@
 			"post": {
 				"summary": "Добавление / редактирование записей ( фильмов и сериалов )",
 				"tags": ["Admin"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -2649,6 +2810,7 @@
 				"summary": "Админ-панель > Получение одной записи ( фильма или сериала )",
 				"tags": ["Admin"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "skip",
@@ -2969,6 +3131,7 @@
 			"put": {
 				"summary": "Админ-панель > Опубликовать / снять с публикации запись (фильм или сериал )",
 				"tags": ["Admin"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -3020,6 +3183,7 @@
 			"put": {
 				"summary": "Админ-панель >  Поднять медиа страницу во всех списках",
 				"tags": ["Admin"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -3075,6 +3239,7 @@
 				"summary": "Админ-панель > История пополнений",
 				"tags": ["Admin"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "limit",
@@ -3305,6 +3470,7 @@
 			"get": {
 				"summary": "Админ-панель > Редактор медиа страницы",
 				"tags": ["Admin"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"responses": {
 					"200": {
 						"description": "OK",
@@ -3336,6 +3502,7 @@
 				"summary": "Админ-панель > Удаление страницы и всех ее медиа материалов",
 				"tags": ["Admin"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "_id",
@@ -3377,6 +3544,7 @@
 				"summary": "Админ-панель > Загрузка обложки, постера или логотипа",
 				"tags": ["Admin"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "name",
@@ -3442,6 +3610,7 @@
 				"summary": "Админ-панель > Удаление изображений",
 				"tags": ["Admin"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "name",
@@ -3492,6 +3661,7 @@
 				"summary": "Админ-панель > Загрузка видео и миниатюры",
 				"tags": ["Admin"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "movieId",
@@ -3577,6 +3747,7 @@
 				"summary": "Админ-панель > Удаление видео",
 				"tags": ["Admin"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "name",
@@ -3627,6 +3798,7 @@
 				"summary": "Админ-панель > История поиска",
 				"tags": ["Admin"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "limit",
@@ -3807,6 +3979,7 @@
 				"summary": "Админ-панель > История рейтингов",
 				"tags": ["Admin"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "limit",
@@ -3969,6 +4142,279 @@
 						}
 					}
 				}
+			},
+			"delete": {
+				"summary": "Админ панель удаление отзывов",
+				"tags": ["Admin"],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"reviewId": { "type": "string", "description": "Id отзыва", "required": true }
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"type": { "type": "string", "description": "Надпись success" },
+										"movieId": { "type": "string", "description": "Id фильма (mongoose.ObjectId)" },
+										"newMovieRating": {
+											"type": "number",
+											"description": "Новый рейтинг фильма после удаления оценки"
+										},
+										"alert": {
+											"type": "boolean",
+											"description": "Показывать ли уведомление на сайте"
+										},
+										"msg": { "type": "string", "description": "надпись Успешно удалено" }
+									},
+									"example": {
+										"type": "success",
+										"alert": true,
+										"msg": "Успешно удалено",
+										"newMovieRating": 9,
+										"movieId": "63ac8aa1b2c93ed2212186e7"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/admin/moviesRatingHistory/reviews": {
+			"get": {
+				"summary": "Админ-панель > История рейтингов",
+				"tags": ["Admin"],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"schema": { "type": "number" },
+						"description": "Ограничение на максимальное количество элементов в теле ответа"
+					},
+					{
+						"in": "query",
+						"name": "skip",
+						"schema": { "type": "number" },
+						"description": "Кол-во пропускаемых элементов из начала выборки"
+					},
+					{
+						"in": "query",
+						"name": "is_published",
+						"schema": { "type": "boolean" },
+						"description": "Принимает значение true или false. Отвечает за поиск только опубликованных отзывов или только неопубликованных"
+					},
+					{
+						"in": "query",
+						"name": "is_deleted",
+						"schema": { "type": "boolean" },
+						"description": "Принимает значение true или false. Отвечает за поиск только удаленных отзывов или только неудаленных"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"totalSize": {
+											"type": "number",
+											"description": "Общее количество сущностей в БД (документов коллекции movieRating)"
+										},
+										"items": {
+											"type": "array",
+											"uniqueItems": true,
+											"minItems": 0,
+											"items": {
+												"type": "object",
+												"properties": {
+													"_id": {
+														"type": "string",
+														"description": "Id (mongoose.ObjectId) оценки фильма пользователем (документа коллекции MovieRating)"
+													},
+													"isPublish": {
+														"type": "boolean",
+														"description": "Опубликован ли комментарий"
+													},
+													"isDeleted": {
+														"type": "boolean",
+														"description": "Удалена ли оценка пользователя"
+													},
+													"rating": {
+														"type": "number",
+														"description": "Оценка фильма пользователем"
+													},
+													"movie": {
+														"type": "object",
+														"properties": {
+															"name": { "type": "string", "description": "Название фильма" },
+															"poster": {
+																"type": "object",
+																"properties": {
+																	"src": {
+																		"type": "string",
+																		"description": "Путь к постеру (файлу картинке)"
+																	}
+																}
+															}
+														}
+													},
+													"user": {
+														"type": "object",
+														"properties": {
+															"_id": { "type": "string", "description": "Profile id" },
+															"email": { "type": "string", "description": "Email user" },
+															"phone": {
+																"type": "string",
+																"description": "Номер телефона пользователя. Это поле может отсутствовать",
+																"required": false
+															},
+															"avatar": {
+																"type": "string",
+																"description": "Path to img src profile user"
+															},
+															"firstname": {
+																"type": "string",
+																"description": "Имя этого человека"
+															},
+															"subscribe": {
+																"type": "object",
+																"description": "Информация по подписке. Если подписки нет, в этом поле null",
+																"properties": {
+																	"startAt": {
+																		"type": "Date",
+																		"description": "Дата начала подписки"
+																	},
+																	"finishAt": {
+																		"type": "Date",
+																		"description": "Дата окончания подписки"
+																	},
+																	"tariffId": {
+																		"type": "string",
+																		"description": "Id тарифа (mongoose.ObjectId)"
+																	}
+																}
+															},
+															"role": {
+																"type": "string",
+																"description": "Admin, manager или если это обычный пользователь то это поле отсуствует."
+															}
+														}
+													}
+												}
+											}
+										}
+									},
+									"example": {
+										"value": {
+											"totalSize": 59,
+											"items": [
+												{
+													"_id": "651f09e2bf5691f203899f2f",
+													"rating": 1,
+													"isPublished": true,
+													"isDeleted": false,
+													"review": "12",
+													"movie": { "name": "HLS" },
+													"user": {
+														"_id": "63c952c66396809788e004a6",
+														"email": "agdias@yandex.ru",
+														"avatar": null,
+														"firstname": "Агдас",
+														"role": "admin"
+													}
+												},
+												{
+													"_id": "651f09aabf5691f203899d9c",
+													"rating": 6,
+													"isPublished": false,
+													"isDeleted": false,
+													"review": "1",
+													"movie": {
+														"name": "Название",
+														"poster": { "src": "/images/651c249e3d51bdf82b354936.jpg" }
+													},
+													"user": {
+														"_id": "63c952c66396809788e004a6",
+														"email": "agdias@yandex.ru",
+														"avatar": null,
+														"firstname": "Агдас",
+														"role": "admin"
+													}
+												}
+											]
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/admin/moviesRatingHistory/publish": {
+			"post": {
+				"summary": "Админ-панель > Опубликовать / снять с публикациикомментарий к фильму от пользователя",
+				"tags": ["Admin"],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"_id": {
+										"type": "string",
+										"description": "Id документа(фильма или сериала) (mongoose.ObjectId)",
+										"required": true
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"_id": {
+											"type": "string",
+											"description": "Id документа(фильма или сериала) (mongoose.ObjectId)"
+										},
+										"type": { "type": "string", "description": "Надпись \"success\"" },
+										"alert": { "type": "boolean", "description": true },
+										"msg": {
+											"type": "string",
+											"description": "Надпись об 'успешной публикации или снятии с публикации"
+										}
+									},
+									"example": {
+										"type": "success",
+										"_id": "6499bdbe9c45fd3d06d89094",
+										"alert": true,
+										"msg": "Успешно опубликовано"
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 		},
 		"/admin/moviesViewingHistory": {
@@ -3976,6 +4422,7 @@
 				"summary": "Админ-панель > История просмотров",
 				"tags": ["Admin"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "limit",
@@ -4181,6 +4628,725 @@
 												}
 											]
 										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/admin/promocodes": {
+			"get": {
+				"summary": "Админ-панель > Cписок всех промокодов",
+				"tags": ["Admin"],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"schema": { "type": "number" },
+						"description": "Ограничение на максимальное количество элементов в теле ответа"
+					},
+					{
+						"in": "query",
+						"name": "skip",
+						"schema": { "type": "number" },
+						"description": "Кол-во пропускаемых элементов из начала выборки"
+					},
+					{
+						"in": "query",
+						"name": "isActive",
+						"schema": { "type": "boolean" },
+						"description": "Поиск по действующим ( или недействующим) в данный момент промокодам"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"totalSize": { "type": "number", "description": "Всего промокодов" },
+										"items": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"_id": { "type": "string", "description": "Id промокода" },
+													"maxAmountActivation": {
+														"type": "number",
+														"description": "Максимальное количество возможных активаций этого промокода пользователями вместе взятыми"
+													},
+													"currentAmountActivation": {
+														"type": "number",
+														"description": "Количество активаций промокода всеми пользователями"
+													},
+													"isOnlyForNewUsers": {
+														"type": "boolean",
+														"description": "Доступен ли промокод только новым пользователм или всем"
+													},
+													"isActive": {
+														"type": "boolean",
+														"description": "Является ли промокод активным в данный момент времени"
+													},
+													"tariffName": {
+														"type": "string",
+														"description": "Название тарифа - '1 месяц', '3 месяца', '6 месяцев'"
+													},
+													"discountFormat": {
+														"type": "string",
+														"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+													},
+													"sizeDiscount": {
+														"type": "number",
+														"description": "Размер скидки. Если discountFormat = percentages, то sizeDiscount выражается в процентах. Если discountFormat = rubles, то sizeDiscount - в рублях"
+													},
+													"value": { "type": "string", "description": "Значение промокода" },
+													"startAt": {
+														"type": "date",
+														"description": "Дата и время начала действия промокода. В формате YYYY-MM-DD HH:mm"
+													},
+													"finishAt": {
+														"type": "date",
+														"description": "Дата и время окончания действия промокода. В формате YYYY-MM-DD HH:mm"
+													},
+													"createdAt": {
+														"type": "date",
+														"description": "Дата и время создания промокода"
+													}
+												}
+											}
+										}
+									},
+									"example": {
+										"totalSize": 3,
+										"items": [
+											{
+												"_id": "650d914b7f0867e591ebc0c9",
+												"maxAmountActivation": 33,
+												"currentAmountActivation": 1,
+												"isOnlyForNewUsers": false,
+												"isActive": true,
+												"tariffName": "3 месяца",
+												"discountFormat": "rubles",
+												"sizeDiscount": 201,
+												"value": "test10",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T13:06:19.295Z"
+											},
+											{
+												"_id": "650d80c410211d9425bd8d54",
+												"maxAmountActivation": 33,
+												"currentAmountActivation": 1,
+												"isOnlyForNewUsers": false,
+												"isActive": true,
+												"tariffName": "3 месяца",
+												"discountFormat": "percentages",
+												"sizeDiscount": 40,
+												"value": "test7",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T11:55:48.227Z"
+											},
+											{
+												"_id": "650d80b710211d9425bd8d30",
+												"maxAmountActivation": 33,
+												"currentAmountActivation": 1,
+												"isOnlyForNewUsers": false,
+												"isActive": true,
+												"tariffName": "6 месяцев",
+												"discountFormat": "percentages",
+												"sizeDiscount": 50,
+												"value": "test6",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T11:55:35.103Z"
+											}
+										]
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"post": {
+				"summary": "Админ панель => Создание промокода",
+				"tags": ["Admin"],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"maxAmountActivation": {
+										"type": "number",
+										"description": "Максимальное количество возможных активаций этого промокода пользователями вместе взятыми"
+									},
+									"isOnlyForNewUsers": {
+										"type": "boolean",
+										"description": "Доступен ли промокод только новым пользователм или всем. По умолчанию true - только для новых пользователей"
+									},
+									"isActive": {
+										"type": "boolean",
+										"description": "Является ли промокод активным в данный момент времени. По умолчанию false"
+									},
+									"tariffName": {
+										"type": "string",
+										"description": "Название тарифа - '1 месяц', '3 месяца', '6 месяцев'"
+									},
+									"discountFormat": {
+										"type": "string",
+										"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+									},
+									"sizeDiscount": {
+										"type": "number",
+										"description": "Размер скидки. Если discountFormat = percentages, то sizeDiscount выражается в процентах. Если discountFormat = rubles, то sizeDiscount - в рублях"
+									},
+									"value": { "type": "string", "description": "Значение промокода" },
+									"startAt": {
+										"type": "date",
+										"description": "Дата и время начала действия промокода. В формате YYYY-MM-DD HH:mm"
+									},
+									"finishAt": {
+										"type": "date",
+										"description": "Дата и время окончания действия промокода. В формате YYYY-MM-DD HH:mm"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"success": { "type": "boolean", "description": "Значение true" },
+										"msg": {
+											"type": "string",
+											"description": "Надпись \"Промокод успешно создан\""
+										}
+									},
+									"example": { "success": true, "msg": "Промокод успешно создан" }
+								}
+							}
+						}
+					}
+				}
+			},
+			"patch": {
+				"summary": "Админ панель => Изменение промокода",
+				"tags": ["Admin"],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"maxAmountActivation": {
+										"type": "number",
+										"description": "Максимальное количество возможных активаций этого промокода пользователями вместе взятыми"
+									},
+									"isOnlyForNewUsers": {
+										"type": "boolean",
+										"description": "Доступен ли промокод только новым пользователм или всем. По умолчанию true - только для новых пользователей"
+									},
+									"isActive": {
+										"type": "boolean",
+										"description": "Является ли промокод активным в данный момент времени. По умолчанию false"
+									},
+									"tariffName": {
+										"type": "string",
+										"description": "Название тарифа - '1 месяц', '3 месяца', '6 месяцев'"
+									},
+									"discountFormat": {
+										"type": "string",
+										"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+									},
+									"sizeDiscount": {
+										"type": "number",
+										"description": "Размер скидки. Если discountFormat = percentages, то sizeDiscount выражается в процентах. Если discountFormat = rubles, то sizeDiscount - в рублях"
+									},
+									"value": { "type": "string", "description": "Значение промокода" },
+									"startAt": {
+										"type": "date",
+										"description": "Дата и время начала действия промокода. В формате YYYY-MM-DD HH:mm"
+									},
+									"finishAt": {
+										"type": "date",
+										"description": "Дата и время окончания действия промокода. В формате YYYY-MM-DD HH:mm"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"alert": { "type": "boolean", "description": "Значение true" },
+										"type": { "type": "string", "description": "надпись 'success'" },
+										"msg": { "type": "string", "description": "Надпись \"Промокод обновлен\"" }
+									},
+									"example": { "alert": true, "type": "sucess", "msg": "Промокод обновлен" }
+								}
+							}
+						}
+					}
+				}
+			},
+			"delete": {
+				"summary": "Удаления промокода",
+				"tags": ["Admin"],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"_id": {
+										"type": "string",
+										"description": "Id промокода (mongoose.ObjectId)",
+										"required": true
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"type": { "type": "string", "description": "Надпись \"success\"" },
+										"alert": { "type": "boolean", "description": "Значение true" },
+										"_id": {
+											"type": "string",
+											"description": "Id удаленного фильма или сериала (mongoose.ObjectId)"
+										},
+										"msg": { "type": "string", "description": "Надпись \"Успешно удалено\"" }
+									},
+									"example": {
+										"type": "success",
+										"alert": true,
+										"id": "63ac7d6ab2c93ed221218186",
+										"msg": "Успешно удалено"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/admin/promocodes/count": {
+			"get": {
+				"summary": "Админ-панель > Информация про промокод и логи его активаций разными пользователями",
+				"tags": ["Admin"],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"schema": { "type": "number" },
+						"description": "Ограничение на максимальное количество элементов в теле ответа"
+					},
+					{
+						"in": "query",
+						"name": "skip",
+						"schema": { "type": "number" },
+						"description": "Кол-во пропускаемых элементов из начала выборки"
+					},
+					{
+						"in": "query",
+						"name": "_id",
+						"schema": { "type": "string" },
+						"description": "Id промокода",
+						"required": true
+					},
+					{
+						"in": "query",
+						"name": "userId",
+						"schema": { "type": "string" },
+						"description": "Id пользователя для поиска пользователей, активировавших указанный промокод"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"sizeLogs": {
+											"type": "number",
+											"description": "Количество логов активаций данного промокода"
+										},
+										"_id": { "type": "string", "description": "Id промокода" },
+										"maxAmountActivation": {
+											"type": "number",
+											"description": "Максимальное количество возможных активаций этого промокода пользователями вместе взятыми"
+										},
+										"currentAmountActivation": {
+											"type": "number",
+											"description": "Количество активаций промокода всеми пользователями"
+										},
+										"isOnlyForNewUsers": {
+											"type": "boolean",
+											"description": "Доступен ли промокод только новым пользователм или всем"
+										},
+										"isActive": {
+											"type": "boolean",
+											"description": "Является ли промокод активным в данный момент времени"
+										},
+										"tariffName": {
+											"type": "string",
+											"description": "Название тарифа - '1 месяц', '3 месяца', '6 месяцев'"
+										},
+										"discountFormat": {
+											"type": "string",
+											"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+										},
+										"sizeDiscount": {
+											"type": "number",
+											"description": "Размер скидки. Если discountFormat = percentages, то sizeDiscount выражается в процентах. Если discountFormat = rubles, то sizeDiscount - в рублях"
+										},
+										"value": { "type": "string", "description": "Значение промокода" },
+										"startAt": {
+											"type": "date",
+											"description": "Дата и время начала действия промокода. В формате YYYY-MM-DD HH:mm"
+										},
+										"finishAt": {
+											"type": "date",
+											"description": "Дата и время окончания действия промокода. В формате YYYY-MM-DD HH:mm"
+										},
+										"createdAt": {
+											"type": "date",
+											"description": "Дата и время создания промокода"
+										},
+										"promocodeslogs": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"_id": {
+														"type": "string",
+														"description": "Id документа коллекции promocodelogs"
+													},
+													"createdAt": {
+														"type": "date",
+														"description": "Дата активации промокода"
+													},
+													"isExpired": {
+														"type": "boolean",
+														"description": "Истек ли срок действия промокода на текущий момент времени"
+													},
+													"user": {
+														"type": "object",
+														"properties": {
+															"_id": { "type": "string", "description": "Id пользователя" },
+															"email": {
+																"type": "string",
+																"description": "Электронная почта пользователя"
+															},
+															"firstname": { "type": "string", "description": "Имя пользователя" },
+															"lastname": {
+																"type": "string",
+																"description": "Фамилия пользователя"
+															}
+														}
+													}
+												}
+											}
+										}
+									},
+									"example": {
+										"_id": "650d5d3e981100537fb33ecd",
+										"maxAmountActivation": 20,
+										"currentAmountActivation": 1,
+										"isOnlyForNewUsers": false,
+										"isActive": false,
+										"tariffName": "6 месяцев",
+										"discountFormat": "rubles",
+										"sizeDiscount": 150,
+										"value": "AUTUMN2023",
+										"startAt": "2023-09-01T00:00:00.000Z",
+										"finishAt": "2023-10-01T00:00:00.000Z",
+										"createdAt": "2023-09-22T09:24:14.077Z",
+										"promocodeslogs": [
+											{
+												"_id": "650d5db6981100537fb33f7e",
+												"createdAt": "2023-04-01T09:26:14.932Z",
+												"user": {
+													"_id": "63bfe1f923c814afb6093783",
+													"email": "me@stwinnie.com",
+													"firstname": "Mikhail",
+													"lastname": "Zakharovskiy"
+												},
+												"isExpired": true
+											},
+											{
+												"_id": "651fea6752c6d5f1209707d7",
+												"createdAt": "2023-09-22T09:26:14.932Z",
+												"user": {
+													"_id": "6480807e904d20e5d4c1b6db",
+													"email": "7on999@gmail.com",
+													"lastname": "Папин",
+													"firstname": "Семённн"
+												},
+												"isExpired": false
+											}
+										],
+										"sizeLogs": 2
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/admin/promocodes/countAll": {
+			"get": {
+				"summary": "Админ-панель > Список всех промокодов и общая аналитическая информация",
+				"tags": ["Admin"],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"schema": { "type": "number" },
+						"description": "Ограничение на максимальное количество элементов в теле ответа"
+					},
+					{
+						"in": "query",
+						"name": "skip",
+						"schema": { "type": "number" },
+						"description": "Кол-во пропускаемых элементов из начала выборки"
+					},
+					{
+						"in": "query",
+						"name": "query",
+						"schema": { "type": "string" },
+						"description": "Поиск по названию промокода",
+						"required": true
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"activatedPromocodesAmount": {
+											"type": "number",
+											"description": "Общее количество когда либо активированных промокодов"
+										},
+										"totalSize": {
+											"type": "number",
+											"description": "Oбщее количество созданных промокодов"
+										},
+										"totalSizeWithMatch": {
+											"type": "number",
+											"description": "Oбщее количество созданных промокодов с учетом фильтра query, отвечающий за поиск по названию промокодов"
+										},
+										"totalSizeActiveNow": {
+											"type": "number",
+											"description": "Количество действующих в данный момент времени промокодов"
+										},
+										"totalSizeNotPublishedNow": {
+											"type": "number",
+											"description": "Количество неопубликованных промокодов"
+										},
+										"items": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"_id": { "type": "string", "description": "Id промокода" },
+													"maxAmountActivation": {
+														"type": "number",
+														"description": "Максимально возможное количество активаций данного промокода в совокупности всеми пользователями"
+													},
+													"currentAmountActivation": {
+														"type": "number",
+														"description": "Количество активаций этого промокода всеми пользователями всего"
+													},
+													"isActive": {
+														"type": "boolean",
+														"description": "Является ли промокод активным в данный момент времени"
+													},
+													"tariffName": {
+														"type": "string",
+														"description": "Название тарифа - '1 месяц', '3 месяца', '6 месяцев'"
+													},
+													"discountFormat": {
+														"type": "string",
+														"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+													},
+													"sizeDiscount": {
+														"type": "number",
+														"description": "Размер скидки. Если discountFormat = percentages, то sizeDiscount выражается в процентах. Если discountFormat = rubles, то sizeDiscount - в рублях"
+													},
+													"value": { "type": "string", "description": "Значение промокода" },
+													"startAt": {
+														"type": "date",
+														"description": "Дата и время начала действия промокода. В формате YYYY-MM-DD HH:mm"
+													},
+													"finishAt": {
+														"type": "date",
+														"description": "Дата и время окончания действия промокода. В формате YYYY-MM-DD HH:mm"
+													},
+													"createdAt": {
+														"type": "date",
+														"description": "Дата и время создания промокода"
+													}
+												}
+											}
+										}
+									},
+									"example": {
+										"activatedPromocodesAmount": 13,
+										"totalSize": 11,
+										"totalSizeWithMatch": 9,
+										"totalSizeActiveNow": 0,
+										"totalSizeNotPublishedNow": 1,
+										"items": [
+											{
+												"_id": "650d914b7f0867e591ebc0c9",
+												"maxAmountActivation": 33,
+												"currentAmountActivation": 1,
+												"isActive": true,
+												"tariffName": "3 месяца",
+												"discountFormat": "rubles",
+												"sizeDiscount": 201,
+												"value": "test10",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T13:06:19.295Z"
+											},
+											{
+												"_id": "650d807c10211d9425bd8ca3",
+												"maxAmountActivation": 33,
+												"currentAmountActivation": 1,
+												"isActive": true,
+												"tariffName": "6 месяцев",
+												"discountFormat": "percentages",
+												"sizeDiscount": 60,
+												"value": "test4",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T11:54:36.855Z"
+											},
+											{
+												"_id": "650d809a10211d9425bd8ce9",
+												"maxAmountActivation": 33,
+												"currentAmountActivation": 1,
+												"isActive": true,
+												"tariffName": "6 месяцев",
+												"discountFormat": "rubles",
+												"sizeDiscount": 151,
+												"value": "test5",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T11:55:06.550Z"
+											},
+											{
+												"_id": "650d80b710211d9425bd8d30",
+												"maxAmountActivation": 33,
+												"currentAmountActivation": 1,
+												"isActive": true,
+												"tariffName": "6 месяцев",
+												"discountFormat": "percentages",
+												"sizeDiscount": 50,
+												"value": "test6",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T11:55:35.103Z"
+											},
+											{
+												"_id": "650d80c410211d9425bd8d54",
+												"maxAmountActivation": 33,
+												"currentAmountActivation": 1,
+												"isActive": true,
+												"tariffName": "3 месяца",
+												"discountFormat": "percentages",
+												"sizeDiscount": 40,
+												"value": "test7",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T11:55:48.227Z"
+											},
+											{
+												"_id": "650d7f8c10211d9425bd8b5c",
+												"maxAmountActivation": 20,
+												"currentAmountActivation": 1,
+												"isActive": true,
+												"tariffName": "3 месяца",
+												"discountFormat": "rubles",
+												"sizeDiscount": 50,
+												"value": "test1",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T11:50:36.061Z"
+											},
+											{
+												"_id": "650d7fb410211d9425bd8bc6",
+												"maxAmountActivation": 20,
+												"currentAmountActivation": 1,
+												"isActive": true,
+												"tariffName": "6 месяцев",
+												"discountFormat": "rubles",
+												"sizeDiscount": 55,
+												"value": "test2",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T11:51:16.865Z"
+											},
+											{
+												"_id": "650d7fd610211d9425bd8bea",
+												"maxAmountActivation": 33,
+												"currentAmountActivation": 1,
+												"isActive": true,
+												"tariffName": "6 месяцев",
+												"discountFormat": "percentages",
+												"sizeDiscount": 55,
+												"value": "test3",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T11:51:50.149Z"
+											},
+											{
+												"_id": "650d5d6d981100537fb33f13",
+												"maxAmountActivation": 20,
+												"currentAmountActivation": 1,
+												"isActive": true,
+												"tariffName": "3 месяца",
+												"discountFormat": "percentages",
+												"sizeDiscount": 20,
+												"value": "SEPTEMBER2023",
+												"startAt": "2023-09-01T00:00:00.000Z",
+												"finishAt": "2023-10-01T00:00:00.000Z",
+												"createdAt": "2023-09-22T09:25:01.398Z"
+											}
+										]
 									}
 								}
 							}
@@ -4469,6 +5635,7 @@
 				"summary": "Подборка \"продолжить просмотр\"",
 				"tags": ["Collections"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "limit",
@@ -4633,6 +5800,7 @@
 				"summary": "Подборка - \"возможно вам понравится\"",
 				"tags": ["Collections"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "limit",
@@ -4758,7 +5926,7 @@
 						"in": "query",
 						"name": "sort",
 						"schema": { "type": "string" },
-						"description": "Установление сортировки списка. Либо new, либо rating."
+						"description": "Установление сортировки списка. Либо new, либо rating, либо popular"
 					},
 					{
 						"in": "query",
@@ -5043,6 +6211,7 @@
 			"get": {
 				"summary": "Тарифы, создание и обработка платежей",
 				"tags": ["Payment"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"responses": {
 					"200": {
 						"description": "OK",
@@ -5077,25 +6246,33 @@
 													"finishOfSubscriptionIn": {
 														"type": "string",
 														"description": "Финиш подписки"
-													}
-												}
-											}
-										},
-										"popularMovies": {
-											"type": "array",
-											"uniqueItems": true,
-											"minItems": 0,
-											"items": {
-												"type": "object",
-												"properties": {
-													"name": { "type": "string", "description": "Название фильма" },
-													"poster": {
+													},
+													"bonucesPromocodes": {
 														"type": "object",
 														"properties": {
-															"src": { "type": "string", "description": "Путь к файлу изображению" }
+															"bestPrice": {
+																"type": "number",
+																"description": "Наиболее выгодная для пользователя цена"
+															},
+															"info": {
+																"type": "object",
+																"properties": {
+																	"sizeDiscount": {
+																		"type": "number",
+																		"description": "Размер скидки"
+																	},
+																	"discountFormat": {
+																		"type": "number",
+																		"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+																	},
+																	"promocodeId": {
+																		"type": "number",
+																		"description": "Id применного наиболее выгодного для пользователя промокода"
+																	}
+																}
+															}
 														}
-													},
-													"rating": { "type": "number", "description": "Рейтинг от 0 до 10" }
+													}
 												}
 											}
 										}
@@ -5127,22 +6304,15 @@
 													"discount": 25,
 													"sort": 4,
 													"allowSubscribe": false,
-													"finishOfSubscriptionIn": "2023-12-04T15:33:23.068Z"
-												}
-											],
-											"popularMovies": [
-												{
-													"name": "Белый шум",
-													"poster": { "src": "/images/6405fe000a569a75e15129f4.jpg" }
-												},
-												{
-													"name": "Армия воров",
-													"poster": { "src": "/images/63ac7d7fb2c93ed2212181a8.jpg" },
-													"rating": 10
-												},
-												{
-													"name": "Уэнделл и Уайлд",
-													"poster": { "src": "/images/63ad6f76b2c93ed22121a059.jpg" }
+													"finishOfSubscriptionIn": "2023-12-04T15:33:23.068Z",
+													"bonucesPromocodes": {
+														"bestPrice": 749,
+														"info": {
+															"sizeDiscount": 150,
+															"discountFormat": "rubles",
+															"promocodeId": "650d5d3e981100537fb33ecd"
+														}
+													}
 												}
 											]
 										}
@@ -5158,6 +6328,7 @@
 			"post": {
 				"summary": "Загрузка платежа",
 				"tags": ["Payment"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -5204,6 +6375,7 @@
 			"post": {
 				"summary": "Обработка уведомления от платежной системы о совершении платежа",
 				"tags": ["Payment"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -5255,11 +6427,12 @@
 				"responses": { "200": { "description": "OK" } }
 			}
 		},
-		"/payment/success": {
+		"/payment/status": {
 			"get": {
 				"summary": "Показать пользователю страницу об успешном совершении платежа",
 				"tags": ["Payment"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "id",
@@ -5283,12 +6456,42 @@
 											"type": "string",
 											"description": "Тип платежа - paid, trial или issued-by-admin"
 										},
-										"finishAt": { "type": "string", "description": "Дата окончания тарифа" }
+										"finishAt": { "type": "string", "description": "Дата окончания тарифа" },
+										"isChecked": {
+											"type": "boolean",
+											"description": "Проверен ли пользователем статус подписки"
+										},
+										"tariff": {
+											"type": "object",
+											"properties": {
+												"_id": { "type": "string", "description": "Id тарифа" },
+												"name": { "type": "string", "description": "Название тарифа" },
+												"price": { "type": "number", "description": "Цена тарифа" },
+												"duration": {
+													"type": "number",
+													"descripton": "Длительность подписки в мили секундах"
+												},
+												"discount": { "type": "number", "description": "Cкидка" },
+												"sort": {
+													"type": "number",
+													"description": "Сорт тарифа ( номер для сортировки )"
+												}
+											}
+										}
 									},
 									"example": {
 										"_id": "63e864ae801189b4df7ea04d",
 										"type": "paid",
-										"finishAt": "2023-03-14T04:02:45.100Z"
+										"finishAt": "2023-03-14T04:02:45.100Z",
+										"isChecked": true,
+										"tariff": {
+											"id": "63f7537f841f04f2348f8de5",
+											"name": "7 дней",
+											"price": 0,
+											"duration": 604800000,
+											"sort": 0,
+											"allowSubscribe": false
+										}
 									}
 								}
 							}
@@ -5447,7 +6650,7 @@
 		},
 		"/search/oftenSeek": {
 			"get": {
-				"summary": "Поиск > Часто ищут (! Сейчас логика из карусели !)",
+				"summary": "Поиск > Часто ищут",
 				"tags": ["Search"],
 				"parameters": [
 					{
@@ -5593,10 +6796,362 @@
 				}
 			}
 		},
+		"/search/nowSeek": {
+			"get": {
+				"summary": "Поиск > Ищут сейчас ( за последние 3 дня)",
+				"tags": ["Search"],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "limit",
+						"schema": { "type": "number" },
+						"description": "Ограничение на максимальное количество элементов в теле ответа"
+					},
+					{
+						"in": "query",
+						"name": "skip",
+						"schema": { "type": "number" },
+						"description": "Количество пропускаемых элементов из начала выборки"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"totalSize": {
+											"type": "number",
+											"description": "Общее количество документов(фильмов) в БД в коллекции movies"
+										},
+										"items": {
+											"type": "array",
+											"uniqueItems": true,
+											"minItems": 0,
+											"items": {
+												"type": "object",
+												"properties": {
+													"_id": {
+														"type": "string",
+														"description": "Id фильма (mongoose.ObjectId)"
+													},
+													"name": { "type": "string", "description": "Название фильма" },
+													"shortDesc": { "type": "string", "description": "Краткое описание" },
+													"ageLevel": { "type": "string", "description": "Возрастное ограничение" },
+													"dateReleased": { "type": "Date", "description": "Дата релиза" },
+													"categoryAlias": {
+														"type": "string",
+														"description": "Вид категориии. Может быть films, serials или collections"
+													},
+													"poster": {
+														"type": "object",
+														"properties": {
+															"src": { "type": "string", "description": "Путь к файлу изображению" }
+														}
+													},
+													"rating": { "type": "number", "description": "Рейтинг от 0 до 10" },
+													"duration": {
+														"type": "string",
+														"description": "Длительность фильма в секундах"
+													},
+													"url": { "type": "string", "description": "Url к фильму" },
+													"badge": {
+														"type": "object",
+														"description": "Бейдж",
+														"required": false,
+														"properties": {
+															"type": {
+																"type": "string",
+																"descriptipn": "newSeason - новый сезон, premiere - премьера"
+															},
+															"startAt": {
+																"type": "date",
+																"descriptipn": "дата начала показа бейджа"
+															},
+															"finishAt": {
+																"type": "date",
+																"descriptipn": "дата окончания показа бейджа"
+															}
+														}
+													},
+													"genres": {
+														"type": "array",
+														"uniqueItems": true,
+														"description": "Список жанров",
+														"items": {
+															"type": "object",
+															"properties": {
+																"name": { "type": "string", "description": "Название жанра" },
+																"alias": { "type": "string", "description": "Алиас жанра" }
+															}
+														}
+													}
+												}
+											}
+										}
+									}
+								},
+								"examples": {
+									"example": {
+										"value": {
+											"totalSize": 2,
+											"items": [
+												{
+													"_id": "63f16d8ed4df293c6a8f839c",
+													"name": "Город пингвинов",
+													"origName": "Penguin Town",
+													"poster": {
+														"_id": "6421ca400f99cfdac6fb8ea8",
+														"src": "/images/6421ca400f99cfdac6fb8ea9.jpg"
+													},
+													"dateReleased": "2021-06-16",
+													"duration": 13273.642667,
+													"shortDesc": "В живописном южноафриканском городке несколько вымирающих видов пингвинов сбиваются в стаю, чтобы искать партнеров, растить птенцов и контактировать с местными жителями.",
+													"ageLevel": 6,
+													"rating": null,
+													"badge": null,
+													"url": "/p/gorod-pingvinov",
+													"categoryAlias": "serials",
+													"genres": ["Документальные", "Драмы", "Триллеры", "Комедии"]
+												},
+												{
+													"_id": "641e14640073f02ab65e75cd",
+													"name": "Город страха: Нью-Йорк против мафии",
+													"origName": "Fear City: New York vs the Mafia",
+													"poster": {
+														"_id": "641e146a0073f02ab65e7605",
+														"src": "/images/641e146a0073f02ab65e7606.jpg"
+													},
+													"dateReleased": "2020-07-22",
+													"duration": 0,
+													"shortDesc": "Пять мафиозных семей правили Нью-Йорком в 1970-х и 1980-х годах, пока группа федеральных агентов не попыталась совершить немыслимое: уничтожить их.",
+													"ageLevel": 16,
+													"rating": null,
+													"badge": null,
+													"url": "/p/gorod-straha-nyu-york-protiv-mafii",
+													"categoryAlias": "serials",
+													"genres": ["Документальные", "Криминал"]
+												}
+											]
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/search/recentlySeek": {
+			"get": {
+				"summary": "Поиск > То что искал сам пользователь",
+				"tags": ["Search"],
+				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
+					{
+						"in": "query",
+						"name": "limit",
+						"schema": { "type": "number" },
+						"description": "Ограничение на максимальное количество элементов в теле ответа"
+					},
+					{
+						"in": "query",
+						"name": "skip",
+						"schema": { "type": "number" },
+						"description": "Количество пропускаемых элементов из начала выборки"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"totalSize": {
+											"type": "number",
+											"description": "Общее количество документов(фильмов) в БД в коллекции movies"
+										},
+										"items": {
+											"type": "array",
+											"uniqueItems": true,
+											"minItems": 0,
+											"items": {
+												"type": "object",
+												"properties": {
+													"_id": {
+														"type": "string",
+														"description": "Id фильма (mongoose.ObjectId)"
+													},
+													"name": { "type": "string", "description": "Название фильма" },
+													"shortDesc": { "type": "string", "description": "Краткое описание" },
+													"ageLevel": { "type": "string", "description": "Возрастное ограничение" },
+													"dateReleased": { "type": "Date", "description": "Дата релиза" },
+													"categoryAlias": {
+														"type": "string",
+														"description": "Вид категориии. Может быть films, serials или collections"
+													},
+													"poster": {
+														"type": "object",
+														"properties": {
+															"src": { "type": "string", "description": "Путь к файлу изображению" }
+														}
+													},
+													"rating": { "type": "number", "description": "Рейтинг от 0 до 10" },
+													"duration": {
+														"type": "string",
+														"description": "Длительность фильма в секундах"
+													},
+													"url": { "type": "string", "description": "Url к фильму" },
+													"badge": {
+														"type": "object",
+														"description": "Бейдж",
+														"required": false,
+														"properties": {
+															"type": {
+																"type": "string",
+																"descriptipn": "newSeason - новый сезон, premiere - премьера"
+															},
+															"startAt": {
+																"type": "date",
+																"descriptipn": "дата начала показа бейджа"
+															},
+															"finishAt": {
+																"type": "date",
+																"descriptipn": "дата окончания показа бейджа"
+															}
+														}
+													},
+													"genres": {
+														"type": "array",
+														"uniqueItems": true,
+														"description": "Список жанров",
+														"items": {
+															"type": "object",
+															"properties": {
+																"name": { "type": "string", "description": "Название жанра" },
+																"alias": { "type": "string", "description": "Алиас жанра" }
+															}
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							},
+							"examples": {
+								"example": {
+									"value": {
+										"totalSize": 5,
+										"items": [
+											{
+												"_id": "63f16d8ed4df293c6a8f839c",
+												"name": "Город пингвинов",
+												"origName": "Penguin Town",
+												"poster": {
+													"_id": "6421ca400f99cfdac6fb8ea8",
+													"src": "/images/6421ca400f99cfdac6fb8ea9.jpg"
+												},
+												"dateReleased": "2021-06-16",
+												"duration": 13273.642667,
+												"shortDesc": "В живописном южноафриканском городке несколько вымирающих видов пингвинов сбиваются в стаю, чтобы искать партнеров, растить птенцов и контактировать с местными жителями.",
+												"ageLevel": 6,
+												"rating": null,
+												"badge": null,
+												"url": "/p/gorod-pingvinov",
+												"categoryAlias": "serials",
+												"genres": ["Документальные", "Драмы", "Триллеры", "Комедии"]
+											},
+											{
+												"_id": "641e14640073f02ab65e75cd",
+												"name": "Город страха: Нью-Йорк против мафии",
+												"origName": "Fear City: New York vs the Mafia",
+												"poster": {
+													"_id": "641e146a0073f02ab65e7605",
+													"src": "/images/641e146a0073f02ab65e7606.jpg"
+												},
+												"dateReleased": "2020-07-22",
+												"duration": 0,
+												"shortDesc": "Пять мафиозных семей правили Нью-Йорком в 1970-х и 1980-х годах, пока группа федеральных агентов не попыталась совершить немыслимое: уничтожить их.",
+												"ageLevel": 16,
+												"rating": null,
+												"badge": null,
+												"url": "/p/gorod-straha-nyu-york-protiv-mafii",
+												"categoryAlias": "serials",
+												"genres": ["Документальные", "Криминал"]
+											},
+											{
+												"_id": "63b337846ce1f3a867dfcf9e",
+												"name": "Ведьмак: Происхождение",
+												"origName": "The Witcher: Blood Origin",
+												"poster": {
+													"_id": "63b337936ce1f3a867dfcfcd",
+													"src": "/images/63b337936ce1f3a867dfcfce.jpg"
+												},
+												"dateReleased": "2022-12-25",
+												"duration": 12383.791666000001,
+												"shortDesc": "Более чем за тысячу лет до появления Геральта из Ривии семь изгоев мира эльфов объединяют свои силы против всемогущей империи.",
+												"ageLevel": 16,
+												"rating": null,
+												"badge": null,
+												"url": "/p/vedmak-proishozhdenie",
+												"categoryAlias": "serials",
+												"genres": ["Фэнтези", "Боевики", "Драмы"]
+											},
+											{
+												"_id": "63c534491c98adb3690e2506",
+												"name": "Ведьмак. Кошмар Волка",
+												"origName": "The Witcher: Nightmare of the Wolf",
+												"poster": {
+													"_id": "63c95ec56396809788e00958",
+													"src": "/images/63c95ec56396809788e00959.jpg"
+												},
+												"dateReleased": "2021-08-23",
+												"duration": 5014.333333,
+												"shortDesc": "Веcемир вырвался из нищеты и стал ведьмаком. Теперь он убивает монстров за монету и славу. Но приходит новый враг, и ему придется столкнуться с демонами своего прошлого.",
+												"ageLevel": 18,
+												"rating": null,
+												"badge": null,
+												"url": "/p/vedmak-koshmar-volka",
+												"categoryAlias": "films",
+												"genres": ["Мультфильмы", "Фэнтези", "Боевики"]
+											},
+											{
+												"_id": "63c1bf0a23c814afb6099e18",
+												"name": "Ведьмак",
+												"origName": "The Witcher",
+												"poster": {
+													"_id": "63e00a92ccaf134edd216857",
+													"src": "/images/63e00a92ccaf134edd216858.jpg"
+												},
+												"dateReleased": "2019-12-20",
+												"duration": 56502.375,
+												"shortDesc": "Геральт из Ривии, наемный охотник за чудовищами, перенесший мутации, идет навстречу своей судьбе в неспокойном мире, где люди часто оказываются куда коварнее чудовищ.",
+												"ageLevel": 18,
+												"rating": 7.25,
+												"badge": null,
+												"url": "/p/vedmak",
+												"categoryAlias": "serials",
+												"genres": ["Фэнтези", "Приключения", "Драмы", "Ужасы"]
+											}
+										]
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
 		"/auth/logout": {
 			"post": {
 				"summary": "Выход из сессии",
 				"tags": ["Auth"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -5636,6 +7191,7 @@
 			"post": {
 				"summary": "Авторизация через яндекс",
 				"tags": ["Auth"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"responses": {
 					"200": {
 						"description": "OK",
@@ -6342,6 +7898,7 @@
 				"summary": "Получить рейтинг и комментарий поставленный пользователем",
 				"tags": ["Movies"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "movieId",
@@ -6377,6 +7934,7 @@
 			"post": {
 				"summary": "Отправка рейтинга(оценки) и отзыва(комментария)",
 				"tags": ["Movies"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -6439,6 +7997,7 @@
 			"delete": {
 				"summary": "Удаления рейтинга и отзыва",
 				"tags": ["Movies"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -6489,6 +8048,7 @@
 				"summary": "Получение статуса на избранное",
 				"tags": ["Movies"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "movieId",
@@ -6524,6 +8084,7 @@
 			"post": {
 				"summary": "Добавление / удаление из избранного",
 				"tags": ["Movies"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -6575,6 +8136,7 @@
 				"summary": "Получение статуса на закладку",
 				"tags": ["Movies"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "movieId",
@@ -6610,6 +8172,7 @@
 			"post": {
 				"summary": "Добавление / удаление из закладок",
 				"tags": ["Movies"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -6664,6 +8227,7 @@
 				"summary": "Получение логов просмотра фильма / серий сериала",
 				"tags": ["Movies"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "movieId",
@@ -6714,6 +8278,7 @@
 			"post": {
 				"summary": "Добавление записи просмотра фильма / серий сериала в логи",
 				"tags": ["Movies"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -6752,6 +8317,7 @@
 			"get": {
 				"summary": "Реферальная программа - получение общих данных",
 				"tags": ["Referral"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"responses": {
 					"200": {
 						"description": "OK",
@@ -6796,6 +8362,7 @@
 				"summary": "Реферальная программа > Список \"Мои рефералы\"",
 				"tags": ["Referral"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "limit",
@@ -6894,6 +8461,7 @@
 				"summary": "Реферальная программа > Список \"История выводов\"",
 				"tags": ["Referral"],
 				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
 						"in": "query",
 						"name": "limit",
@@ -6991,6 +8559,7 @@
 			"patch": {
 				"summary": "Реферальная программа > Изменить данные карты",
 				"tags": ["Referral"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -7032,6 +8601,7 @@
 			"delete": {
 				"summary": "Реферальная программа > Удалить данные карты",
 				"tags": ["Referral"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"responses": {
 					"200": {
 						"description": "OK",
@@ -7056,6 +8626,7 @@
 			"post": {
 				"summary": "Реферальная программа > Создание заявки на вывод c обнулением баланса",
 				"tags": ["Referral"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
 				"responses": {
 					"200": {
 						"description": "OK",
@@ -7072,6 +8643,115 @@
 										"type": "success",
 										"alert": true,
 										"msg": "Создана заявка на вывод средств"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"promocodes/activate": {
+			"patch": {
+				"summary": "Активация промокода",
+				"tags": ["Promocode"],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": { "value": { "type": "string", "description": "Значение промокода" } }
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"alert": { "type": "boolean", "description": "Значение true" },
+										"type": { "type": "string", "description": "надпись 'success'" },
+										"msg": {
+											"type": "string",
+											"description": "Надпись \"Промокод успешно активирован\""
+										},
+										"startAt": {
+											"type": "date",
+											"description": "Начало времени действия активированного промокода"
+										},
+										"finishAt": {
+											"type": "date",
+											"description": "Окончание времени действия активированного промокода"
+										},
+										"tariffName": {
+											"type": "string",
+											"description": "Название тарифа, скидку на который дает промокод. Если discountFormat = 'free-month', то это поле отсутсвует",
+											"required": false
+										},
+										"discountFormat": {
+											"type": "number",
+											"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+										},
+										"sizeDiscount": {
+											"type": "number",
+											"description": "Размер скидки. Если discountFormat = 'free-month', то это поле отсутсвует",
+											"required": false
+										}
+									},
+									"example": {
+										"type": "success",
+										"alert": true,
+										"msg": "Промокод успешно активирован",
+										"startAt": "01.09.2023",
+										"finishAt": "01.12.2023",
+										"tariffName": "3 месяца",
+										"discountFormat": "percentages",
+										"sizeDiscount": 40
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"promocodes/cancel": {
+			"patch": {
+				"summary": "Отмена промокода",
+				"tags": ["Promocode"],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": { "promocodeId": { "type": "string", "description": "Id промокода" } }
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"alert": { "type": "boolean", "description": "Значение true" },
+										"type": { "type": "string", "description": "надпись 'success'" },
+										"msg": {
+											"type": "string",
+											"description": "Надпись \"Действие промокода отменено\""
+										}
+									},
+									"example": {
+										"type": "success",
+										"alert": true,
+										"msg": "Действие промокода отменено"
 									}
 								}
 							}

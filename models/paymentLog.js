@@ -18,6 +18,7 @@ const paymentLogSchema = new mongoose.Schema(
 				'issued-by-admin', // Выдан администратором
 			],
 		},
+		isChecked: Boolean, // Проверен ли пользователем статус подписки
 		startAt: Date, // Дата начала действия тарифа
 		finishAt: Date, // Дата конца действия тарифа
 

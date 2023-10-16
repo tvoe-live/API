@@ -4,7 +4,6 @@ const Movie = require('../models/movie')
 const verify = require('../middlewares/verify')
 const resError = require('../helpers/resError')
 const searchLog = require('../models/searchLog')
-const movieOperations = require('../helpers/movieOperations')
 const getSearchQuery = require('../middlewares/getSearchQuery')
 const ru = require('convert-layout/ru')
 
@@ -593,7 +592,15 @@ router.get('/', getSearchQuery, async (req, res) => {
 	const skip = +(req.query.skip ?? 0)
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
-	const query = req.searchQuery?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+	if (!req.searchQuery) return resError({ res, msg: 'Параметр query не может быть пустой' })
+
+	let query = req.searchQuery?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+	if (
+		(query[0] === '"' && query[query.length - 1] === '"') ||
+		(query[0] === "'" && query[query.length - 1 === "'"])
+	)
+		query = query.slice(1, query.length - 1)
+
 	const editSpace = query?.replace(/ /gi, '\\s.*')
 	const RegExpQuery = new RegExp(editSpace?.replace(/[eё]/gi, '[её]'), 'i')
 
@@ -601,49 +608,59 @@ router.get('/', getSearchQuery, async (req, res) => {
 	const editSpaceEnglish = queryInglishKeyboard?.replace(/ /gi, '\\s.*')
 	const RegExpQueryInglishKeyboard = new RegExp(editSpaceEnglish?.replace(/[eё]/gi, '[её]'), 'i')
 
+	function findMatch(s1, s2) {
+		function editDistance(s1, s2) {
+			s1 = s1.toLowerCase()
+			s2 = s2.toLowerCase()
+
+			var costs = new Array()
+			for (var i = 0; i <= s1.length; i++) {
+				var lastValue = i
+				for (var j = 0; j <= s2.length; j++) {
+					if (i == 0) costs[j] = j
+					else {
+						if (j > 0) {
+							var newValue = costs[j - 1]
+							if (s1.charAt(i - 1) != s2.charAt(j - 1))
+								newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1
+							costs[j - 1] = lastValue
+							lastValue = newValue
+						}
+					}
+				}
+				if (i > 0) costs[s2.length] = lastValue
+			}
+			return costs[s2.length]
+		}
+
+		let longer = s1
+		let shorter = s2
+		if (s1.length < s2.length) {
+			longer = s2
+			shorter = s1
+		}
+		var longerLength = longer.length
+		if (longerLength == 0) {
+			return 1.0
+		}
+		return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength)
+	}
+
 	const mainAgregation = [
 		{
 			$addFields: {
-				similarityScore: {
+				nameWithMissprint: {
 					$function: {
-						body: function (s1, s2) {
-							function editDistance(s1, s2) {
-								s1 = s1.toLowerCase()
-								s2 = s2.toLowerCase()
-
-								var costs = new Array()
-								for (var i = 0; i <= s1.length; i++) {
-									var lastValue = i
-									for (var j = 0; j <= s2.length; j++) {
-										if (i == 0) costs[j] = j
-										else {
-											if (j > 0) {
-												var newValue = costs[j - 1]
-												if (s1.charAt(i - 1) != s2.charAt(j - 1))
-													newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1
-												costs[j - 1] = lastValue
-												lastValue = newValue
-											}
-										}
-									}
-									if (i > 0) costs[s2.length] = lastValue
-								}
-								return costs[s2.length]
-							}
-
-							let longer = s1
-							let shorter = s2
-							if (s1.length < s2.length) {
-								longer = s2
-								shorter = s1
-							}
-							var longerLength = longer.length
-							if (longerLength == 0) {
-								return 1.0
-							}
-							return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength)
-						},
+						body: findMatch,
 						args: [query, '$name'],
+						lang: 'js',
+					},
+				},
+
+				nameInEnglishWithMissprint: {
+					$function: {
+						body: findMatch,
+						args: [queryInglishKeyboard, '$name'],
 						lang: 'js',
 					},
 				},
@@ -663,7 +680,8 @@ router.get('/', getSearchQuery, async (req, res) => {
 							$elemMatch: { name: RegExpQuery },
 						},
 					},
-					{ similarityScore: { $gte: 0.7 } },
+					{ nameWithMissprint: { $gte: 0.7 } },
+					{ nameInEnglishWithMissprint: { $gte: 0.7 } },
 				],
 				publishedAt: { $ne: null },
 			},
@@ -711,6 +729,83 @@ router.get('/', getSearchQuery, async (req, res) => {
 								dataReleased: true,
 								poster: true,
 								url: { $concat: ['/p/', '$alias'] },
+							},
+						},
+						{
+							$addFields: {
+								nameMatch: {
+									$cond: {
+										if: { $regexMatch: { input: '$name', regex: RegExpQuery } },
+										then: 1,
+										else: 0,
+									},
+								},
+								nameEnglishMatch: {
+									$cond: {
+										if: { $regexMatch: { input: '$name', regex: RegExpQueryInglishKeyboard } },
+										then: 1,
+										else: 0,
+									},
+								},
+								nameWithMissprintMatch: {
+									$cond: {
+										if: { $regexMatch: { input: '$nameWithMissprint', regex: RegExpQuery } },
+										then: 1,
+										else: 0,
+									},
+								},
+								nameInEnglishWithMissprintMatch: {
+									$cond: {
+										if: {
+											$regexMatch: { input: '$nameInEnglishWithMissprint', regex: RegExpQuery },
+										},
+										then: 1,
+										else: 0,
+									},
+								},
+								origNameMatch: {
+									$cond: {
+										if: { $regexMatch: { input: '$origName', regex: RegExpQuery } },
+										then: 1,
+										else: 0,
+									},
+								},
+								fullDescMatch: {
+									$cond: {
+										if: { $regexMatch: { input: '$fullDesc', regex: RegExpQuery } },
+										then: 1,
+										else: 0,
+									},
+								},
+								countriesMatch: {
+									$cond: {
+										if: { $regexMatch: { input: '$countries', regex: RegExpQuery } },
+										then: 1,
+										else: 0,
+									},
+								},
+							},
+						},
+						{
+							$sort: {
+								nameMatch: -1,
+								nameEnglishMatch: -1,
+								nameWithMissprintMatch: -1,
+								nameInEnglishWithMissprintMatch: -1,
+								origNameMatch: -1,
+								fullDescMatch: -1,
+								countriesMatch: -1,
+							},
+						},
+						{
+							$project: {
+								nameMatch: false,
+								nameEnglishMatch: false,
+								nameWithMissprintMatch: false,
+								nameInEnglishWithMissprintMatch: false,
+								origNameMatch: false,
+								fullDescMatch: false,
+								countriesMatch: false,
 							},
 						},
 						{ $skip: skip },

@@ -41,6 +41,8 @@ const token = async (req, res, next) => {
 		token = req.headers.authorization
 	} else if (req.headers.cookie) {
 		token = getCookie('token', req.headers.cookie)
+	} else if (req.headers.token) {
+		token = req.headers.token
 	}
 
 	if (!token && res) {

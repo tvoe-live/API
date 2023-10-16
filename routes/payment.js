@@ -7,6 +7,7 @@ const {
 } = process.env
 const express = require('express')
 const router = express.Router()
+
 const axios = require('axios')
 const crypto = require('crypto')
 const mongoose = require('mongoose')
@@ -15,6 +16,8 @@ const Tariff = require('../models/tariff')
 const verify = require('../middlewares/verify')
 const resError = require('../helpers/resError')
 const PaymentLog = require('../models/paymentLog')
+const PromocodeLog = require('../models/promocodeLog')
+const isValidObjectId = require('../helpers/isValidObjectId')
 
 /*
  * Тарифы, создание и обработка платежей
@@ -64,9 +67,140 @@ router.get('/tariffs', async (req, res) => {
 				  )
 				: null
 
+			const benefitsFromPromocodes = await PromocodeLog.aggregate([
+				{
+					$match: {
+						userId: req.user._id,
+						isCancelled: { $ne: true },
+						isPurchaseCompleted: { $ne: true },
+					},
+				},
+				{
+					$lookup: {
+						from: 'promocodes',
+						localField: 'promocodeId',
+						foreignField: '_id',
+						pipeline: [
+							{
+								$match: {
+									startAt: {
+										$lte: new Date(),
+									},
+									finishAt: {
+										$gte: new Date(),
+									},
+									discountFormat: { $ne: 'free-month' },
+								},
+							},
+							{
+								$project: {
+									_id: true,
+									tariffName: true,
+									discountFormat: true,
+									sizeDiscount: true,
+								},
+							},
+						],
+						as: 'promocode',
+					},
+				},
+				{ $unwind: { path: '$promocode' } },
+				{
+					$project: {
+						tariffName: '$promocode.tariffName',
+						discountFormat: '$promocode.discountFormat',
+						sizeDiscount: '$promocode.sizeDiscount',
+						promocodeId: '$promocode._id',
+					},
+				},
+				{
+					$group: {
+						_id: { tariffName: '$tariffName', discountFormat: '$discountFormat' }, // группируем по уникальным значениям полей tariffName и discountFormat
+						maxDiscount: { $max: '$sizeDiscount' }, // находим максимальное значение поля sizeDiscount
+						documents: { $push: '$$ROOT' },
+					},
+				},
+				{
+					$addFields: {
+						promocodeId: {
+							$let: {
+								vars: {
+									documentWithMaxDiscount: {
+										$first: {
+											$filter: {
+												input: '$documents',
+												as: 'document',
+												cond: { $eq: ['$$document.sizeDiscount', '$maxDiscount'] },
+											},
+										},
+									},
+								},
+								in: '$$documentWithMaxDiscount.promocodeId',
+							},
+						},
+					},
+				},
+				{
+					$group: {
+						_id: '$_id.tariffName',
+						benefits: {
+							$push: {
+								discountFormat: '$_id.discountFormat',
+								sizeDiscount: '$maxDiscount',
+								promocodeId: '$promocodeId',
+							},
+						},
+					},
+				},
+			])
+
 			tariffsResult = tariffsResult.map((tariff) => {
 				let allowSubscribe = true
 				let finishOfSubscriptionIn
+				let bonucesPromocodes
+
+				const existBenefitsFromPromocodes = benefitsFromPromocodes.find(
+					(benefit) => benefit._id === tariff.name
+				)
+
+				if (existBenefitsFromPromocodes) {
+					const benefitsWithBestPrice = existBenefitsFromPromocodes?.benefits.reduce(
+						(acc, item) => {
+							switch (item.discountFormat) {
+								case 'percentages':
+									const currentPricePercentagesCount =
+										(tariff.price * (100 - item.sizeDiscount)) / 100
+									if (currentPricePercentagesCount < acc.bestPrice) {
+										acc.bestPrice = currentPricePercentagesCount
+										acc.info = {
+											sizeDiscount: item.sizeDiscount,
+											discountFormat: item.discountFormat,
+											promocodeId: item.promocodeId,
+										}
+									}
+									return acc
+
+								case 'rubles':
+									const currentPriceRublesDiscount = tariff.price - item.sizeDiscount
+									if (currentPriceRublesDiscount < acc.bestPrice) {
+										acc.bestPrice = currentPriceRublesDiscount
+										acc.info = {
+											sizeDiscount: item.sizeDiscount,
+											discountFormat: item.discountFormat,
+											promocodeId: item.promocodeId,
+										}
+									}
+									return acc
+
+								default:
+									return acc
+							}
+						},
+						{ bestPrice: Number(tariff.price) }
+					)
+
+					bonucesPromocodes = benefitsWithBestPrice
+				}
 
 				if (subscribeTariff) {
 					// Запретить докупать текущий или менее по длительности тарифы
@@ -83,6 +217,7 @@ router.get('/tariffs', async (req, res) => {
 					...tariff,
 					allowSubscribe,
 					finishOfSubscriptionIn,
+					bonucesPromocodes,
 				}
 			})
 		}
@@ -99,9 +234,6 @@ router.get('/tariffs', async (req, res) => {
 router.post('/createPayment', verify.token, async (req, res) => {
 	const { selectedTariffId } = req.body
 
-	const successURL = new URL(`${CLIENT_URL}/payment/status`)
-	const failURL = new URL(`${CLIENT_URL}/payment/status`)
-
 	if (!selectedTariffId) {
 		return resError({
 			res,
@@ -109,6 +241,183 @@ router.post('/createPayment', verify.token, async (req, res) => {
 			msg: 'Требуется выбрать тариф',
 		})
 	}
+
+	if (!isValidObjectId(selectedTariffId)) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Не валидное значение selectedTariffId',
+		})
+	}
+
+	const benefitsFromPromocodes = await PromocodeLog.aggregate([
+		{
+			$match: {
+				userId: req.user._id,
+				isCancelled: { $ne: true },
+				isPurchaseCompleted: { $ne: true },
+			},
+		},
+		{
+			$lookup: {
+				from: 'promocodes',
+				localField: 'promocodeId',
+				foreignField: '_id',
+				pipeline: [
+					{
+						$match: {
+							startAt: {
+								$lte: new Date(),
+							},
+							finishAt: {
+								$gte: new Date(),
+							},
+							discountFormat: { $ne: 'free-month' },
+						},
+					},
+					{
+						$lookup: {
+							from: 'tariffs',
+							localField: 'tariffName',
+							foreignField: 'name',
+							pipeline: [
+								{
+									$match: {
+										_id: mongoose.Types.ObjectId(selectedTariffId),
+									},
+								},
+								{
+									$project: {
+										price: true,
+									},
+								},
+							],
+							as: 'tariff',
+						},
+					},
+					{
+						$project: {
+							tariffName: true,
+							discountFormat: true,
+							sizeDiscount: true,
+							tariff: true,
+						},
+					},
+				],
+				as: 'promocode',
+			},
+		},
+		{ $unwind: { path: '$promocode' } },
+		{
+			$project: {
+				promocodeId: '$promocodeId',
+				tariffName: '$promocode.tariffName',
+				discountFormat: '$promocode.discountFormat',
+				sizeDiscount: '$promocode.sizeDiscount',
+				price: '$promocode.tariff.price',
+				tariffId: '$promocode.tariff._id',
+			},
+		},
+		{ $unwind: { path: '$price' } },
+		{
+			$group: {
+				_id: { tariffName: '$tariffName', discountFormat: '$discountFormat' }, // группируем по уникальным значениям полей _id и discountFormat
+				maxDiscount: { $max: '$sizeDiscount' }, // находим максимальное значение поля sizeDiscount
+				price: { $first: '$price' },
+				documents: { $push: '$$ROOT' },
+			},
+		},
+		{
+			$addFields: {
+				promocodeId: {
+					$let: {
+						vars: {
+							documentWithMaxDiscount: {
+								$first: {
+									$filter: {
+										input: '$documents',
+										as: 'document',
+										cond: { $eq: ['$$document.sizeDiscount', '$maxDiscount'] },
+									},
+								},
+							},
+						},
+						in: '$$documentWithMaxDiscount.promocodeId',
+					},
+				},
+			},
+		},
+		{
+			$group: {
+				_id: '$_id.tariffName',
+				initialPrice: { $first: '$price' },
+				benefits: {
+					$push: {
+						discountFormat: '$_id.discountFormat',
+						sizeDiscount: '$maxDiscount',
+						promocodeId: '$promocodeId',
+					},
+				},
+			},
+		},
+		{
+			$addFields: {
+				bestPrice: {
+					$let: {
+						vars: {
+							bestDiscount: {
+								$reduce: {
+									input: '$benefits',
+									initialValue: {
+										price: '$initialPrice',
+										promocodeId: null,
+									},
+									in: {
+										$let: {
+											vars: {
+												currentPrice: {
+													$cond: [
+														{ $eq: ['$$this.discountFormat', 'rubles'] },
+														{ $subtract: ['$initialPrice', '$$this.sizeDiscount'] },
+														{
+															$multiply: [
+																'$initialPrice',
+																{ $divide: [{ $subtract: [100, '$$this.sizeDiscount'] }, 100] },
+															],
+														},
+													],
+												},
+											},
+											in: {
+												$cond: [
+													{ $lt: ['$$currentPrice', '$$value.price'] },
+													{
+														price: '$$currentPrice',
+														promocodeId: '$$this.promocodeId',
+													},
+													'$$value',
+												],
+											},
+										},
+									},
+								},
+							},
+						},
+						in: {
+							value: '$$bestDiscount.price',
+							promocodeId: '$$bestDiscount.promocodeId',
+						},
+					},
+				},
+			},
+		},
+	])
+
+	const priceAfterDiscount = benefitsFromPromocodes[0]?.bestPrice?.value
+	const promocodeId = benefitsFromPromocodes[0]?.bestPrice?.promocodeId
+
+	const successURL = new URL(`${CLIENT_URL}/payment/status`)
+	const failURL = new URL(`${CLIENT_URL}/payment/status`)
 
 	const tariffs = await Tariff.find(
 		{},
@@ -131,6 +440,8 @@ router.post('/createPayment', verify.token, async (req, res) => {
 			msg: 'Тарифа не существует',
 		})
 	}
+
+	const price = priceAfterDiscount?.toFixed(2) || selectedTariff.price
 
 	// Если оформлена подписка, можно только увеличить тариф большей длительности
 	if (subscribeTariff) {
@@ -163,6 +474,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 			type: 'trial',
 			userId: req.user._id,
 			tariffId: selectedTariff._id,
+			isChecked: false,
 		}).save()
 
 		// В url успешной страницы передать id созданного лога
@@ -192,7 +504,24 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		type: 'paid',
 		userId: req.user._id,
 		tariffId: selectedTariff._id,
+		isChecked: false,
 	}).save()
+
+	// findOneAndUpdate
+	if (promocodeId) {
+		await PromocodeLog.findOneAndUpdate(
+			{
+				promocodeId,
+				userId: req.user._id,
+			},
+			{
+				$set: {
+					isPurchaseCompleted: true,
+				},
+				$inc: { __v: 1 },
+			}
+		)
+	}
 
 	// В url успешной страницы передать id созданного лога
 	successURL.searchParams.set('id', paymentLog._id)
@@ -208,7 +537,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		NotificationURL: `${API_URL}/payment/notification`, // URL для уведомлений об оплате
 		Password: PAYMENT_TERMINAL_PASSWORD, // Пароль терминала
 
-		Amount: selectedTariff.price * 100, // Цена тарифа (в коп)
+		Amount: price * 100, // Цена тарифа (в копейках)
 		OrderId: paymentLog._id, // ID заказа
 		Description: `Подписка на ${selectedTariff.name}`, // Описание заказа (для СБП)
 		//CustomerKey:
@@ -219,9 +548,9 @@ router.post('/createPayment', verify.token, async (req, res) => {
 			Items: [
 				{
 					Name: `Подписка на ${selectedTariff.name}`, // Наименование товара
-					Price: selectedTariff.price * 100, // Цена в копейках
+					Price: price * 100, // Цена в копейках
 					Quantity: 1, // Количество или вес товара
-					Amount: selectedTariff.price * 100, // Стоимость товара в копейках. Произведение Quantity и Price
+					Amount: price * 100, // Стоимость товара в копейках. Произведение Quantity и Price
 					PaymentMethod: 'lfull_prepayment', // Признак способа расчёта (предоплата 100%)
 					PaymentObject: 'commodity', // Признак предмета расчёта (товар)
 					Tax: 'vat20', // Ставка НДС (ставка 20%)
@@ -326,6 +655,7 @@ router.post('/notification', async (req, res) => {
 			{ _id: paymentLogId },
 			{
 				$set: {
+					isChecked: false,
 					status,
 				},
 			}
@@ -339,6 +669,7 @@ router.post('/notification', async (req, res) => {
 		{ _id: paymentLogId },
 		{
 			$set: {
+				isChecked: false,
 				finishAt,
 				startAt: paymentStartAt,
 				pan,
@@ -459,16 +790,31 @@ router.get('/status', async (req, res) => {
 	const { id } = req.query
 
 	try {
-		const paymentLog = await PaymentLog.findOne(
+		const paymentLog = await PaymentLog.findOneAndUpdate(
 			{ _id: id },
+			{ $set: { isChecked: true } },
 			{
+				tariffId: true,
+				isChecked: true,
 				type: true,
 				status: true,
 				finishAt: true,
 			}
 		)
 
-		return res.status(200).json(paymentLog)
+		const tariff = await Tariff.findOne({ _id: paymentLog.tariffId })
+
+		return res.status(200).json({
+			_id: paymentLog._id,
+			userId: paymentLog.userId,
+			type: paymentLog.type,
+			status: paymentLog.status,
+			isChecked: paymentLog.isChecked ?? true,
+			createdAt: paymentLog.createdAt,
+			updatedAt: paymentLog.updatedAt,
+			__v: paymentLog.__v,
+			tariff,
+		})
 	} catch (err) {
 		return resError({ res, msg: err })
 	}
