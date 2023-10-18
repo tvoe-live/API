@@ -6288,6 +6288,75 @@ paths:
                 example:
                   token: eyJhbGciOiJIUzI1NiIsInR1cCI6IkpXVCJ9.eyJpZCI6IjY0ODA4ODZjMmZjMzhkY2E4MDQyOThkMCIsImlhdCI6MTY4ODc1NDAwMywiZXhwIjoxNzIwMzExNjAzfQ.sTY0dun0jUgAS96QXciWl7V-J7OeurvxmSAXjNp-AFQ
 
+  /sms/login:
+    patch:
+      summary: Авторизация через cмс
+      tags:
+        - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: number
+                  description: Номер телефона, начинающегося с цифры "7" и состоящий из 11 цифр без пробелов и разделяющих символов. Например 79107718366
+                  required: true
+                  example: 79107718366
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    description: 'success'
+                  msg:
+                    type: string
+                    description: 'Сообщение с кодом отправлено по указанному номеру телефона'
+                example:
+                  type: 'success'
+                  msg: 'Сообщение с кодом отправлено по указанному номеру телефона'
+
+  /sms/compare:
+    patch:
+      summary: Авторизация через cмс
+      tags:
+        - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone:
+                  type: number
+                  description: Номер телефона, начинающегося с цифры "7" и состоящий из 11 цифр без пробелов и разделяющих символов.
+                  required: true
+                  example: 79107718366
+                code:
+                  type: number
+                  description: 4-eх значный код, отправленный по смс
+                  required: true
+                  example: 7345
+
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT token
+                example:
+                  token: eyJhbGciOiJIUzI1NiIsInR1cCI6IkpXVCJ9.eyJpZCI6IjY0ODA4ODZjMmZjMzhkY2E4MDQyOThkMCIsImlhdCI6MTY4ODc1NDAwMywiZXhwIjoxNzIwMzExNjAzfQ.sTY0dun0jUgAS96QXciWl7V-J7OeurvxmSAXjNp-AFQ
   /movies:
     get:
       summary: Список фильмов и сериалов
