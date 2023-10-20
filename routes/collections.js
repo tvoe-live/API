@@ -3,6 +3,7 @@ const router = express.Router()
 const Movie = require('../models/movie')
 const Category = require('../models/category')
 const resError = require('../helpers/resError')
+const resSuccess = require('../helpers/resSuccess')
 const movieOperations = require('../helpers/movieOperations')
 const verify = require('../middlewares/verify')
 const MoviePageLog = require('../models/moviePageLog')
@@ -393,6 +394,7 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 		movieId: true,
 		endTime: true,
 		updatedAt: true,
+		isDeletedFromContinueWathcing: true,
 		movie: {
 			name: '$movie.name',
 			alias: '$movie.alias',
@@ -441,6 +443,7 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 				},
 			},
 		],
+		isDeletedFromContinueWathcing: { $ne: true },
 	}
 
 	try {
@@ -497,6 +500,29 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 		return res.status(200).json(logs[0])
 	} catch (e) {
 		return res.json(e)
+	}
+})
+
+router.delete('/continueWatching/:id', verify.token, async (req, res) => {
+	const logId = req.params.id
+
+	try {
+		await MoviePageLog.updateOne(
+			{ _id: logId },
+			{
+				$set: {
+					isDeletedFromContinueWathcing: true,
+				},
+			}
+		)
+
+		return resSuccess({
+			res,
+			alert: true,
+			msg: 'Удалено из продолжить просмотр',
+		})
+	} catch (err) {
+		return resError({ res, msg: err })
 	}
 })
 

@@ -5793,6 +5793,44 @@
 						}
 					}
 				}
+			},
+			"delete": {
+				"summary": "Удаление из подборки \"продолжить просмотр\"",
+				"tags": ["Collections"],
+				"parameters": [
+					{ "$ref": "#/components/parameters/AuthorizationHeader" },
+					{
+						"in": "params",
+						"name": "id",
+						"schema": { "type": "string" },
+						"description": "Id записи которую необходимо удалить"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"type": { "type": "string", "description": "Надпись \"success\"" },
+										"alert": { "type": "boolean", "description": "Значение true" },
+										"msg": {
+											"type": "string",
+											"description": "Надпись \"Удалено из продолжить просмотр\""
+										}
+									},
+									"example": {
+										"type": "success",
+										"alert": true,
+										"msg": "Удалено из продолжить просмотр"
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 		},
 		"/collections/possibleYouLike": {
