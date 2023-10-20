@@ -15,30 +15,966 @@ components:
       schema:
         type: string
         default: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY1MDQ1ZjRiMWJkNmRkYzM2NDI5MDlmYiIsImlhdCI6MTY5NjQ4OTA0MCwiZXhwIjoxNzI4MDQ2NjQwfQ.hhoCzqDtsVMlXZ1BBzwJOgqwJPGGQr-kTNl05aNWQ_Q
+  schemas:
+    AuthLog:
+      type: object
+      properties:
+        userId:
+          type: string
+          description: Id пользователя
+          example: 63ac7a31b2c93ed2212180d0
+        type:
+          type: string
+          enum:
+            - LOGIN
+            - LOGOUT
+          example: LOGIN
+        token:
+          type: string
+          description: JWT token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYzYWM3YTMxYjJjOTNlZDIyMTIxODBkMCIsImlhdCI6MTY3MjY3OTIxNywiZXhwIjoxNzA0MjM2ODE3fQ.gngYwApyYXgzS2mKtzQU946tH2LrG7ApIVDtFE-2pgo
+    Category:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Фильмы или Сериалы
+          example: Фильмы
+        alias:
+          type: string
+          description: films или serials
+          example: films
+        aliasInUrl:
+          type: string
+          description: filmy или serialy
+          example: films
+        genres:
+          type: array
+          description: Массив объектов
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Название категории на русском
+                example: Биографии
+              alias:
+                type: string
+                description: Alias категории на английском
+                example: biografii
+    CleanupLog:
+      type: object
+      properties:
+        src:
+          type: string
+          description: источник
+          example: Нет примера
+        thumbnail:
+          type: string
+          description: thumbnail
+          example: Нет примера
+    Movie:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Название
+          example: Армия воров
+        origName:
+          type: string
+          description: Оригинальное название
+          example: Army of Thieves
+        shortDesc:
+          type: string
+          description: Краткое описание
+          example: В этом приквеле «Армии мертвецов» загадочная женщина нанимает банковского служащего Дитера, чтобы тот помог взломать три легендарных сейфа в разных частях Европы.
+        fullDesc:
+          type: string
+          description: Полное описание
+          example: Скромный банковский служащий Себастиан ведёт непопулярный видеоблог, в котором рассказывает об увлечении всей жизни — взломе сейфов. Разумеется, законопослушный парень никогда не применял свои навыки в криминальной деятельности, но однажды на него выходит команда разыскиваемых Интерполом преступников и делает предложение, от которого невозможно отказаться. Пока в Штатах разворачивается зомби-эпидемия, они планируют взломать три находящихся в Европейских банках легендарных сейфа, созданных великим мастером Хансом Вагнером по мотивам опер своего знаменитого тёзки.
+        ageLevel:
+          type: number
+          description: Возрастное ограничение
+          example: 16
+        dateReleased:
+          type: string
+          description: Дата выпуска (HHHH-MM-DD формат)
+          example: 2021-10-28
+        countries:
+          type: array
+          description: Массив стран
+          example: [Германия, США]
+          items:
+            type: string
+            description: Страна
+            example: Германия
+        alias:
+          type: string
+          description: films или serials
+          example: films
+        duration:
+          type: string
+          description: Длительность фильма в секундах
+          example: 34534
+        categoryAlias:
+          type: string
+          description: Категория - films или serials
+          example: films
+        rating:
+          type: number
+          description: Рейтинг фильма по оценкам пользователей ( от 1 до 10)
+          example: 7
+        genresAliases:
+          type: array
+          description: Массив жанров
+          example: ['boeviki', 'trillery']
+          items:
+            type: string
+        badge:
+          type: object
+          description: Бейдж
+          reqired: false
+          properties:
+            type:
+              type: string
+              descriptipn: newSeason - новый сезон, premiere - премьера
+            startAt:
+              type: date
+              descriptipn: Дата начала показа бейджа
+            finishAt:
+              type: date
+              descriptipn: Дата окончания показа бейджа
+        persons:
+          required: false
+          type: array
+          description: Список актёров и преставителей съемочной группы
+          uniqueItems: true
+          minItems: 0
+          items:
+            type: object
+            properties:
+              _id:
+                type: string
+                description: mongoose.ObjectId
+              name:
+                type: string
+                description: Имя и фамилия человека
+              type:
+                type: string
+                description: director - режиссер, actor - актер, producer - продюсер, screenwriter - сценарист, operator - оператор
+        series:
+          type: array
+          description: Список серий. Приходят в во вложенном массиве
+          uniqueItems: true
+          minItems: 0
+          items:
+            type: array
+            description: Список серий
+            uniqueItems: true
+            minItems: 0
+            items:
+              type: object
+              properties:
+                _id:
+                  type: string
+                  description: Id cерии (mongoose.ObjectId)
+                src:
+                  type: string
+                  description: Источник на файл ( путь к исходнику )
+                duration:
+                  type: number
+                  description: Продолжительность серии
+                thumbnail:
+                  type: string
+                  description: Миниатюра (кадр из видео)
+                version:
+                  type: number
+                  description: Версия видео
+                status:
+                  type: string
+                  description: UPLOADING - загружается, READY - доступно к просмотру
+                managerUserId:
+                  type: string
+                  description: Id менеджера, загружающего видео
+                lastUpdateAt:
+                  type: date
+                  description: Дата последнего обновления (для загрузки и удаления)
+                qualities:
+                  type: array
+                  description: Доступные качества видео
+                  items:
+                    type: string
+                audio:
+                  type: array
+                  description: Названия аудиодорожек
+                  items:
+                    type: string
+                subtitles:
+                  type: array
+                  description: Названия субтитров
+                  items:
+                    type: string
+                files:
+                  type: object
+                  properties:
+                    fragments:
+                      type: object
+                      properties:
+                        420p:
+                          type: array
+                          items:
+                            type: number
+                        720p:
+                          type: array
+                          items:
+                            type: number
+                        1080p:
+                          type: array
+                          items:
+                            type: number
+                    thumbnails:
+                      type: number
+                      description: Количество склеек миниатюр
+        films:
+          type: array
+          description: Список из одного объекта - фильма, если categoryAlias = films. Если categoryAlias = series, то здесь null
+          uniqueItems: true
+          minItems: 0
+          items:
+            type: object
+            properties:
+              _id:
+                type: string
+                description: Id фильма (mongoose.ObjectId)
+              src:
+                type: string
+                description: Источник на файл ( путь к исходнику )
+              duration:
+                type: number
+                description: Длительность фильма
+              thumbnail:
+                type: string
+                description: Миниатюра (кадр из видео)
+              version:
+                type: number
+                description: Версия видео
+              status:
+                type: string
+                description: UPLOADING - загружается, READY - доступно к просмотру
+              managerUserId:
+                type: string
+                description: Id менеджера, загружающего видео
+              lastUpdateAt:
+                type: date
+                description: Дата последнего обновления (для загрузки и удаления)
+              qualities:
+                type: array
+                description: Доступные качества видео
+                items:
+                  type: string
+              audio:
+                type: array
+                description: Названия аудиодорожек
+                items:
+                  type: string
+              subtitles:
+                type: array
+                description: Названия субтитров
+                items:
+                  type: string
+              files:
+                type: object
+                properties:
+                  fragments:
+                    type: object
+                    properties:
+                      420p:
+                        type: array
+                        items:
+                          type: number
+                      720p:
+                        type: array
+                        items:
+                          type: number
+                      1080p:
+                        type: array
+                        items:
+                          type: number
+                  thumbnails:
+                    type: number
+                    description: Количество склеек миниатюр
+        createdAt:
+          type: Date
+          description: Дата создания
+        updatedAt:
+          type: Date
+          description: Дата обновления
+        poster:
+          type: object
+          properties:
+            id:
+              type: string
+              description: mongoose.ObjectId
+            src:
+              type: string
+              description: Путь к файлу изображению постера
+        cover:
+          type: object
+          properties:
+            id:
+              type: string
+              description: Mongoose.ObjectId
+            src:
+              type: string
+              description: Путь к файлу изображению обложки
+        trailer:
+          type: object
+          properties:
+            id:
+              type: string
+              description: Mongoose.ObjectId
+            src:
+              type: string
+              description: Путь к файлу изображению обложки
+            thumbnail:
+              type: string
+              description: Миниатюра (кадр из видео)
+            duration:
+              type: number
+              description: Длительность
+        logo:
+          type: object
+          properties:
+            id:
+              type: string
+              description: mongoose.ObjectId
+            src:
+              type: string
+              description: Путь к файлу изображению логотипа
+        raisedUpAt:
+          type: Date
+          description: Дата поднятия в списке (для актуальности)
+        publishedAt:
+          type: Date
+          description: Дата публикации
+        willPublishedAt:
+          type: Date
+          description: Планируемая дата публикации
+        deletedAt:
+          type: Date
+          description: Дата удаления
+        creatorUserId:
+          type: Date
+          description: ID создателя
 
-tags:
-  - name: Profile
-    description: Профиль
-  - name: Admin
-    description: Административная панель
-  - name: Catalog
-    description: Каталог
-  - name: Collections
-    description: Коллекции
-  - name: Sitemap
-    description: Данные для sitemap.xml
-  - name: Payment
-    description: Тарифы, создание и обработка платежей
-  - name: Search
-    description: Поиск
-  - name: Auth
-    description: Авторизация / регистрация через Яндекс и разрушение сессии
-  - name: Movies
-    description: Фильмы и сериалы
-  - name: Referral
-    description: Реферальная программа
-  - name: Promocode
-    description: Промокоды
+    MovieBookmark:
+      type: object
+      properties:
+        movieId:
+          type: string
+          description: Id фильма
+        userId:
+          type: string
+          description: Id пользователя
+        isBookmark:
+          type: boolean
+          description: добавлен ли фильм в закладки
+
+    MovieFavorite:
+      type: object
+      properties:
+        movieId:
+          type: string
+          description: Id фильма
+        userId:
+          type: string
+          description: Id пользователя
+        isFavorite:
+          type: boolean
+          description: добавлен ли фильм в избранное
+
+    MoviePageLog:
+      type: object
+      properties:
+        movieId:
+          type: string
+          description: Id фильма
+        userId:
+          type: string
+          description: Id пользователя
+        videoId:
+          type: string
+          description: Id файла видео
+        startTime:
+          type: number
+          description: Время начала просмотра
+        endTime:
+          type: number
+          description: Время окончания просмотра
+        referer:
+          type: string
+          description: добавлен ли фильм в избранное
+        device:
+          type: object
+          description: Информация про устройство пользователя с которого он смотрел фильм/сериал
+          properties:
+            ip:
+              type: string
+              description: ip адрес
+              example: 37.144.237.60
+            os:
+              type: string
+              description: Операционная система устройства
+              example: OS X
+            browser:
+              type: string
+              description: Браузер
+              example: Chrome
+            version:
+              type: string
+              description: Версия браузера
+              example: 108.0.0.0
+            platform:
+              type: string
+              description: Платформа устройства
+              example: Apple Mac
+            isBot:
+              type: boolean
+              description: Является ли пользователь ботом
+            isMobile:
+              type: boolean
+              description: Является ли устройство мобильным
+            isDesktop:
+              type: boolean
+              description: Является ли устройство десктопом
+
+    MovieRating:
+      type: object
+      properties:
+        movieId:
+          type: string
+          description: Id фильма
+        userId:
+          type: string
+          description: Id пользователя
+        rating:
+          type: number
+          description: Оценка от пользователя
+        review:
+          type: number
+          description: Комментарий от пользователя
+        isPublished:
+          type: boolean
+          description: Был ли отзыв опубликован
+        isDeleted:
+          type: boolean
+          description: Был ли отзыв удален
+
+    Notification:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Название уведомления
+        description:
+          type: string
+          description: Описание уведомления
+        type:
+          type: string
+          description: Тип уведомления. Может быть Новости сервиса, подарки и акции, профиль (напоминание об окончании подписки и индивидуальные предложения), Новинки кинематографа, новинки на сервисе, новинки из раздела "Избранное" и "Буду смотреть"
+          enum:
+            [
+              'SERVICE_NEWS',
+              'GIFTS_AND_PROMOTIONS',
+              'PROFILE',
+              'CINEMA_NEWS',
+              'SERVICE_NEWS',
+              'FAVOTITES_AND_BOOKMARKS_NEWS',
+            ]
+        willPublishedAt:
+          type: date
+          description: Планируемая дата публикации
+        isPublished:
+          type: boolean
+          description: Был ли отзыв опубликован
+        deleted:
+          type: boolean
+          description: Было ли уведомление удалено
+        link:
+          type: string
+          description: Ссылка
+        receiversIds:
+          type: array
+          description: Массив получателей сообщения. Если это поле null, значит уведмоление отправляется всем пользователям
+          items:
+            type: string
+        img:
+          type: object
+          properties:
+            _id:
+              type: string
+              description: Id изображения
+            src:
+              type: string
+              description: Путь к файлу
+
+    NotificationReadLog:
+      type: object
+      properties:
+        notificationId:
+          type: string
+          description: Id уведомления
+        userId:
+          type: string
+          description: Id пользователя
+
+    PaymentLog:
+      type: object
+      properties:
+        tariffId:
+          type: string
+          description: Id тарифа
+        userId:
+          type: string
+          description: Id пользователя
+        type:
+          type: string
+          description: Тип платежного лога.  'trial' -  Пробная подписка,  'paid' - Оплачен пользователем, 	'issued-by-admin' - Выдан администратором
+          enum: ['trial', 'paid', 'issued-by-admin']
+        isChecked:
+          type: boolean
+          description: Проверен ли пользователем статус подписки
+        startAt:
+          type: date
+          description: Дата начала действия тарифа
+        finishAt:
+          type: date
+          description: Дата конца действия тарифа
+        terminalKey:
+          type: string
+          description: Идентификатор терминала. Выдается Мерчанту Тинькофф Кассой при заведении терминала.
+        amount:
+          type: number
+          description: Сумма пополнения
+        refundedAmount:
+          type: number
+          description: Сумма возврата или частичного возврата
+        orderId:
+          type: string
+          description: Идентификатор заказа в системе Мерчанта
+        success:
+          type: boolean
+          description: Выполнение платежа
+        status:
+          type: string
+          description: Статус платежа.  'AUTHORIZED' -  Пробная подписка,  'CONFIRMED' - Оплачен пользователем, 'PARTIAL_REVERSED' - Частичная отмена, 'REVERSED' - Операция отменена, 'PARTIAL_REFUNDED' - Произведён частичный возврат, 'REFUNDED' - Произведён возврат, 'REJECTED' - Списание денежных средств закончилась ошибкой, '3DS_CHECKING' - Автоматическое закрытие сессии, которая превысила срок пребывания в статусе 3DS_CHECKING (более 36 часов)
+          enum:
+            [
+              'AUTHORIZED',
+              'CONFIRMED',
+              'PARTIAL_REVERSED',
+              'REVERSED',
+              'PARTIAL_REFUNDED',
+              'REFUNDED',
+              'REJECTED',
+              '3DS_CHECKING',
+            ]
+        paymentId:
+          type: string
+          description: Уникальный идентификатор транзакции в системе Тинькофф Кассы
+        errorCode:
+          type: string
+          description: Код ошибки. «0» в случае успеха
+        message:
+          type: string
+          description: Краткое описание ошибки
+        details:
+          type: string
+          description: Подробное описание ошибки
+        rebillId:
+          type: string
+          description: Идентификатор автоплатежа
+        cardId:
+          type: number
+          description: Идентификатор карты в системе Тинькофф Кассы
+        pan:
+          type: string
+          description: Замаскированный номер карты/Замаскированный номер телефона
+        expDate:
+          type: string
+          description: Срок действия карты В формате MMYY, где YY — две последние цифры года
+        token:
+          type: string
+          description: Токен для проверки подлинности запроса (удаляется после успешной операции)
+
+    Promocode:
+      type: object
+      properties:
+        maxAmountActivation:
+          type: number
+          description: Максимальное количество возможных активаций промокода
+        currentAmountActivation:
+          type: number
+          description: Текущее количество активаций промокода
+        tariffName:
+          type: string
+          description: Вид тарифа
+          enum: ['1 месяц', '3 месяца', '6 месяцев']
+        isOnlyForNewUsers:
+          type: boolean
+          description: Доступен ли промокод только новым пользователем или нет. Пользователь считается новым если он прежде не оплачивал подписку
+        isActive:
+          type: boolean
+          description: Является ли промокод активным в данный момент
+        sizeDiscount:
+          type: number
+          description: Размер скидки - число в рублях (если discountFormat = rubles) или процентах ( если discountFormat = percentages). Если discountFormat = free-month, тогда sizeDiscount = null
+        value:
+          type: string
+          description: Комбинация символов, которую пользователь вводит в качестве значения промокода
+        startAt:
+          type: date
+          description: Дата начала действия промокода
+        finishAt:
+          type: date
+          description: Дата конца действия промокода
+        deleted:
+          type: boolean
+          description: Удален ли промокод
+
+    PromocodesLog:
+      type: object
+      properties:
+        promocodeId:
+          type: string
+          description: Id промокода
+        userId:
+          type: string
+          description: Id пользователя
+        isCancelled:
+          type: boolean
+          description: Отменен ли данный промокод пользователем
+        isPurchaseCompleted:
+          type: boolean
+          description: Совершена ли покупка по указанному промокоду
+
+    ReferralWithdrawalLog:
+      type: object
+      properties:
+        approverUserId:
+          type: string
+          description: ID сотрудника ответившего на заявку
+        userId:
+          type: string
+          description: ID пользователя отправившего заявку
+        amount:
+          type: number
+          description: Сумма вывода
+        status:
+          type: string
+          description: Статус заявки. canceled - отказ, pending - в процессе, success - успешно
+          card:
+            description: Данные карты для вывода баланса
+            type: object
+            properties:
+              number:
+                type: string
+                description: Номер карты
+              cardholder:
+                type: string
+                description: Владелец карты
+
+    SearchLog:
+      type: object
+      properties:
+        query:
+          type: string
+          description: Запрос в поисковой строке
+        userId:
+          type: string
+          description: ID пользователя
+        device:
+          type: object
+          description: Информация про устройство пользователя с которого он производил поиск
+          properties:
+            ip:
+              type: string
+              description: ip адрес
+              example: 37.144.237.60
+            os:
+              type: string
+              description: Операционная система устройства
+              example: OS X
+            browser:
+              type: string
+              description: Браузер
+              example: Chrome
+            version:
+              type: string
+              description: Версия браузера
+              example: 108.0.0.0
+            platform:
+              type: string
+              description: Платформа устройства
+              example: Apple Mac
+            isBot:
+              type: boolean
+              description: Является ли пользователь ботом
+            isMobile:
+              type: boolean
+              description: Является ли устройство мобильным
+            isDesktop:
+              type: boolean
+              description: Является ли устройство десктопом
+
+    Tariff:
+      type: object
+      description: Список тарифов
+      properties:
+        name:
+          type: string
+          description: Название
+        sort:
+          type: string
+          description: Сортировка
+        price:
+          type: number
+          description: Цена
+        hidden:
+          type: boolean
+          description: Скрыт ли нет
+        duration:
+          type: number
+          description: Длительность
+
+    User:
+      type: object
+      description: Пользователи
+      properties:
+        initial_email:
+          type: string
+          description: Емайл полученный от яндекса через oath
+        initial_id:
+          type: string
+          description: Id полученный от яндекса через oath
+        initial_sex:
+          type: string
+          description: Пол полученный от яндекса через oath
+        initial_phone:
+          type: string
+          description: Телефон полученный от яндекса через oath
+        initial_birthday:
+          type: string
+          description: День рождения полученный от яндекса через oath
+        initial_firstname:
+          type: string
+          description: Имя полученное от яндекса через oath
+        initial_lastname:
+          type: string
+          description: Фамилия полученная от яндекса через oath
+        initial_client_id:
+          type: string
+        initial_displayName:
+          type: string
+          description: Отоброжаемое имя полученное от яндекса
+        email:
+          type: string
+          description: Емайл
+        sex:
+          type: string
+          description: Пол
+        phone:
+          type: string
+          description: Телефон
+        birthday:
+          type: string
+          description: День рождения
+        firstname:
+          type: string
+          description: Имя
+        lastname:
+          type: string
+          description: Фамилия
+        avatar:
+          type: string
+          description: Путь к аватарке
+        displayName:
+          type: string
+          description: Отображаемое имя
+        sessions:
+          type: array
+          description: Список сессий
+          uniqueItems: true
+          minItems: 0
+          items:
+            type: object
+            properties:
+              token:
+                type: string
+                description: JWT Токен юзера
+              ip:
+                type: string
+                description: Ip адресс юзера
+              os:
+                type: string
+                description: Операционная система устройства
+              isBot:
+                type: boolean
+                description: Является ли юзер ботом
+              isMobile:
+                type: boolean
+                description: Является ли дейвайс мобильным устройством
+              isDesktop:
+                type: boolean
+                description: Является ли дейвайс десктопным устройством
+              browser:
+                type: string
+                description: Название браузера
+              version:
+                type: string
+                description: Версия браузера
+              platform:
+                type: string
+                description: Платформа устройства ( ос)
+              createdAt:
+                type: Date
+                description: Дата создания
+              _id:
+                type: string
+                description: Id сессии (mongoose.Schema.Types.ObjectId)
+        subscribe:
+          type: object
+          description: Информация по подписке. Если подписки нет, в этом поле null
+          properties:
+            startAt:
+              type: Date
+              description: Дата начала подписки
+            finishAt:
+              type: Date
+              description: Дата окончания подписки
+            tariffId:
+              type: string
+              description: Id тарифа (mongoose.ObjectId)
+        allowTrialTariff:
+          type: boolean
+          description: Позволен ли пробный тариф
+        role:
+          type: string
+          description: Admin, manager или, если это обычный пользователь - это поле отсуствует.
+        disabledNotifications:
+          type: Array
+          description: Типы отключенных уведомлений - 'SERVICE_NEWS'(Новости сервиса - уведомления о технических работах на сайте и новинках обновленного сервиса), 'GIFTS_AND_PROMOTIONS'(Подарки и акции - бонусы для пользователей), 'PROFILE'(Профиль - напоминание об окончании подписки и индивидуальные предложения), 'CINEMA_NEWS'(Новинки кинематографа), 'SERVICE_NOVELTIES'(Новинки на сервисе), 'FAVOTITES_AND_BOOKMARKS_NEWS'(FAVOTITES_AND_BOOKMARKS_NEWS)
+          items:
+            type: string
+            description: Тип отключенного уведомления
+        refererUserId:
+          type: string
+          description: От какого ID пользователя был приглашен по реферальной программе
+        referral:
+          type: object
+          properties:
+            balance:
+              type: number
+              description: Баланс в реферальной программе
+            card:
+              type: object
+              description: Данные карты для вывода баланса
+              properties:
+                number:
+                  type: string
+                  description: Номер карты
+                cardholder:
+                  type: string
+                  description: Владелец карты
+        lastVisitAt:
+          type: Date
+          description: Дата последнего посещения
+        banned:
+          type: boolean
+          description: Дата блокировки и восстановления
+        deleted:
+          type: boolean
+          description: Дата удаления и восстановления
+
+    UserDeletionLog:
+      type: object
+      description: Журнал удалений аккаунтов
+      properties:
+        userId:
+          type: string
+          description: Id пользователя
+        isRefund:
+          type: string
+          description: Хочет ли пользователь оформить возврат средств за оставшиеся дни подписки
+        reason:
+          type: object
+          properties:
+            text:
+              type: string
+              description: Комментарий пользователя почему хочет удалить аккаунт
+            types:
+              type: array
+              description: Хочет ли пользователь оформить возврат средств за оставшиеся дни подписки
+              items:
+                description: NOT_ENOUGH_CONTENT не достаточно контента, BAD_QUALITY_VIDEO Плохое качество видео, BAD_SOUND(Плохой звук), NOT_MATCH_TARIFF(Нет подходящего тарифа), HIGH_COST_SUBSCRIBTION (Высокая стоимость подписки)
+                type: string
+        refundStatus:
+          type: string
+          enum: ['CONFIRMED', 'REJECTED', 'WAITING']
+          description: Статус возврата. CONFIRMED Операция подтверждена; REJECTED Операция отклонена; WAITING Операция в режиме ожидания
+        refundAmount:
+          type: number
+          description: Cумма денег для возврата пользователю ( если значение isRefund = true)
+
+    WithdrawalLog:
+      type: object
+      description: Журнал удалений аккаунтов
+      properties:
+        userId:
+          type: string
+          description: ID пользователя отправившего заявку
+        managerUserId:
+          type: string
+          description: ID менеджера рассотревшего заявку
+        reason:
+          type: object
+          properties:
+            text:
+              type: string
+              description: Комментарий пользователя почему хочет вернуть деньги
+            types:
+              type: array
+              description: Хочет ли пользователь оформить возврат средств за оставшиеся дни подписки
+              items:
+                description: NOT_ENOUGH_CONTENT не достаточно контента, BAD_QUALITY_VIDEO Плохое качество видео, BAD_SOUND(Плохой звук)
+                type: string
+        status:
+          type: string
+          enum: ['WAITING', 'CANCELLED', 'SUCCESS']
+          description: Статус операции. WAITING - Операция в режиме ожидания; CANCELLED В операции отказано; SUCCESS Операция успешно проведена
+  tags:
+    - name: Profile
+      description: Профиль
+    - name: Admin
+      description: Административная панель
+    - name: Catalog
+      description: Каталог
+    - name: Collections
+      description: Коллекции
+    - name: Sitemap
+      description: Данные для sitemap.xml
+    - name: Payment
+      description: Тарифы, создание и обработка платежей
+    - name: Search
+      description: Поиск
+    - name: Auth
+      description: Авторизация / регистрация через Яндекс и разрушение сессии
+    - name: Movies
+      description: Фильмы и сериалы
+    - name: Referral
+      description: Реферальная программа
+    - name: Promocode
+      description: Промокоды
 paths:
   /profile:
     get:
