@@ -58,6 +58,7 @@ const sitemap = require('./routes/sitemap')
 const profile = require('./routes/profile')
 const notFound = require('./routes/notFound')
 const referral = require('./routes/referral')
+const complaints = require('./routes/complaints')
 const adminUsers = require('./routes/admin/users')
 const collections = require('./routes/collections')
 const adminMovies = require('./routes/admin/movies')
@@ -87,6 +88,7 @@ app.use('/catalog', catalog) // Фильмы / сериалы с фильтро�
 app.use('/referral', referral) // Реферальная программа
 app.use('/collections', collections) // Подборки и жанры для главной страницы
 app.use('/promocodes', promocodes) // Промокоды
+app.use('/complaints', complaints) // Жалобы
 
 app.use('/profile', profile) // Профиль
 app.use('/profile/payment', profilePayment) // Профиль > Подписка
