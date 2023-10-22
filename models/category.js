@@ -1,17 +1,36 @@
-const mongoose = require('mongoose');
+const mongoose = require('mongoose')
 
-const categorySchema = new mongoose.Schema({
-	name: {
-		required: true,
-		type: String
+/*
+ * Категории с жанрами
+ */
+
+const categorySchema = new mongoose.Schema(
+	{
+		name: {
+			required: true,
+			type: String,
+		},
+		alias: {
+			required: true,
+			type: String,
+		},
+		genres: [
+			{
+				name: {
+					required: true,
+					type: String,
+				},
+				alias: {
+					required: true,
+					type: String,
+				},
+			},
+		],
+		deleted: Boolean,
 	},
-	alias: {
-		required: true,
-		type: String
-	},
-	deleted: Boolean
-}, {
-	versionKey: false
-})
+	{
+		versionKey: false,
+	}
+)
 
 module.exports = mongoose.model('Category', categorySchema)

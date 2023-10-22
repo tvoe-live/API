@@ -5,7 +5,8 @@
 	"main": "app.js",
 	"scripts": {
 		"start": "nodemon NODE_ENV=production && --max-old-space-size=8192 app.js",
-		"dev": "nodemon NODE_ENV=development && app.js"
+		"dev": "nodemon NODE_ENV=development && app.js",
+		"prepare": "husky install"
 	},
 	"author": "",
 	"dependencies": {
@@ -13,6 +14,7 @@
 		"@aws-sdk/lib-storage": "^3.290.0",
 		"axios": "^1.1.3",
 		"body-parser": "^1.20.1",
+		"convert-layout": "^0.11.1",
 		"cors": "^2.8.5",
 		"crypto": "^1.0.1",
 		"dotenv": "^16.0.0",
@@ -28,5 +30,13 @@
 		"sharp": "^0.31.2",
 		"swagger-ui-express": "^4.6.3",
 		"xml": "^1.0.1"
+	},
+	"devDependencies": {
+		"husky": "^8.0.3",
+		"lint-staged": "^14.0.1",
+		"prettier": "3.0.3"
+	},
+	"lint-staged": {
+		"**/*": "prettier --write --ignore-unknown"
 	}
 }

@@ -1,9 +1,9 @@
-const express = require('express');
-const router = express.Router();
-const Movie = require('../../models/movie');
-const verify = require('../../middlewares/verify');
-const resError = require('../../helpers/resError');
-const movieOperations = require('../../helpers/movieOperations');
+const express = require('express')
+const router = express.Router()
+const Movie = require('../../models/movie')
+const MoviePageLog = require('../../models/moviePageLog')
+const verify = require('../../middlewares/verify')
+const resError = require('../../helpers/resError')
 
 /*
  * Профиль > История просмотров
@@ -14,64 +14,144 @@ router.get('/', verify.token, async (req, res) => {
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	const agregationListForTotalSize = [
-		{ $lookup: {
-			from: "moviepagelogs",
-			localField: "_id",
-			foreignField: "movieId",
-			pipeline: [
-				{ $match: { userId: req.user._id } },
-				{ $group: { 
-					_id: "$movieId", 
-					count: { $sum: 1 }, 
-					updatedAt: { $push: "$$ROOT.updatedAt" }
-				} },
-				{ $sort: { updatedAt: -1 } }
-			],
-			as: "moviepagelogs"
-		} },
-		{ $unwind: "$moviepagelogs" },
+		{
+			$match: {
+				userId: req.user._id,
+			},
+		},
+		{
+			$lookup: {
+				from: 'movies',
+				localField: 'movieId',
+				foreignField: '_id',
+				pipeline: [{ $project: { persons: false } }],
+				as: 'movie',
+			},
+		},
+		{ $unwind: '$movie' },
+		{
+			$group: {
+				_id: '$movie._id',
+				name: { $first: '$movie.name' },
+				rating: { $first: '$movie.rating' },
+				ageLevel: { $first: '$movie.ageLevel' },
+				trailer: { $first: '$movie.trailer' },
+				categoryAlias: { $first: '$movie.categoryAlias' },
+				series: { $first: '$movie.series' },
+				films: { $first: '$movie.films' },
+				poster: { $first: '$movie.poster' },
+				updatedAt: { $max: '$updatedAt' },
+				alias: { $first: '$movie.alias' },
+				dateReleased: { $first: '$movie.dateReleased' },
+			},
+		},
+		{
+			$addFields: {
+				url: { $concat: ['/p/', '$alias'] },
+				duration: {
+					$switch: {
+						branches: [
+							{
+								case: { $eq: ['$categoryAlias', 'films'] },
+								then: {
+									$sum: {
+										$map: {
+											input: '$films',
+											as: 'item',
+											in: '$$item.duration',
+										},
+									},
+								},
+							},
+							{
+								case: { $eq: ['$categoryAlias', 'serials'] },
+								then: {
+									$sum: {
+										$map: {
+											input: '$series',
+											as: 'seasons',
+											in: {
+												$sum: {
+													$map: {
+														input: '$$seasons',
+														as: 'item',
+														in: '$$item.duration',
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						],
+						default: 0,
+					},
+				},
+			},
+		},
+		{
+			$project: {
+				url: true,
+				duration: true,
+				_id: true,
+				name: true,
+				rating: true,
+				ageLevel: true,
+				trailer: true,
+				categoryAlias: true,
+				dateReleased: true,
+				poster: true,
+				updatedAt: true,
+				series: {
+					$cond: {
+						if: { $eq: ['$categoryAlias', 'serials'] },
+						then: '$series',
+						else: '$$REMOVE',
+					},
+				},
+			},
+		},
 	]
 
 	try {
-		Movie.aggregate([
-			{
-				"$facet": {
-					"totalSize":[
-						...agregationListForTotalSize,
-						{ $group: { 
-							_id: null, 
-							count: { $sum: 1 }
-						} },
-						{ $project: { _id: false } },
-						{ $limit: 1 }
-					],
-					"items":[
-						...agregationListForTotalSize,
-						...movieOperations({
-							addToProject: {
-								poster: { src: true },
-								moviepagelogs: "$moviepagelogs",
-								lastLogUpdatedAt: "$moviepagelogs.updatedAt"
+		MoviePageLog.aggregate(
+			[
+				{
+					$facet: {
+						totalSize: [
+							...agregationListForTotalSize,
+							{
+								$group: {
+									_id: null,
+									count: { $sum: 1 },
+								},
 							},
-							skip,
-							limit
-						}),
-						{ $sort: { lastLogUpdatedAt: -1 } },
-					]
-				}
-			},
-			{ $unwind: { path: "$totalSize", preserveNullAndEmptyArrays: true } },
-			{ $project: {
-				totalSize: { $cond: [ "$totalSize.count", "$totalSize.count", 0] },
-				items: "$items"
-			} },
-		], (err, result)=>{
-			return res.status(200).json(result[0]);
-		});
-		
-	} catch(err) {
-		return resError({ res, msg: err });
+							{ $project: { _id: false } },
+							{ $limit: 1 },
+						],
+						items: [
+							...agregationListForTotalSize,
+							{ $sort: { updatedAt: -1 } },
+							{ $skip: skip },
+							{ $limit: limit },
+						],
+					},
+				},
+				{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
+				{
+					$project: {
+						totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+						items: '$items',
+					},
+				},
+			],
+			(err, result) => {
+				return res.status(200).json(result[0])
+			}
+		)
+	} catch (err) {
+		return resError({ res, msg: err })
 	}
-});
+})
 
-module.exports = router;
+module.exports = router
