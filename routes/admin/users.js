@@ -201,28 +201,27 @@ router.patch('/profile', verify.token, verify.isAdmin, async (req, res) => {
 							},
 							allowTrialTariff: false,
 						},
-						allowTrialTariff: false,
 					}
 				)
 
 				schedule.scheduleJob(finishAt, async function () {
 					await User.updateOne({ _id: userId }, { $set: { subscribe: null } })
 				})
-
-				await User.updateOne(
-					{ _id: userId },
-					{
-						$set: { role },
-						$inc: { __v: 1 },
-					}
-				)
-
-				return resSuccess({
-					res,
-					msg: 'Профиль обновлен',
-				})
 			}
 		}
+
+		await User.updateOne(
+			{ _id: userId },
+			{
+				$set: { role },
+				$inc: { __v: 1 },
+			}
+		)
+
+		return resSuccess({
+			res,
+			msg: 'Профиль обновлен',
+		})
 	} catch (err) {
 		return resError({ res, msg: err })
 	}
