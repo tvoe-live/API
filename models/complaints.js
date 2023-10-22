@@ -6,8 +6,9 @@ const mongoose = require('mongoose')
 
 const complaintSchema = new mongoose.Schema(
 	{
-		// userId,
-		// movieId,
+		userId: mongoose.Schema.Types.ObjectId, // Id пользователя
+		movieId: mongoose.Schema.Types.ObjectId, // Id фильма или сериала
+		videoId: mongoose.Schema.Types.ObjectId, // Id видео
 		text: String, // Текст жалобы
 		reasons: {
 			// Список выбранных пользователем причин
