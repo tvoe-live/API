@@ -2,7 +2,6 @@ const express = require('express')
 const router = express.Router()
 const User = require('../models/user')
 const Movie = require('../models/movie')
-const Complaint = require('../models/complaints')
 const verify = require('../middlewares/verify')
 const resError = require('../helpers/resError')
 const mailer = require('../helpers/nodemailer')
@@ -59,15 +58,7 @@ router.post('/', verify.token, async (req, res) => {
 	}
 
 	try {
-		const response = await Complaint.create({
-			text,
-			reasons,
-			videoId,
-			movieId,
-			videoId,
-		})
-
-		let textForMail = `Поступила жалоба c id ${response._id} на фильм '${name}' от пользователя`
+		let textForMail = `Поступила жалоба на фильм '${name}' (videoId ='${videoId}', movieId ='${movieId}') от пользователя`
 
 		if (firstname) {
 			textForMail += ` ${firstname}`
