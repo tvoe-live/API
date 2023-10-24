@@ -2,6 +2,7 @@ openapi: 3.0.1
 info:
   title: API https://tvoe-dev.ru/
   version: v1
+  description: Изменения 25.10.2023 - 1) Роуты POST profile/notification,  DELETE profile/notification, PATCH profile/notification, GET profile/notification/count,  GET profile/notifications/countAll   переместились в POST admin/notification,  DELETE admin/notification, PATCH admin/notification, GET admin/notification/count,  GET admin/notifications/countAll соответственно. 2) В ответе ендпоинта GET search/oftenSeek удалил несколько полей, оставив id, дату релиза, url, постер, название
 servers:
   - url: https://api.1390760-cu92735.tw1.ru/
 
@@ -972,321 +973,6 @@ paths:
                         type: premiere
                         willPublishedAt: '2021-04-04T00:00:00.000Z'
                         link: https://kogdavyydet.com/shaman-king-2-sezon.html
-    post:
-      summary: Загрузка уведомления
-      tags:
-        - Profile
-      parameters:
-        - $ref: '#/components/parameters/AuthorizationHeader'
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  description: Исходник сам файл картинки уведомления
-          application/json:
-            schema:
-              type: object
-              properties:
-                title:
-                  type: string
-                  description: Название уведомления
-                description:
-                  type: string
-                  description: Описаниее в уведомлении
-                  required: false
-                type:
-                  type: string
-                  description: Тип уведомления - premiere или system
-                willPublishedAt:
-                  type: string
-                  description: Планируемая дата публикации уведомления
-                link:
-                  type: string
-                  description: Ссылка
-                receiversIds:
-                  type: array
-                  uniqueItems: true
-                  description: Массив из Id получателей (mongoose.ObjectId). Если он не передается, то уведомление будет предназначено для всех пользователей
-                  minItems: 0
-                  items:
-                    type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    description: id уведомления
-                  success:
-                    type: boolean
-                    description: true
-                  title:
-                    type: string
-                    description: Название уведомления
-                  description:
-                    type: string
-                    description: Описаниее в уведомлении
-                    required: false
-                  type:
-                    type: string
-                    description: Тип уведомления - premiere или system
-                  willPublishedAt:
-                    type: string
-                    description: Планируемая дата публикации уведомления
-                  link:
-                    type: string
-                    description: Ссылка
-                  receiversIds:
-                    type: array
-                    uniqueItems: true
-                    description: Массив из Id получателей (mongoose.ObjectId). Если этого поля нет, значит уведомление предназначено для всех пользователей
-                    minItems: 0
-                    items:
-                      type: string
-                  img:
-                    type: object
-                    properties:
-                      _id:
-                        type: string
-                        description: Id файла (mongoose.ObjectId)
-                      src:
-                        type: string
-                        description: Ссылка на файл изображение
-                example:
-                  success: true
-                  id: 64ece16991850d7975c3186a
-                  title: Премьера нового сезона ведьмака
-                  description: Не пропустите!
-                  type: premiere
-                  willPublishedAt: '2023-08-20'
-                  img:
-                    _id: 64ece16891850d7975c31868
-                    src: '/images/64ece16891850d7975c31869.jpg'
-    patch:
-      summary: Обновление уведомления
-      tags:
-        - Profile
-      parameters:
-        - $ref: '#/components/parameters/AuthorizationHeader'
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  description: Исходник сам файл картинки уведомления
-          application/json:
-            schema:
-              type: object
-              properties:
-                title:
-                  type: string
-                  description: Название уведомления
-                description:
-                  type: string
-                  description: Описаниее в уведомлении
-                  required: false
-                type:
-                  type: string
-                  description: Тип уведомления - premiere или system
-                willPublishedAt:
-                  type: string
-                  description: Планируемая дата публикации уведомления
-                link:
-                  type: string
-                  description: Ссылка
-                receiversIds:
-                  type: array
-                  uniqueItems: true
-                  description: Массив из Id получателей (mongoose.ObjectId). Если он не передается, то уведомление будет предназначено для всех пользователей
-                  minItems: 0
-                  items:
-                    type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  type:
-                    type: string
-                    description: 'success'
-                  msg:
-                    type: string
-                    description: 'Уведомление обновлено'
-                  alert:
-                    type: boolean
-                    description: true
-                example:
-                  type: 'success'
-                  alert: true
-                  msg: 'Уведомление обновлено'
-
-    delete:
-      summary: Удаление уведомления
-      tags:
-        - Profile
-      parameters:
-        - $ref: '#/components/parameters/AuthorizationHeader'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                _id:
-                  type: string
-                  description: Id уведомления для удаления
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  type:
-                    type: string
-                    description: 'success'
-                  _id:
-                    type: string
-                    description: Id уведомления для удаления
-                  msg:
-                    type: string
-                    description: 'Успешно удалено'
-                  alert:
-                    type: boolean
-                    description: true
-                example:
-                  type: success
-                  _id: 64d15212c3003ddd2d373642
-                  alert: true
-                  msg: Успешно удалено
-
-  /profile/notifications/count:
-    get:
-      summary: Профиль > Количество просмотров у одного уведомления
-      tags:
-        - Profile
-      parameters:
-        - $ref: '#/components/parameters/AuthorizationHeader'
-        - in: query
-          name: id
-          schema:
-            type: string
-          description: Id(mongoose.ObjectId)уведомления, количество просмотров которого необходимо посмотреть
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  totalSize:
-                    type: number
-                    description: Количество просмотров уведомления
-                  id:
-                    type: number
-                    description: Id (mongoose.ObjectId) уведомления
-                example:
-                  totalSize: 10
-                  id: 64d15212c3003ddd2d373642
-
-  /profile/notifications/countAll:
-    get:
-      summary: Профиль > Количество просмотров у всех уведомлений
-      tags:
-        - Profile
-      parameters:
-        - $ref: '#/components/parameters/AuthorizationHeader'
-        - in: query
-          name: limit
-          schema:
-            type: number
-          description: Ограничение на максимальное количество элементов в теле ответа
-        - in: query
-          name: skip
-          schema:
-            type: number
-          description: Количество пропускаемых элементов из начала выборки
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  totalSize:
-                    type: number
-                    description: Общее количество сущностей в БД
-                  items:
-                    type: array
-                    uniqueItems: true
-                    minItems: 0
-                    items:
-                      type: object
-                      properties:
-                        _id:
-                          type: string
-                          description: Id (mongoose.ObjectId) уведомления
-                        title:
-                          type: string
-                          description: Название уведомления
-                        description:
-                          type: string
-                          description: Описаниее в уведомлении
-                          required: false
-                        type:
-                          type: string
-                          description: Тип уведомления - premiere или system
-                        updatedAt:
-                          type: string
-                          description: Дата обновления
-                        img:
-                          type: object
-                          properties:
-                            _id:
-                              type: string
-                              description: Id файла изображения
-                            src:
-                              type: string
-                              description: Ссылка на изображения
-                        watchingAmount:
-                          type: number
-                          description: Количество просмотров
-                example:
-                  totalSize: 2
-                  items:
-                    - _id: 64ece16991850d7975c3186a
-                      title: Премьера нового сезона ведьмака
-                      description: Не пропустите!
-                      type: premiere
-                      img:
-                        _id: 64ece16891850d7975c31868
-                        src: '/images/64ece16891850d7975c31869.jpg'
-                      updatedAt: '2023-08-28T18:03:21.578Z'
-                      watchingAmount: 7
-                    - _id: 64dbddb8b7ef836bbda14ad9
-                      title: 11 друзей оушена
-                      type: premiere
-                      updatedAt: '2023-08-15T20:19:04.521Z'
-                      watchingAmount: 10
 
   /profile/notifications/markAsRead:
     patch:
@@ -1623,6 +1309,321 @@ paths:
                         willPublishedAt: '2023-08-20T00:00:00.000Z'
                         updatedAt: '2023-10-05T21:32:58.489Z'
                         status: опубликовано
+    post:
+      summary: Загрузка уведомления
+      tags:
+        - Admin
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Исходник сам файл картинки уведомления
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  description: Название уведомления
+                description:
+                  type: string
+                  description: Описаниее в уведомлении
+                  required: false
+                type:
+                  type: string
+                  description: Тип уведомления - premiere или system
+                willPublishedAt:
+                  type: string
+                  description: Планируемая дата публикации уведомления
+                link:
+                  type: string
+                  description: Ссылка
+                receiversIds:
+                  type: array
+                  uniqueItems: true
+                  description: Массив из Id получателей (mongoose.ObjectId). Если он не передается, то уведомление будет предназначено для всех пользователей
+                  minItems: 0
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: id уведомления
+                  success:
+                    type: boolean
+                    description: true
+                  title:
+                    type: string
+                    description: Название уведомления
+                  description:
+                    type: string
+                    description: Описаниее в уведомлении
+                    required: false
+                  type:
+                    type: string
+                    description: Тип уведомления - premiere или system
+                  willPublishedAt:
+                    type: string
+                    description: Планируемая дата публикации уведомления
+                  link:
+                    type: string
+                    description: Ссылка
+                  receiversIds:
+                    type: array
+                    uniqueItems: true
+                    description: Массив из Id получателей (mongoose.ObjectId). Если этого поля нет, значит уведомление предназначено для всех пользователей
+                    minItems: 0
+                    items:
+                      type: string
+                  img:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        description: Id файла (mongoose.ObjectId)
+                      src:
+                        type: string
+                        description: Ссылка на файл изображение
+                example:
+                  success: true
+                  id: 64ece16991850d7975c3186a
+                  title: Премьера нового сезона ведьмака
+                  description: Не пропустите!
+                  type: premiere
+                  willPublishedAt: '2023-08-20'
+                  img:
+                    _id: 64ece16891850d7975c31868
+                    src: '/images/64ece16891850d7975c31869.jpg'
+    patch:
+      summary: Обновление уведомления
+      tags:
+        - Admin
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Исходник сам файл картинки уведомления
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  description: Название уведомления
+                description:
+                  type: string
+                  description: Описаниее в уведомлении
+                  required: false
+                type:
+                  type: string
+                  description: Тип уведомления - premiere или system
+                willPublishedAt:
+                  type: string
+                  description: Планируемая дата публикации уведомления
+                link:
+                  type: string
+                  description: Ссылка
+                receiversIds:
+                  type: array
+                  uniqueItems: true
+                  description: Массив из Id получателей (mongoose.ObjectId). Если он не передается, то уведомление будет предназначено для всех пользователей
+                  minItems: 0
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    description: 'success'
+                  msg:
+                    type: string
+                    description: 'Уведомление обновлено'
+                  alert:
+                    type: boolean
+                    description: true
+                example:
+                  type: 'success'
+                  alert: true
+                  msg: 'Уведомление обновлено'
+
+    delete:
+      summary: Удаление уведомления
+      tags:
+        - Admin
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                _id:
+                  type: string
+                  description: Id уведомления для удаления
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    description: 'success'
+                  _id:
+                    type: string
+                    description: Id уведомления для удаления
+                  msg:
+                    type: string
+                    description: 'Успешно удалено'
+                  alert:
+                    type: boolean
+                    description: true
+                example:
+                  type: success
+                  _id: 64d15212c3003ddd2d373642
+                  alert: true
+                  msg: Успешно удалено
+
+  /admin/notifications/count:
+    get:
+      summary: Профиль > Количество просмотров у одного уведомления
+      tags:
+        - Admin
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - in: query
+          name: id
+          schema:
+            type: string
+          description: Id(mongoose.ObjectId)уведомления, количество просмотров которого необходимо посмотреть
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalSize:
+                    type: number
+                    description: Количество просмотров уведомления
+                  id:
+                    type: number
+                    description: Id (mongoose.ObjectId) уведомления
+                example:
+                  totalSize: 10
+                  id: 64d15212c3003ddd2d373642
+
+  /admin/notifications/countAll:
+    get:
+      summary: Профиль > Количество просмотров у всех уведомлений
+      tags:
+        - Admin
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+        - in: query
+          name: limit
+          schema:
+            type: number
+          description: Ограничение на максимальное количество элементов в теле ответа
+        - in: query
+          name: skip
+          schema:
+            type: number
+          description: Количество пропускаемых элементов из начала выборки
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalSize:
+                    type: number
+                    description: Общее количество сущностей в БД
+                  items:
+                    type: array
+                    uniqueItems: true
+                    minItems: 0
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          description: Id (mongoose.ObjectId) уведомления
+                        title:
+                          type: string
+                          description: Название уведомления
+                        description:
+                          type: string
+                          description: Описаниее в уведомлении
+                          required: false
+                        type:
+                          type: string
+                          description: Тип уведомления - premiere или system
+                        updatedAt:
+                          type: string
+                          description: Дата обновления
+                        img:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              description: Id файла изображения
+                            src:
+                              type: string
+                              description: Ссылка на изображения
+                        watchingAmount:
+                          type: number
+                          description: Количество просмотров
+                example:
+                  totalSize: 2
+                  items:
+                    - _id: 64ece16991850d7975c3186a
+                      title: Премьера нового сезона ведьмака
+                      description: Не пропустите!
+                      type: premiere
+                      img:
+                        _id: 64ece16891850d7975c31868
+                        src: '/images/64ece16891850d7975c31869.jpg'
+                      updatedAt: '2023-08-28T18:03:21.578Z'
+                      watchingAmount: 7
+                    - _id: 64dbddb8b7ef836bbda14ad9
+                      title: 11 друзей оушена
+                      type: premiere
+                      updatedAt: '2023-08-15T20:19:04.521Z'
+                      watchingAmount: 10
 
   /admin/users:
     get:
@@ -4265,6 +4266,12 @@ paths:
       summary: Админ панель => Изменение промокода
       tags:
         - Admin
+      parameters:
+        - in: param
+          name: id
+          schema:
+            type: string
+          description: Id промокода
       requestBody:
         content:
           application/json:
@@ -4538,6 +4545,9 @@ paths:
                   totalSizeActiveNow:
                     type: number
                     description: Количество действующих в данный момент времени промокодов
+                  expired:
+                    type: number
+                    description: Число промокодов с истекшим сроком действия
                   totalSizeNotPublishedNow:
                     type: number
                     description: Количество неопубликованных промокодов
@@ -4586,6 +4596,7 @@ paths:
                   totalSizeWithMatch: 9
                   totalSizeActiveNow: 0
                   totalSizeNotPublishedNow: 1
+                  expired: 2
                   items:
                     - _id: 650d914b7f0867e591ebc0c9
                       maxAmountActivation: 33
@@ -5274,47 +5285,46 @@ paths:
                                   type: string
                                   description: Миниатюра (кадр из видео)
                 example:
-                  value:
-                    totalSize: 3597
-                    items:
-                      - name: Армия воров 3
-                        ageLevel: 16
-                        dateReleased: '2021-10-28'
-                        categoryAlias: films
-                        shortDesc: В этом приквеле «Армии мертвецов» загадочная женщина нанимает банковского служащего Дитера, чтобы тот помог взломать три легендарных сейфа в разных частях Европы.
-                        genresNames:
-                          - Драмы
-                          - Военные
-                          - Исторические
-                        duration: 0
-                        url: '/p/armiya-vorov'
-                        series:
-                          - - _id: 64732eecfa87aa4b70851c64
-                              duration: 155.738333
-                              src: '/videos/64732eecfa87aa4b70851c65'
-                              thumbnail: '/images/64732eecfa87aa4b70851c66.jpg'
-                      - name: 'Битва при Нарвике: Первое поражение Гитлера'
-                        shortDesc: Притворяясь богатым и успешным бриллиантовым магнатом, он обольщал женщин в интернете, а потом выманивал у них миллионы долларов. Теперь его жертвы обдумывают план мести.
-                        ageLevel: 16
-                        dateReleased: '2022-12-15'
-                        categoryAlias: films
-                        poster:
-                          src: '/images/640376060a569a75e1507a94.jpg'
-                        rating: 6
-                        duration: 6546.833333
-                        url: '/p/bitva-pri-narvike-pervoe-porazhenie-gitlera'
-                        trailer:
-                          _id: 63ba2ad54b33357ef706971c
-                          src: '/videos/63ba2ad54b33357ef706971b.mp4'
-                          thumbnail: '/images/63ba2ad54b33357ef706971d.jpg'
-                        genresNames:
-                          - Боевики
-                          - Криминал
-                        series:
-                          - - _id: 64732eecfa87aa4b70851c64
-                              duration: 155.738333
-                              src: '/videos/64732eecfa87aa4b70851c65'
-                              thumbnail: '/images/64732eecfa87aa4b70851c66.jpg'
+                  totalSize: 3597
+                  items:
+                    - name: Армия воров 3
+                      ageLevel: 16
+                      dateReleased: '2021-10-28'
+                      categoryAlias: films
+                      shortDesc: В этом приквеле «Армии мертвецов» загадочная женщина нанимает банковского служащего Дитера, чтобы тот помог взломать три легендарных сейфа в разных частях Европы.
+                      genresNames:
+                        - Драмы
+                        - Военные
+                        - Исторические
+                      duration: 0
+                      url: '/p/armiya-vorov'
+                      series:
+                        - - _id: 64732eecfa87aa4b70851c64
+                            duration: 155.738333
+                            src: '/videos/64732eecfa87aa4b70851c65'
+                            thumbnail: '/images/64732eecfa87aa4b70851c66.jpg'
+                    - name: 'Битва при Нарвике: Первое поражение Гитлера'
+                      shortDesc: Притворяясь богатым и успешным бриллиантовым магнатом, он обольщал женщин в интернете, а потом выманивал у них миллионы долларов. Теперь его жертвы обдумывают план мести.
+                      ageLevel: 16
+                      dateReleased: '2022-12-15'
+                      categoryAlias: films
+                      poster:
+                        src: '/images/640376060a569a75e1507a94.jpg'
+                      rating: 6
+                      duration: 6546.833333
+                      url: '/p/bitva-pri-narvike-pervoe-porazhenie-gitlera'
+                      trailer:
+                        _id: 63ba2ad54b33357ef706971c
+                        src: '/videos/63ba2ad54b33357ef706971b.mp4'
+                        thumbnail: '/images/63ba2ad54b33357ef706971d.jpg'
+                      genresNames:
+                        - Боевики
+                        - Криминал
+                      series:
+                        - - _id: 64732eecfa87aa4b70851c64
+                            duration: 155.738333
+                            src: '/videos/64732eecfa87aa4b70851c65'
+                            thumbnail: '/images/64732eecfa87aa4b70851c66.jpg'
   /catalog/pages:
     get:
       summary: Страницы для рендеринга при сборке
@@ -5795,52 +5805,15 @@ paths:
                         name:
                           type: string
                           description: Название фильма
-                        shortDesc:
-                          type: string
-                          description: Краткое описание
-                        ageLevel:
-                          type: string
-                          description: Возрастное ограничение
                         dateReleased:
                           type: Date
                           description: Дата релиза
-                        categoryAlias:
-                          type: string
-                          description: Вид категориии. Может быть films, serials или collections
                         poster:
                           type: object
                           properties:
                             src:
                               type: string
                               description: Путь к файлу изображению
-                        trailer:
-                          type: object
-                          properties:
-                            id:
-                              type: string
-                              description: Mongoose.ObjectId
-                            src:
-                              type: string
-                              description: Путь к файлу изображению обложки
-                            thumbnail:
-                              type: string
-                              description: Миниатюра (кадр из видео)
-                            duration:
-                              type: number
-                              description: Длительность
-                              poster:
-                                type: object
-                                required: false
-                                properties:
-                                  src:
-                                    type: string
-                                    description: Путь к файлу изображению
-                        rating:
-                          type: number
-                          description: Рейтинг от 0 до 10
-                        duration:
-                          type: string
-                          description: Длительность фильма в секундах
                         url:
                           type: string
                           description: Url к фильму? путь к фильму?
@@ -5851,41 +5824,19 @@ paths:
                   value:
                     totalSize: 407
                     items:
-                      - name: HLS
-                        shortDesc: 'протокол для потоковой передачи медиа данных через интернет'
-                        categoryAlias: films
-                        duration: 139.328
-                        url: '/p/hls'
-                        trailer:
-                          _id: 642f4a4b8e6fd86616fe01a1
-                          src: '/videos/642f4a4b8e6fd86616fe019e.mp4'
-                          thumbnail: '/images/642f4a4b8e6fd86616fe01a0.jpg'
                       - name: Белый шум
-                        shortDesc: 'Белый шум описывает историю семьи Глэдни, на долю которой, кроме внутренних назревающих проблем'
-                        ageLevel: 16
                         dateReleased: '2022-08-31'
-                        categoryAlias: films
                         poster:
                           src: '/images/6405fe000a569a75e15129f4.jpg'
-                        duration: 8216.875
                         url: '/p/belyy-shum'
-                        trailer:
-                          _id: 642f4a4b8e6fd86616fe01a1
-                          src: '/videos/642f4a4b8e6fd86616fe019e.mp4'
-                          thumbnail: '/images/642f4a4b8e6fd86616fe01a0.jpg'
+                        _id: 63dd07bf1311449b80d879d7
                       - name: Вундеркинды
-                        shortDesc: 'От микробов и эмоций до социальных сетей и многого другого — это наука о нашем мире, объясняемая в необычно доходчивой форме.'
-                        ageLevel: 6
                         dateReleased: '2018-11-02'
-                        categoryAlias: serials
                         poster:
                           src: '/images/642f5e208e6fd86616fe08d5.jpg'
                         duration: 18578.069334
                         url: '/p/vunderkindy'
-                        trailer:
-                          _id: 642f4a4b8e6fd86616fe01a1
-                          src: '/videos/642f4a4b8e6fd86616fe019e.mp4'
-                          thumbnail: '/images/642f4a4b8e6fd86616fe01a0.jpg'
+                        _id: 63ccff631a0acf040863cd0b
 
   /search/nowSeek:
     get:
