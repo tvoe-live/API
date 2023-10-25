@@ -128,7 +128,7 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 	if (existPromocode) return resError({ res, msg: 'Промокод с таким названием уже существует' })
 
 	try {
-		const response = await Promocode.create({
+		await Promocode.create({
 			value,
 			maxAmountActivation,
 			discountFormat,
@@ -143,6 +143,7 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 
 		return res.status(200).json({
 			success: true,
+			alert: true,
 			msg: 'Промокод успешно создан',
 		})
 	} catch (err) {
@@ -436,6 +437,12 @@ router.get('/countAll', verify.token, verify.isAdmin, getSearchQuery, async (req
 						items: [
 							{ $sort: { updatedAt: -1 } },
 							{
+								$match: {
+									...searchMatch,
+									deleted: { $ne: true },
+								},
+							},
+							{
 								$project: {
 									createdAt: true,
 									value: true,
@@ -447,11 +454,6 @@ router.get('/countAll', verify.token, verify.isAdmin, getSearchQuery, async (req
 									tariffName: true,
 									discountFormat: true,
 									sizeDiscount: true,
-								},
-							},
-							{
-								$match: {
-									...searchMatch,
 								},
 							},
 							{ $skip: skip },

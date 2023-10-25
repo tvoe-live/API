@@ -5196,7 +5196,11 @@ paths:
                   msg:
                     type: string
                     description: Надпись "Промокод успешно создан"
+                  alert:
+                    type: boolean
+                    description: Значение true для уведомления в ui
                 example:
+                  alert: true
                   success: true
                   msg: Промокод успешно создан
 

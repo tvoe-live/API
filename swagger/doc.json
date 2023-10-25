@@ -815,23 +815,10 @@
 			},
 			{ "name": "Movies", "description": "Фильмы и сериалы" },
 			{ "name": "Referral", "description": "Реферальная программа" },
-			{ "name": "Promocode", "description": "Промокоды" }
+			{ "name": "Promocode", "description": "Промокоды" },
+			{ "name": "Complaints", "description": "Жалобы" }
 		]
 	},
-	"tags": [
-		{ "name": "Profile", "description": "Профиль" },
-		{ "name": "Admin", "description": "Административная панель" },
-		{ "name": "Catalog", "description": "Каталог" },
-		{ "name": "Collections", "description": "Коллекции" },
-		{ "name": "Sitemap", "description": "Данные для sitemap.xml" },
-		{ "name": "Payment", "description": "Тарифы, создание и обработка платежей" },
-		{ "name": "Search", "description": "Поиск" },
-		{ "name": "Auth", "description": "Авторизация / регистрация через Яндекс и разрушение сессии" },
-		{ "name": "Movies", "description": "Фильмы и сериалы" },
-		{ "name": "Referral", "description": "Реферальная программа" },
-		{ "name": "Promocode", "description": "Промокоды" },
-		{ "name": "Complaints", "description": "Жалобы" }
-	],
 	"paths": {
 		"/profile": {
 			"get": {
@@ -5635,9 +5622,13 @@
 										"msg": {
 											"type": "string",
 											"description": "Надпись \"Промокод успешно создан\""
+										},
+										"alert": {
+											"type": "boolean",
+											"description": "Значение true для уведомления в ui"
 										}
 									},
-									"example": { "success": true, "msg": "Промокод успешно создан" }
+									"example": { "alert": true, "success": true, "msg": "Промокод успешно создан" }
 								}
 							}
 						}
