@@ -153,7 +153,7 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 /*
  * Изменить промокод
  */
-router.patch('/', verify.token, verify.isAdmin, async (req, res) => {
+router.patch('/:id', verify.token, verify.isAdmin, async (req, res) => {
 	const {
 		value,
 		startAt,
@@ -162,12 +162,12 @@ router.patch('/', verify.token, verify.isAdmin, async (req, res) => {
 		tariffName,
 		discountFormat,
 		sizeDiscount,
-		isActive = false,
-		isOnlyForNewUsers = true,
+		isActive,
+		isOnlyForNewUsers,
 	} = req.body
 
 	try {
-		const promocode = await Promocode.findOne({ _id })
+		const promocode = await Promocode.findOne({ _id: req.params.id })
 
 		if (!promocode) {
 			return resError({ res, msg: 'Промокода с указанным _id не найдено' })
@@ -180,8 +180,8 @@ router.patch('/', verify.token, verify.isAdmin, async (req, res) => {
 		if (tariffName) promocode.tariffName = tariffName
 		if (discountFormat) promocode.discountFormat = discountFormat
 		if (sizeDiscount) promocode.sizeDiscount = sizeDiscount
-		if (isActive) promocode.isActive = isActive
-		if (isOnlyForNewUsers) promocode.isOnlyForNewUsers = isOnlyForNewUsers
+		if ('isActive' in req.body) promocode.isActive = isActive
+		if ('isOnlyForNewUsers' in req.body) promocode.isOnlyForNewUsers = isOnlyForNewUsers
 
 		promocode.save()
 
@@ -357,6 +357,7 @@ router.get('/countAll', verify.token, verify.isAdmin, getSearchQuery, async (req
 				{
 					$facet: {
 						totalSize: [
+							{ $match: { deleted: { $ne: true } } },
 							{
 								$group: {
 									_id: null,
@@ -369,6 +370,7 @@ router.get('/countAll', verify.token, verify.isAdmin, getSearchQuery, async (req
 						totalSizeWithMatch: [
 							{
 								$match: {
+									deleted: { $ne: true },
 									...searchMatch,
 								},
 							},
@@ -384,6 +386,7 @@ router.get('/countAll', verify.token, verify.isAdmin, getSearchQuery, async (req
 						totalSizeActiveNow: [
 							{
 								$match: {
+									deleted: { $ne: true },
 									isActive: true,
 									startAt: { $lte: new Date() },
 									finishAt: { $gte: new Date() },
@@ -398,9 +401,26 @@ router.get('/countAll', verify.token, verify.isAdmin, getSearchQuery, async (req
 							{ $project: { _id: false } },
 							{ $limit: 1 },
 						],
+						expired: [
+							{
+								$match: {
+									deleted: { $ne: true },
+									finishAt: { $lte: new Date() },
+								},
+							},
+							{
+								$group: {
+									_id: null,
+									count: { $sum: 1 },
+								},
+							},
+							{ $project: { _id: false } },
+							{ $limit: 1 },
+						],
 						totalSizeNotPublishedNow: [
 							{
 								$match: {
+									deleted: { $ne: true },
 									isActive: false,
 								},
 							},
@@ -444,6 +464,8 @@ router.get('/countAll', verify.token, verify.isAdmin, getSearchQuery, async (req
 				{ $unwind: { path: '$totalSizeWithMatch', preserveNullAndEmptyArrays: true } },
 				{ $unwind: { path: '$totalSizeActiveNow', preserveNullAndEmptyArrays: true } },
 				{ $unwind: { path: '$totalSizeNotPublishedNow', preserveNullAndEmptyArrays: true } },
+				{ $unwind: { path: '$expired', preserveNullAndEmptyArrays: true } },
+
 				{
 					$project: {
 						totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
@@ -452,6 +474,9 @@ router.get('/countAll', verify.token, verify.isAdmin, getSearchQuery, async (req
 						},
 						totalSizeActiveNow: {
 							$cond: ['$totalSizeActiveNow.count', '$totalSizeActiveNow.count', 0],
+						},
+						expired: {
+							$cond: ['$expired.count', '$expired.count', 0],
 						},
 						totalSizeNotPublishedNow: {
 							$cond: ['$totalSizeNotPublishedNow.count', '$totalSizeNotPublishedNow.count', 0],
