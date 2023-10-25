@@ -1,7 +1,6 @@
 const express = require('express')
 const router = express.Router()
 const Movie = require('../models/movie')
-const Category = require('../models/category')
 const resError = require('../helpers/resError')
 const movieOperations = require('../helpers/movieOperations')
 const verify = require('../middlewares/verify')
