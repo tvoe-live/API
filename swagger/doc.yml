@@ -976,6 +976,8 @@ components:
       description: Реферальная программа
     - name: Promocode
       description: Промокоды
+    - name: Complaints
+      description: Жалобы
 paths:
   /profile:
     get:
@@ -8721,6 +8723,57 @@ paths:
                   type: success
                   alert: true
                   msg: Действие промокода отменено
+
+  /complaints:
+    post:
+      summary: Отправка жалобы пользователя на электронную почту
+      tags:
+        - Complaints
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationHeader'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  description: Текст жалобы
+                  example: Плохой перевод
+                  required: false
+                reasons:
+                  type: array
+                  description: Массив причин. Возможные значения BAD_QUALITY_VIDEO 'Плохое качество видео', BAD_SOUND 'Плохой звук', BAD_SUBTITLES 'Плохо подобраны слова',	AGE_LIMIT_VIOLATION 'Нарушение возрастного ограничения'
+                  example: [BAD_QUALITY_VIDEO, BAD_SOUND]
+                  required: false
+                movieId:
+                  type: string
+                  description: Id фильма
+                  example: 63acb9feb2c93ed2212193ef
+                  required: true
+                videoId:
+                  type: string
+                  description: Id видео
+                  example: 63b797214b33357ef7062683
+                  required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: true
+                  msg:
+                    type: string
+                    description: Сообщеие "Жалоба отправлена"
+                example:
+                  success: true
+                  msg: Жалоба отправлена
 
 definitions:
   XmlSiteMapModel:
