@@ -102,7 +102,6 @@ router.get('/', getSearchQuery, verify.token, verify.isAdmin, async (req, res) =
 				},
 			],
 			async (err, result) => {
-				console.log('result:', result)
 				return res.status(200).json(result[0])
 			}
 		)
