@@ -94,6 +94,11 @@ router.get('/movie', async (req, res) => {
 
 	if (!find) return resError({ res, msg: 'Ожидается Id или Alias' })
 
+	const movie = await Movie.findOne(find, {
+		name: true,
+	})
+	if (!movie) return resError({ res, msg: 'Фильм c таким селектором не существует' })
+
 	const videoParams = {
 		_id: true,
 		src: true,
@@ -330,8 +335,9 @@ router.get('/movie', async (req, res) => {
 				if (!result[0]) return resError({ res, msg: 'Не найдено' })
 
 				const data = result[0].item[0]
+
 				data.reviews = {
-					items: data.reviews,
+					items: data?.reviews,
 					totalSize: result[0].totalSizeReview,
 				}
 

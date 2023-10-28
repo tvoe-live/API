@@ -3,12 +3,16 @@ const router = express.Router()
 const axios = require('axios')
 const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose')
+
 const User = require('../models/user')
 const AuthLog = require('../models/authLog')
+const PhoneChecking = require('../models/phoneChecking')
+
 const verify = require('../middlewares/verify')
 const resError = require('../helpers/resError')
 const resSuccess = require('../helpers/resSuccess')
 const { uploadImageToS3 } = require('../helpers/uploadImage')
+require('dotenv').config()
 
 /*
  * Авторизация / регистрация через Яндекс и разрушение сессии
@@ -245,6 +249,256 @@ router.post('/logout', verify.token, async (req, res) => {
 		}
 	)
 	return resSuccess({ res })
+})
+
+/*
+ *  Отправка 4 значного кода через смс для авторизации / регистрации
+ */
+
+router.post('/sms/login', async (req, res) => {
+	const { phone } = req.body
+
+	const referer = req.header('Referer')
+	const ip = req.ip
+
+	try {
+		if (referer !== process.env.REFERER && referer !== process.env.DEV_REFERER) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'С вашего адреса запрос запрещен',
+			})
+		}
+
+		if (req.useragent?.isBot) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Обнаружен бот',
+			})
+		}
+
+		if (!phone) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Не получен phone',
+			})
+		}
+
+		if (typeof phone !== 'number') {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Номер телефона может содержать только цифры',
+			})
+		}
+
+		if (phone.toString()?.length !== 11) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Номер телефона должен состоять из 11 цифр',
+			})
+		}
+
+		if (phone.toString()[0] !== '7') {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Номер телефона должен начинаться с цифры 7',
+			})
+		}
+
+		let DayAgo = new Date()
+		DayAgo.setDate(DayAgo.getDate() - 1)
+
+		const previousPhoneChecking = await PhoneChecking.find({
+			$or: [{ phone }, { ip }],
+			createdAt: { $gt: DayAgo },
+		})
+
+		if (previousPhoneChecking.length >= 10) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Превышено число авторизаций за сутки',
+			})
+		}
+
+		const code = Math.floor(1000 + Math.random() * 9000) // 4 значный код для подтверждения
+		await PhoneChecking.updateMany({ phone, code: { $ne: code } }, { $set: { isCancelled: true } })
+
+		// Создание записи в журнале авторизаций через смс
+		await PhoneChecking.create({
+			phone,
+			code,
+			isConfirmed: false,
+			attemptAmount: 3,
+			ip,
+			isCancelled: false,
+		})
+
+		const response = await fetch(
+			`https://smsc.ru/sys/send.php?login=${process.env.LOGIN}&psw=${process.env.PASSWORD}&phones=${phone}&mes=${code}`
+		)
+
+		if (response.status === 200) {
+			return resSuccess({ res, msg: 'Сообщение с кодом отправлено по указанному номеру телефона' })
+		} else {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Что-то пошло не так. Попробуйе позже',
+			})
+		}
+	} catch (error) {
+		return res.json(error)
+	}
+})
+
+/*
+ *  Проверка 4 значного кода через смс для для авторизации / регистрации
+ */
+router.post('/sms/compare', async (req, res) => {
+	const { code, phone } = req.body
+	let refererUserId = req.header('RefererUserId') || null
+
+	if (!code) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Не получен 4 значный код',
+		})
+	}
+
+	if (!phone) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Не получен phone',
+		})
+	}
+
+	if (code.toString().length !== 4) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Код должен быть 4 значным',
+		})
+	}
+
+	let DayAgo = new Date()
+	DayAgo.setDate(DayAgo.getDate() - 1)
+
+	const phoneCheckingLog = await PhoneChecking.findOne({
+		phone,
+		isConfirmed: false,
+		isCancelled: false,
+		createdAt: { $gt: DayAgo },
+	})
+
+	if (phoneCheckingLog) {
+		if (phoneCheckingLog.attemptAmount === 0) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Исчерпано количество попыток. Запросите новый код',
+			})
+		}
+
+		phoneCheckingLog.attemptAmount -= 1
+		await phoneCheckingLog.save()
+
+		if (code !== phoneCheckingLog.code) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Неверный код подтверждения',
+			})
+		}
+
+		phoneCheckingLog.isConfirmed = true
+		await phoneCheckingLog.save()
+
+		// Поиск пользователя в БД
+		let user = await User.findOne({ phone })
+
+		// Если пользователя нет в БД, создаем нового
+		if (!user) {
+			user = await new User({
+				phone,
+				lastVisitAt: Date.now(),
+			}).save()
+
+			if (refererUserId) {
+				// Поиск пользователя в БД, который пригласил на регистрацию
+				const refererUser = await User.findOneAndUpdate(
+					{ _id: refererUserId },
+					{
+						$addToSet: {
+							'referral.userIds': user._id,
+						},
+					}
+				)
+				// Привязать пользователя к рефереру
+				if (refererUser) {
+					await User.updateOne({ _id: user._id }, { $set: { refererUserId } })
+				}
+			}
+		}
+
+		// Генерируем токен
+		const userId = user._id
+		const token = await generateAccessToken(userId)
+
+		await User.updateOne(
+			{ _id: userId },
+			{
+				$push: {
+					sessions: {
+						token,
+						ip: req.ip,
+						os: req.useragent.os,
+						isBot: Boolean(req.useragent.isBot),
+						isMobile: req.useragent.isMobile,
+						isDesktop: req.useragent.isDesktop,
+						browser: req.useragent.browser,
+						version: req.useragent.version,
+						platform: req.useragent.platform,
+						createdAt: Date.now(),
+					},
+				},
+			}
+		)
+
+		// Логирование на создание запроса авторизации
+		await new AuthLog({
+			token,
+			userId,
+			type: 'LOGIN',
+		}).save()
+
+		const hostname = process.env.HOSTNAME
+		const isLocalhost = hostname === 'localhost' && !req.headers.origin?.endsWith('ngrok-free.app')
+
+		res.cookie('token', token, {
+			path: '/',
+			priority: 'high',
+			domain: hostname,
+			maxAge: 31536000000,
+			secure: !isLocalhost,
+			sameSite: isLocalhost ? 'lax' : 'none',
+		})
+
+		return res.status(200).json({ token })
+	} else {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Для данного номера телефона нет действующего кода подтверждения. Запросите код подтверждения повторно',
+		})
+	}
 })
 
 module.exports = router
