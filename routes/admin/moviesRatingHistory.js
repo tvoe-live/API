@@ -342,8 +342,6 @@ router.delete('/rating', verify.token, async (req, res) => {
 				$inc: { __v: 1 },
 			}
 		)
-		console.log('movieRating:', movieRating)
-		// return
 
 		// Получить все оценки фильма
 		const movieRatingLogs = await MovieRating.aggregate([
