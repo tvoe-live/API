@@ -262,21 +262,21 @@ router.post('/sms/login', async (req, res) => {
 	const ip = req.ip
 
 	try {
-		if (referer !== process.env.REFERER && referer !== process.env.DEV_REFERER) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'С вашего адреса запрос запрещен',
-			})
-		}
+		// if (referer !== process.env.REFERER && referer !== process.env.DEV_REFERER) {
+		// 	return resError({
+		// 		res,
+		// 		alert: true,
+		// 		msg: 'С вашего адреса запрос запрещен',
+		// 	})
+		// }
 
-		if (req.useragent?.isBot) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Обнаружен бот',
-			})
-		}
+		// if (req.useragent?.isBot) {
+		// 	return resError({
+		// 		res,
+		// 		alert: true,
+		// 		msg: 'Обнаружен бот',
+		// 	})
+		// }
 
 		if (!phone) {
 			return resError({
