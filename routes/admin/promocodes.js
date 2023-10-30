@@ -1,6 +1,7 @@
 const express = require('express')
 const mongoose = require('mongoose')
 
+const User = require('../../models/user')
 const Tariff = require('../../models/tariff')
 const Promocode = require('../../models/promocode')
 const PromocodesLog = require('../../models/promocodeLog')
@@ -226,18 +227,64 @@ router.delete('/', verify.token, verify.isAdmin, async (req, res) => {
 })
 
 /*
+ *  Отменить действие промокода для конкретного юзера
+ */
+router.delete('/cancel/:id', verify.token, verify.isAdmin, async (req, res) => {
+	const _id = req.params?.id
+	if (!_id) return resError({ res, msg: 'Не передан id' })
+
+	try {
+		const promocodeLog = await PromocodesLog.findOne({
+			_id,
+		})
+
+		if (!promocodeLog) {
+			return resError({
+				res,
+				msg: `Невозможно отменить действие промокода, так как promocodeLog c id = ${_id} не существует`,
+			})
+		}
+
+		if (promocodeLog.isCancelled) {
+			return resError({ res, msg: 'Промокод уже был отменен ранее' })
+		} else if (promocodeLog.isPurchaseCompleted) {
+			const user = await User.findOne({ _id: promocodeLog.userId })
+			const promocode = await Promocode.findOne({ _id: promocodeLog.promocodeId })
+
+			const tariff = await Tariff.findOne({ name: promocode.tariffName })
+
+			if (Date.now() < promocodeLog.createdAt.getTime() + Number(tariff.duration)) {
+				user.subscribe = null
+				user.save()
+			}
+		}
+
+		promocodeLog.isCancelled = true
+		promocodeLog.save()
+
+		return resSuccess({
+			res,
+			alert: true,
+			msg: 'Действие промокода отменено',
+		})
+	} catch (err) {
+		return resError({ res, msg: err })
+	}
+})
+
+/*
  *  Общие данные и аналитика об одном конкретном промокоде
  */
 router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
 
-	const { _id, userId } = req.query
+	const { _id, query } = req.query
 
 	if (!_id) return resError({ res, msg: 'Не передан _id' })
 	if (!isValidObjectId(_id)) return resError({ res, msg: 'Не валидный _id' })
 
-	if (userId && !isValidObjectId(userId)) return resError({ res, msg: 'Не валидный userId' })
+	if (query && !isValidObjectId(query)) return resError({ res, msg: 'Не валидный userId' })
 
 	try {
 		const result = await Promocode.aggregate([
@@ -272,8 +319,8 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 					pipeline: [
 						{
 							$match: {
-								...(userId && {
-									userId: mongoose.Types.ObjectId(userId),
+								...(query && {
+									userId: mongoose.Types.ObjectId(query),
 								}),
 							},
 						},
@@ -291,6 +338,38 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 											phone: true,
 											email: true,
 											lastname: true,
+											subscribe: true,
+											referral: true,
+										},
+									},
+									{
+										$addFields: {
+											isReferral: {
+												$cond: {
+													if: {
+														$and: [
+															{ $ne: ['$referral', null] },
+															{ $ne: ['$referral.userIds', null] },
+															{ $eq: [{ $type: '$referral.userIds' }, 'array'] },
+															{ $gt: [{ $size: '$referral.userIds' }, 0] },
+														],
+													},
+													then: true,
+													else: false,
+												},
+											},
+											isHaveSubscribe: {
+												$cond: {
+													if: {
+														$and: [
+															{ $ne: ['$subscribe', null] },
+															{ $gt: ['$subscribe.finishAt', new Date()] },
+														],
+													},
+													then: true,
+													else: false,
+												},
+											},
 										},
 									},
 								],
@@ -301,7 +380,7 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 						{
 							$addFields: {
 								isExpired: {
-									$lt: [{ $add: ['$createdAt', '$$tariffDuration'] }, new Date()],
+									$lt: [{ $add: ['$createdAt', '$$tariffDuration'] }, new Date()], // закончилось ли действие промокода
 								},
 							},
 						},
