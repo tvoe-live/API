@@ -5332,7 +5332,7 @@ paths:
           description: Id промокода
           required: true
         - in: query
-          name: userId
+          name: query
           schema:
             type: string
           description: Id пользователя для поиска пользователей, активировавших указанный промокод
@@ -5412,6 +5412,12 @@ paths:
                             lastname:
                               type: string
                               description: Фамилия пользователя
+                            isReferral:
+                              type: boolean
+                              description: Является лишь юзер участником рефералки ( приглашал ли он других пользователей)
+                            isHaveSubscribe:
+                              type: boolean
+                              description: Имеет ли пользователь активную подписку в данный момент
 
                 example:
                   _id: 650d5d3e981100537fb33ecd
@@ -5434,6 +5440,8 @@ paths:
                         email: me@stwinnie.com
                         firstname: Mikhail
                         lastname: Zakharovskiy
+                        isReferral: true
+                        isHaveSubscribe: true
                       isExpired: true
                     - _id: 651fea6752c6d5f1209707d7
                       createdAt: '2023-09-22T09:26:14.932Z'
@@ -5442,8 +5450,43 @@ paths:
                         email: 7on999@gmail.com
                         lastname: Папин
                         firstname: Семённн
+                        isReferral: true
+                        isHaveSubscribe: false
                       isExpired: false
                   sizeLogs: 2
+
+  /admin/promocodes/cancel:
+    delete:
+      summary: Админ панель => Отмена действия промокода у конкретного пользователя
+      tags:
+        - Admin
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          description: Id записи применения промокода (promocodeLog id). Передается как params
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    description: Надпись success
+                  alert:
+                    type: boolean
+                    description: Показывать как всплывающее уведомление в ui
+                  msg:
+                    type: string
+                    description: Cообщение от отмены действии промокода
+                example:
+                  type: success
+                  alert: true
+                  msg: Действие промокода отменено
 
   /admin/promocodes/countAll:
     get:
@@ -5639,15 +5682,6 @@ paths:
                       startAt: '2023-09-01T00:00:00.000Z'
                       finishAt: '2023-10-01T00:00:00.000Z'
                       createdAt: '2023-09-22T09:25:01.398Z'
-
-                #   _id: 650d5d3e981100537fb33ecd
-                #   maxAmountActivation: 20
-                #   currentAmountActivation: 1
-                #   isOnlyForNewUsers: false
-                #   isActive: false
-                #   tariffName: 6 месяцев
-                #   discountFormat: rubles
-                #   sizeDiscount: 150
 
   /collections:
     get:
@@ -6006,7 +6040,7 @@ paths:
         - Collections
       parameters:
         - $ref: '#/components/parameters/AuthorizationHeader'
-        - in: params
+        - in: path
           name: id
           schema:
             type: string

@@ -5783,7 +5783,7 @@
 					},
 					{
 						"in": "query",
-						"name": "userId",
+						"name": "query",
 						"schema": { "type": "string" },
 						"description": "Id пользователя для поиска пользователей, активировавших указанный промокод"
 					}
@@ -5871,6 +5871,14 @@
 															"lastname": {
 																"type": "string",
 																"description": "Фамилия пользователя"
+															},
+															"isReferral": {
+																"type": "boolean",
+																"description": "Является лишь юзер участником рефералки ( приглашал ли он других пользователей)"
+															},
+															"isHaveSubscribe": {
+																"type": "boolean",
+																"description": "Имеет ли пользователь активную подписку в данный момент"
 															}
 														}
 													}
@@ -5899,7 +5907,9 @@
 													"_id": "63bfe1f923c814afb6093783",
 													"email": "me@stwinnie.com",
 													"firstname": "Mikhail",
-													"lastname": "Zakharovskiy"
+													"lastname": "Zakharovskiy",
+													"isReferral": true,
+													"isHaveSubscribe": true
 												},
 												"isExpired": true
 											},
@@ -5910,12 +5920,56 @@
 													"_id": "6480807e904d20e5d4c1b6db",
 													"email": "7on999@gmail.com",
 													"lastname": "Папин",
-													"firstname": "Семённн"
+													"firstname": "Семённн",
+													"isReferral": true,
+													"isHaveSubscribe": false
 												},
 												"isExpired": false
 											}
 										],
 										"sizeLogs": 2
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/admin/promocodes/cancel": {
+			"delete": {
+				"summary": "Админ панель => Отмена действия промокода у конкретного пользователя",
+				"tags": ["Admin"],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"schema": { "type": "string" },
+						"description": "Id записи применения промокода (promocodeLog id). Передается как params"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"type": { "type": "string", "description": "Надпись success" },
+										"alert": {
+											"type": "boolean",
+											"description": "Показывать как всплывающее уведомление в ui"
+										},
+										"msg": {
+											"type": "string",
+											"description": "Cообщение от отмены действии промокода"
+										}
+									},
+									"example": {
+										"type": "success",
+										"alert": true,
+										"msg": "Действие промокода отменено"
 									}
 								}
 							}
@@ -6607,7 +6661,7 @@
 				"parameters": [
 					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
-						"in": "params",
+						"in": "path",
 						"name": "id",
 						"schema": { "type": "string" },
 						"description": "Id записи которую необходимо удалить"
