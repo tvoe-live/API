@@ -7213,7 +7213,7 @@ paths:
                 example:
                   token: eyJhbGciOiJIUzI1NiIsInR1cCI6IkpXVCJ9.eyJpZCI6IjY0ODA4ODZjMmZjMzhkY2E4MDQyOThkMCIsImlhdCI6MTY4ODc1NDAwMywiZXhwIjoxNzIwMzExNjAzfQ.sTY0dun0jUgAS96QXciWl7V-J7OeurvxmSAXjNp-AFQ
 
-  /sms/login:
+  auth/sms/login:
     patch:
       summary: Авторизация через cмс
       tags:

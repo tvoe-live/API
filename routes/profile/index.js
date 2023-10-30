@@ -43,13 +43,13 @@ router.get('/', verify.token, async (req, res) => {
 
 // Изменение профиля
 router.patch('/', verify.token, async (req, res) => {
-	let { firstname } = req.body
+	let { firstname, phone } = req.body
 
-	if (typeof firstname === 'undefined') {
+	if (typeof firstname === 'undefined' && typeof phone === 'undefined') {
 		return resError({
 			res,
 			alert: true,
-			msg: 'Поле firstname обязательное',
+			msg: 'Обязательно наличие поля firstname и/или phone',
 		})
 	}
 
