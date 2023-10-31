@@ -7,7 +7,7 @@ const {
 } = process.env
 const express = require('express')
 const router = express.Router()
-
+const cron = require('node-cron')
 const axios = require('axios')
 const crypto = require('crypto')
 const mongoose = require('mongoose')
@@ -18,10 +18,13 @@ const resError = require('../helpers/resError')
 const PaymentLog = require('../models/paymentLog')
 const PromocodeLog = require('../models/promocodeLog')
 const isValidObjectId = require('../helpers/isValidObjectId')
+const { Tasks } = require('../helpers/createTask')
 
 /*
  * Тарифы, создание и обработка платежей
  */
+
+const paymentTasks = new Tasks('payment')
 
 // Получить токен для проверки подлинности запросов
 const getToken = (params) => {
@@ -249,6 +252,8 @@ router.post('/createPayment', verify.token, async (req, res) => {
 			msg: 'Не валидное значение selectedTariffId',
 		})
 	}
+
+	await paymentTasks.deleteTask(req.user._id)
 
 	const benefitsFromPromocodes = await PromocodeLog.aggregate([
 		{
@@ -540,8 +545,8 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		Amount: price * 100, // Цена тарифа (в копейках)
 		OrderId: paymentLog._id, // ID заказа
 		Description: `Подписка на ${selectedTariff.name}`, // Описание заказа (для СБП)
-		//CustomerKey:
-		//Recurrent:
+		CustomerKey: req.user._id,
+		Recurrent: 'Y',
 		PayType: 'O', // Тип проведения платежа ("O" - одностадийная оплата)
 		Language: 'ru', // Язык платежной формы
 		Receipt: {
@@ -779,6 +784,71 @@ router.post('/notification', async (req, res) => {
 		default:
 			break
 	}
+
+	const minutis = new Date().getMinutes()
+	const hours = new Date().getHours()
+	const day = new Date().getDay()
+	const months = (tariff.duration / (1000 * 60 * 60 * 24 * 30)) % 12
+
+	await paymentTasks.createTask(
+		user._id.toString(),
+		`${minutis} ${hours} ${day} */${months} *`,
+		async () => {
+			try {
+				const { data: initResponse } = await axios.post(
+					'https://securepay.tinkoff.ru/v2/Init',
+					{
+						TerminalKey: PAYMENT_TERMINAL_KEY, // ID терминала
+						Amount: tariff.price * 100,
+						OrderId: paymentLogId,
+						Token: token,
+					},
+					{ headers: { 'Content-Type': 'application/json' } }
+				)
+
+				const { data: chargeResponse } = await axios.post(
+					'https://securepay.tinkoff.ru/v2/Charge',
+					{
+						TerminalKey: PAYMENT_TERMINAL_KEY, // ID терминала
+						PaymentId: initResponse.PaymentId,
+						RebillId: rebillId,
+						Token: token,
+					}
+				)
+
+				if (chargeResponse.Status === 'CONFIRMED') {
+					await PaymentLog.updateOne(
+						{ _id: paymentLogId },
+						{
+							$set: {
+								isChecked: false,
+								finishAt,
+								startAt: paymentStartAt,
+								pan,
+								cardId,
+								status,
+								expDate,
+								message,
+								details,
+								orderId,
+								success,
+								rebillId,
+								paymentId,
+								errorCode,
+								terminalKey,
+								amount: tariff.price,
+								refundedAmount: status === 'REFUNDED' || status === 'PARTIAL_REFUNDED' ? amount : 0,
+							},
+							$unset: { token: null },
+							$inc: { __v: 1 },
+						}
+					)
+				}
+			} catch (error) {
+				console.log(error)
+			}
+		}
+	)
 
 	return res.status(200).send('OK')
 })
