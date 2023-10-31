@@ -313,18 +313,18 @@ router.post('/sms/login', async (req, res) => {
 		let DayAgo = new Date()
 		DayAgo.setDate(DayAgo.getDate() - 1)
 
-		const previousPhoneChecking = await PhoneChecking.find({
-			$or: [{ phone }, { ip }],
-			createdAt: { $gt: DayAgo },
-		})
+		// const previousPhoneChecking = await PhoneChecking.find({
+		// 	$or: [{ phone }, { ip }],
+		// 	createdAt: { $gt: DayAgo },
+		// })
 
-		if (previousPhoneChecking.length >= 10) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Превышено число авторизаций за сутки',
-			})
-		}
+		// if (previousPhoneChecking.length >= 10) {
+		// 	return resError({
+		// 		res,
+		// 		alert: true,
+		// 		msg: 'Превышено число авторизаций за сутки',
+		// 	})
+		// }
 
 		const code = Math.floor(1000 + Math.random() * 9000) // 4 значный код для подтверждения
 		await PhoneChecking.updateMany({ phone, code: { $ne: code } }, { $set: { isCancelled: true } })
