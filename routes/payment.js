@@ -703,14 +703,19 @@ router.post('/notification', async (req, res) => {
 
 		const addToBalance = amount * (REFERRAL_PERCENT_BONUSE / 100)
 
-		await User.updateOne(
-			{ _id: refererUserId },
-			{
+		const referalUser = await User.findByIdAndUpdate(refererUserId, {
+			$inc: {
+				'referral.balance': addToBalance,
+			},
+		})
+
+		if (referalUser.refererUserId) {
+			await User.findByIdAndUpdate(a.refererUserId, {
 				$inc: {
-					'referral.balance': addToBalance,
+					'referral.balance': addToBalance / 2,
 				},
-			}
-		)
+			})
+		}
 	}
 
 	switch (status) {
@@ -817,32 +822,25 @@ router.post('/notification', async (req, res) => {
 				)
 
 				if (chargeResponse.Status === 'CONFIRMED') {
-					await PaymentLog.updateOne(
-						{ _id: paymentLogId },
+					await User.updateOne(
+						{ _id: user._id },
 						{
 							$set: {
-								isChecked: false,
-								finishAt,
-								startAt: paymentStartAt,
-								pan,
-								cardId,
-								status,
-								expDate,
-								message,
-								details,
-								orderId,
-								success,
-								rebillId,
-								paymentId,
-								errorCode,
-								terminalKey,
-								amount: tariff.price,
-								refundedAmount: status === 'REFUNDED' || status === 'PARTIAL_REFUNDED' ? amount : 0,
+								subscribe: {
+									startAt,
+									finishAt,
+									tariffId: paymentLog.tariffId,
+								},
+								allowTrialTariff: false,
 							},
-							$unset: { token: null },
-							$inc: { __v: 1 },
 						}
 					)
+
+					await shareWithReferrer({
+						amount,
+						userId: user._id,
+						refererUserId: user.refererUserId,
+					})
 				}
 			} catch (error) {
 				console.log(error)
