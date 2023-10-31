@@ -41,15 +41,15 @@ router.get('/', verify.token, async (req, res) => {
 	return res.status(200).json(user)
 })
 
-// Изменение профиля
+// Изменение имени в профиле
 router.patch('/', verify.token, async (req, res) => {
-	let { firstname, phone } = req.body
+	let { firstname } = req.body
 
-	if (typeof firstname === 'undefined' && typeof phone === 'undefined') {
+	if (typeof firstname === 'undefined') {
 		return resError({
 			res,
 			alert: true,
-			msg: 'Обязательно наличие поля firstname и/или phone',
+			msg: 'Обязательно наличие поля firstname',
 		})
 	}
 
@@ -76,6 +76,108 @@ router.patch('/', verify.token, async (req, res) => {
 		alert: true,
 		msg: 'Имя пользователя обновлено',
 	})
+})
+
+// Изменение номера телефона в профиле
+router.patch('/phone', verify.token, async (req, res) => {
+	let { phone } = req.body
+	const ip = req.ip
+
+	try {
+		// if (referer !== process.env.REFERER && referer !== process.env.DEV_REFERER) {
+		// 	return resError({
+		// 		res,
+		// 		alert: true,
+		// 		msg: 'С вашего адреса запрос запрещен',
+		// 	})
+		// }
+
+		// if (req.useragent?.isBot) {
+		// 	return resError({
+		// 		res,
+		// 		alert: true,
+		// 		msg: 'Обнаружен бот',
+		// 	})
+		// }
+
+		if (!phone) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Не получен phone',
+			})
+		}
+
+		if (typeof phone !== 'number') {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Номер телефона может содержать только цифры',
+			})
+		}
+
+		if (phone.toString()?.length !== 11) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Номер телефона должен состоять из 11 цифр',
+			})
+		}
+
+		if (phone.toString()[0] !== '7') {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Номер телефона должен начинаться с цифры 7',
+			})
+		}
+
+		let DayAgo = new Date()
+		DayAgo.setDate(DayAgo.getDate() - 1)
+
+		const previousPhoneChecking = await PhoneChecking.find({
+			$or: [{ phone }, { ip }],
+			createdAt: { $gt: DayAgo },
+		})
+
+		if (previousPhoneChecking.length >= 10) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Превышено число авторизаций за сутки',
+			})
+		}
+
+		const code = Math.floor(1000 + Math.random() * 9000) // 4 значный код для подтверждения
+		await PhoneChecking.updateMany({ phone, code: { $ne: code } }, { $set: { isCancelled: true } })
+
+		// Создание записи в журнале авторизаций через смс
+		await PhoneChecking.create({
+			phone,
+			code,
+			isConfirmed: false,
+			attemptAmount: 3,
+			ip,
+			isCancelled: false,
+			type: 'registration',
+		})
+
+		const response = await fetch(
+			`https://smsc.ru/sys/send.php?login=${process.env.LOGIN}&psw=${process.env.PASSWORD}&phones=${phone}&mes=${code}`
+		)
+
+		if (response.status === 200) {
+			return resSuccess({ res, msg: 'Сообщение с кодом отправлено по указанному номеру телефона' })
+		} else {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Что-то пошло не так. Попробуйе позже',
+			})
+		}
+	} catch (error) {
+		return res.json(error)
+	}
 })
 
 // Удаление профиля

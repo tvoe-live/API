@@ -337,6 +337,7 @@ router.post('/sms/login', async (req, res) => {
 			attemptAmount: 3,
 			ip,
 			isCancelled: false,
+			type: 'registration',
 		})
 
 		const response = await fetch(
@@ -395,6 +396,7 @@ router.post('/sms/compare', async (req, res) => {
 		phone,
 		isConfirmed: false,
 		isCancelled: false,
+		type: 'registration',
 		createdAt: { $gt: DayAgo },
 	})
 
