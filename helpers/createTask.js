@@ -7,13 +7,17 @@ const cronTaskModel = require('../models/cronTask')
 class Tasks {
 	constructor(_prefix) {
 		this.prefix = _prefix
-		cronTaskModel
-			.find({ prefix: _prefix }, { _id: false, __v: false })
-			.then((res) => (this.tasks = res))
 	}
 
-	tasks
+	tasks = []
 	prefix
+
+	async init() {
+		this.tasks = await cronTaskModel.find(
+			{ prefix: this.prefix, isDeleted: false },
+			{ _id: false, __v: false }
+		)
+	}
 
 	/**
 	 * Метод для создания новой задачи
@@ -24,72 +28,60 @@ class Tasks {
 	 * @returns созданную задачу (по умолчанию она не запущенная)
 	 */
 	createTask = async (id = null, period, callback, isStart = false) => {
-		const task = cron.schedule(period, callback, {
+		cron.schedule(period, callback, {
 			scheduled: isStart ? true : false,
-			name: `${prefix}-${id}`,
+			name: id ? `${this.prefix}-${id}` : `${this.prefix}-${this.tasks.length}`,
 		})
 
 		await cronTaskModel.create({
-			id: id ? `${prefix}-${id}` : `${prefix}-${this.tasks.length}`,
+			id: id ? `${this.prefix}-${id}` : `${this.prefix}-${this.tasks.length}`,
+			prefix: this.prefix,
 			period,
 		})
 
 		this.tasks.push({
-			id: id ? `${prefix}-${id}` : `${prefix}-${this.tasks.length}`,
+			id: id ? `${this.prefix}-${id}` : `${this.prefix}-${this.tasks.length}`,
 			period,
 		})
 
-		return task
+		return this.tasks[this.tasks.length - 1].id
 	}
 
 	/**
+	 * Запустить крон-задачу
+	 *
+	 * @param {String} id - Идентификатор крон-задачи
+	 * @returns
+	 */
+	startTask = (id) => cron.getTasks().get(id).start()
+
+	/**
+	 * Остановить крон-задачу
 	 *
 	 * @param {String} id - Идентификатор по котораму будет искаться задача
 	 * @returns Возвращает найденную задачу
 	 */
 	stopTask = (id) =>
-		this.tasks.find((item) => item.id === `${prefix}-${id}` && cron.getTasks[item.id].stop())
-
-	getTask = (id) =>
-		this.tasks.find((item) => {
-			if (item.id === `${this.prefix}-${id}`) {
-				return cron.getTasks[item.id]
-			}
-		})
+		this.tasks.find(
+			(item) => item.id === `${this.prefix}-${id}` && cron.getTasks().get(item.id).stop()
+		)
 
 	/**
+	 * Получить крон-задачу
 	 *
-	 * @param {String} id - идентификатор задачи, которая будет изменена
-	 * @param {Object} newTask - данные новой задачи (новый период и новый колбек)
-	 * @returns возвращает новую задачу (по умолчанию не запущенна)
+	 * @param {String} id - Идентификатор по которому будет искаться задача
+	 * @returns Найденную задачу
 	 */
-	changeTask = async (id, newTask, isStart = false) => {
-		for (const item of this.tasks) {
-			if (item.id === `${prefix}-${id}`) {
-				cron.getTasks[item.id].stop()
-
-				item.period = newTask.period
-				const task = cron.schedule(newTask.period, newTask.callback, {
-					scheduled: isStart ? true : false,
-					name: `${prefix}-${id}`,
-				})
-
-				await item.save()
-				task.start()
-
-				return task
-			}
-		}
-	}
+	getTask = (id) => cron.getTasks().get(`${this.prefix}-${id}`)
 
 	/**
 	 *
-	 * @param {String} id
+	 * @param {String} id - Идентификатор по котораму будет искаться задача
 	 */
 	deleteTask = async (id) => {
 		for (const item of this.tasks) {
 			if (item.id === `${prefix}-${id}`) {
-				cron.getTasks[item.id].stop()
+				cron.getTasks().get(item.id).stop()
 				item.isDeleted = true
 				await item.save()
 			}

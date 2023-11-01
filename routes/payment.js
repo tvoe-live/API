@@ -795,7 +795,9 @@ router.post('/notification', async (req, res) => {
 	const day = new Date().getDay()
 	const months = (tariff.duration / (1000 * 60 * 60 * 24 * 30)) % 12
 
-	const task = await paymentTasks.createTask(
+	await paymentTasks.init()
+
+	const taskId = await paymentTasks.createTask(
 		user._id.toString(),
 		`${minutis} ${hours} ${day} */${months} *`,
 		async () => {
@@ -867,7 +869,7 @@ router.post('/notification', async (req, res) => {
 		}
 	)
 
-	task.start()
+	paymentTasks.startTask(taskId)
 
 	return res.status(200).send('OK')
 })
