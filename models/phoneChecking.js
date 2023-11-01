@@ -6,16 +6,17 @@ const mongoose = require('mongoose')
 
 const phoneCheckingSchema = new mongoose.Schema(
 	{
-		phone: {
-			// Номер телефона
-			type: Number,
-			index: true,
-		},
+		phone: String, // Номер телефона
 		code: Number, // 4 значный код подтверждения
 		attemptAmount: Number, // Число попыток
 		isConfirmed: Boolean, //Был ли использован этот код для потверждения номера телефона
 		ip: String, // ip адрес
 		isCancelled: Boolean, // Отменен ли код подтверждения
+		type: {
+			type: String,
+			enum: ['authorization', 'change'], // authorization - для авторизации / регистрации, change - для смены номера телефона
+		},
+		userId: mongoose.Schema.Types.ObjectId, // Id пользователя
 	},
 	{
 		timestamps: true,
