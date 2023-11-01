@@ -394,13 +394,13 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 						},
 					],
 
-					as: 'promocodeslogs',
+					as: 'items',
 				},
 			},
 			{
 				$addFields: {
 					sizeLogs: {
-						$size: '$promocodeslogs',
+						$size: '$items',
 					},
 				},
 			},
