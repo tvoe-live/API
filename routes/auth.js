@@ -18,6 +18,8 @@ require('dotenv').config()
  * Авторизация / регистрация через Яндекс и разрушение сессии
  */
 
+const regex = /^7\d{10}$/ // проверка номера телефона: начинается с цифры 7 и состоит из 11 цифр
+
 // Скачивание аватарки
 const downloadAvatar = async (res, default_avatar_id) => {
 	try {
@@ -286,27 +288,11 @@ router.post('/sms/login', async (req, res) => {
 			})
 		}
 
-		if (typeof phone !== 'number') {
+		if (!regex.test(phone)) {
 			return resError({
 				res,
 				alert: true,
-				msg: 'Номер телефона может содержать только цифры',
-			})
-		}
-
-		if (phone.toString()?.length !== 11) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Номер телефона должен состоять из 11 цифр',
-			})
-		}
-
-		if (phone.toString()[0] !== '7') {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Номер телефона должен начинаться с цифры 7',
+				msg: 'Номер телефона должен начинаться с "7" и состоять из 11 цифр',
 			})
 		}
 
@@ -327,7 +313,10 @@ router.post('/sms/login', async (req, res) => {
 		// }
 
 		const code = Math.floor(1000 + Math.random() * 9000) // 4 значный код для подтверждения
-		await PhoneChecking.updateMany({ phone, code: { $ne: code } }, { $set: { isCancelled: true } })
+		await PhoneChecking.updateMany(
+			{ phone, code: { $ne: code }, type: 'authorization' },
+			{ $set: { isCancelled: true } }
+		)
 
 		// Создание записи в журнале авторизаций через смс
 		await PhoneChecking.create({
@@ -337,6 +326,7 @@ router.post('/sms/login', async (req, res) => {
 			attemptAmount: 3,
 			ip,
 			isCancelled: false,
+			type: 'authorization',
 		})
 
 		const response = await fetch(
@@ -380,6 +370,14 @@ router.post('/sms/compare', async (req, res) => {
 		})
 	}
 
+	if (!regex.test(phone)) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Номер телефона должен начинаться с "7" и состоять из 11 цифр',
+		})
+	}
+
 	if (code.toString().length !== 4) {
 		return resError({
 			res,
@@ -395,6 +393,7 @@ router.post('/sms/compare', async (req, res) => {
 		phone,
 		isConfirmed: false,
 		isCancelled: false,
+		type: 'authorization',
 		createdAt: { $gt: DayAgo },
 	})
 

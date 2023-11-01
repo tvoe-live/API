@@ -3,6 +3,7 @@ const router = express.Router()
 const multer = require('multer')
 const User = require('../../models/user')
 const Tariff = require('../../models/tariff')
+const PhoneChecking = require('../../models/phoneChecking')
 const UserDeletionLog = require('../../models/userDeletionLog')
 const verify = require('../../middlewares/verify')
 const resError = require('../../helpers/resError')
@@ -13,6 +14,8 @@ const { deleteFileFromS3 } = require('../../helpers/deleteFile')
 /*
  * Профиль > Основное
  */
+
+const regex = /^7\d{10}$/ // проверка номера телефона: начинается с цифры 7 и состоит из 11 цифр
 
 // Загрузка картинок в буффер
 const memoryStorage = multer.memoryStorage()
@@ -41,7 +44,7 @@ router.get('/', verify.token, async (req, res) => {
 	return res.status(200).json(user)
 })
 
-// Изменение профиля
+// Изменение имени в профиле
 router.patch('/', verify.token, async (req, res) => {
 	let { firstname } = req.body
 
@@ -49,7 +52,7 @@ router.patch('/', verify.token, async (req, res) => {
 		return resError({
 			res,
 			alert: true,
-			msg: 'Поле firstname обязательное',
+			msg: 'Обязательно наличие поля firstname',
 		})
 	}
 
@@ -76,6 +79,218 @@ router.patch('/', verify.token, async (req, res) => {
 		alert: true,
 		msg: 'Имя пользователя обновлено',
 	})
+})
+
+// Изменение номера телефона в профиле
+router.patch('/phone', verify.token, async (req, res) => {
+	const { phone } = req.body
+	const userId = req.user._id
+
+	try {
+		// if (referer !== process.env.REFERER && referer !== process.env.DEV_REFERER) {
+		// 	return resError({
+		// 		res,
+		// 		alert: true,
+		// 		msg: 'С вашего адреса запрос запрещен',
+		// 	})
+		// }
+
+		// if (req.useragent?.isBot) {
+		// 	return resError({
+		// 		res,
+		// 		alert: true,
+		// 		msg: 'Обнаружен бот',
+		// 	})
+		// }
+
+		if (!phone) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Не получен phone',
+			})
+		}
+
+		if (!regex.test(phone)) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Номер телефона должен начинаться с "7" и состоять из 11 цифр',
+			})
+		}
+
+		if (phone === req.user.phone) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'К данному аккаунту уже привязан этот номер телефона',
+			})
+		}
+
+		let DayAgo = new Date()
+		DayAgo.setDate(DayAgo.getDate() - 1)
+
+		const previousPhoneChecking = await PhoneChecking.find({
+			userId,
+			createdAt: { $gt: DayAgo },
+			type: 'change',
+		})
+
+		// if (previousPhoneChecking.length >= 3) {
+		// 	return resError({
+		// 		res,
+		// 		alert: true,
+		// 		msg: 'Нельзя менять телефон более 3 раз за сутки',
+		// 	})
+		// }
+
+		const code = Math.floor(1000 + Math.random() * 9000) // 4 значный код для подтверждения
+		await PhoneChecking.updateMany(
+			{ phone, code: { $ne: code }, type: 'change', userId },
+			{ $set: { isCancelled: true } }
+		)
+
+		// Создание записи в журнале авторизаций через смс
+		await PhoneChecking.create({
+			phone,
+			code,
+			isConfirmed: false,
+			attemptAmount: 3,
+			isCancelled: false,
+			type: 'change',
+			userId,
+		})
+
+		const response = await fetch(
+			`https://smsc.ru/sys/send.php?login=${process.env.LOGIN}&psw=${process.env.PASSWORD}&phones=${phone}&mes=${code}`
+		)
+
+		if (response.status === 200) {
+			return resSuccess({
+				res,
+				msg: 'Сообщение с кодом отправлено по указанному номеру телефона',
+				alert: true,
+			})
+		} else {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Что-то пошло не так. Попробуйе позже',
+			})
+		}
+	} catch (error) {
+		return res.json(error)
+	}
+})
+
+/*
+ *  Проверка 4 значного кода через смс для для смены номера телефона
+ */
+router.post('/change-phone/compare', verify.token, async (req, res) => {
+	const { code, phone } = req.body
+
+	if (!code) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Не получен 4 значный код',
+		})
+	}
+
+	if (!phone) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Не получен phone',
+		})
+	}
+
+	if (!regex.test(phone)) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Номер телефона должен начинаться с "7" и состоять из 11 цифр',
+		})
+	}
+
+	if (code.toString().length !== 4) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Код должен быть 4 значным',
+		})
+	}
+
+	let DayAgo = new Date()
+	DayAgo.setDate(DayAgo.getDate() - 1)
+
+	const phoneCheckingLog = await PhoneChecking.findOne({
+		phone,
+		isConfirmed: false,
+		isCancelled: false,
+		type: 'change',
+		createdAt: { $gt: DayAgo },
+		userId: req.user._id,
+	})
+
+	if (phoneCheckingLog) {
+		if (phoneCheckingLog.attemptAmount === 0) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Исчерпано количество попыток. Запросите новый код',
+			})
+		}
+
+		phoneCheckingLog.attemptAmount -= 1
+		await phoneCheckingLog.save()
+
+		if (code !== phoneCheckingLog.code) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Неверный код подтверждения',
+			})
+		}
+
+		phoneCheckingLog.isConfirmed = true
+		await phoneCheckingLog.save()
+
+		// Поиск пользователя в БД и установление ему нового номера телефона
+		await User.findOneAndUpdate(
+			{
+				_id: req.user._id,
+			},
+			{
+				$set: {
+					phone,
+				},
+				$inc: { __v: 1 },
+			}
+		)
+
+		// Обнулить телефон у другого юзера, если он существует, с таким номером телефона
+		await User.findOneAndUpdate(
+			{
+				_id: { $ne: req.user._id },
+				phone,
+			},
+			{
+				$set: {
+					phone: null,
+				},
+				$inc: { __v: 1 },
+			}
+		)
+
+		return res.status(200).json({ alert: true, msg: 'Номер телефона обновлен', success: true })
+	} else {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Для данного номера телефона нет действующего кода подтверждения. Запросите код подтверждения повторно',
+		})
+	}
 })
 
 // Удаление профиля

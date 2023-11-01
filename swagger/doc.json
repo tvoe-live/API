@@ -1977,6 +1977,102 @@
 				}
 			}
 		},
+		"/profile/phone/": {
+			"patch": {
+				"summary": "Профиль > Изменение номера телефона",
+				"tags": ["Profile"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"phone": {
+										"type": "string",
+										"description": "Новый номер телефона. Он должен состоять из 11 цифр подряд, первая цифра 7."
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"type": { "type": "string", "description": "success" },
+										"msg": {
+											"type": "string",
+											"description": "Сообщение с кодом отправлено по указанному номеру телефона"
+										},
+										"alert": { "type": "boolean", "description": true }
+									},
+									"example": {
+										"type": "success",
+										"alert": true,
+										"msg": "Сообщение с кодом отправлено по указанному номеру телефона"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/profile/change-phone/compare/": {
+			"post": {
+				"summary": "Профиль > Изменение номера телефона",
+				"tags": ["Profile"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"phone": {
+										"type": "string",
+										"description": "Новый номер телефона. Он должен состоять из 11 цифр подряд, первая цифра 7.",
+										"example": 79107718345
+									},
+									"code": {
+										"type": "number",
+										"description": "4 значный код подтверждения. Состоит из цифр",
+										"example": 1234
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"type": { "type": "string", "description": "success" },
+										"msg": {
+											"type": "string",
+											"description": "Сообение \"Номер телефона обновлен\""
+										},
+										"alert": { "type": "boolean", "description": true }
+									},
+									"example": { "type": "success", "alert": true, "msg": "Номер телефона обновлен" }
+								}
+							}
+						}
+					}
+				}
+			}
+		},
 		"/admin/categories": {
 			"get": {
 				"summary": "Получение категорий",
@@ -8041,7 +8137,7 @@
 				}
 			}
 		},
-		"/sms/login": {
+		"auth/sms/login": {
 			"patch": {
 				"summary": "Авторизация через cмс",
 				"tags": ["Auth"],
