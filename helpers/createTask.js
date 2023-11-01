@@ -1,6 +1,9 @@
 const cron = require('node-cron')
 const cronTaskModel = require('../models/cronTask')
 
+/**
+ * Класс-помошник для управления скроновскими задачами
+ */
 class Tasks {
 	constructor(_prefix) {
 		this.prefix = _prefix
@@ -12,8 +15,19 @@ class Tasks {
 	tasks
 	prefix
 
-	createTask = async (id = null, period, callback) => {
-		const task = cron.schedule(period, callback, { scheduled: false, name: `${prefix}-${id}` })
+	/**
+	 * Метод для создания новой задачи
+	 *
+	 * @param {String} id - идентификатор по которому можно найти задачу
+	 * @param {String} period - указание периода/времени выполнения задачи в cron-формате
+	 * @param {Function} callback - анонимная функция, которая будет выполнятся
+	 * @returns созданную задачу (по умолчанию она не запущенная)
+	 */
+	createTask = async (id = null, period, callback, isStart = false) => {
+		const task = cron.schedule(period, callback, {
+			scheduled: isStart ? true : false,
+			name: `${prefix}-${id}`,
+		})
 
 		await cronTaskModel.create({
 			id: id ? `${prefix}-${id}` : `${prefix}-${this.tasks.length}`,
@@ -28,6 +42,11 @@ class Tasks {
 		return task
 	}
 
+	/**
+	 *
+	 * @param {String} id - Идентификатор по котораму будет искаться задача
+	 * @returns Возвращает найденную задачу
+	 */
 	stopTask = (id) =>
 		this.tasks.find((item) => item.id === `${prefix}-${id}` && cron.getTasks[item.id].stop())
 
@@ -38,14 +57,20 @@ class Tasks {
 			}
 		})
 
-	changeTask = async (id, newTask) => {
+	/**
+	 *
+	 * @param {String} id - идентификатор задачи, которая будет изменена
+	 * @param {Object} newTask - данные новой задачи (новый период и новый колбек)
+	 * @returns возвращает новую задачу (по умолчанию не запущенна)
+	 */
+	changeTask = async (id, newTask, isStart = false) => {
 		for (const item of this.tasks) {
 			if (item.id === `${prefix}-${id}`) {
 				cron.getTasks[item.id].stop()
 
 				item.period = newTask.period
 				const task = cron.schedule(newTask.period, newTask.callback, {
-					scheduled: false,
+					scheduled: isStart ? true : false,
 					name: `${prefix}-${id}`,
 				})
 
@@ -57,6 +82,10 @@ class Tasks {
 		}
 	}
 
+	/**
+	 *
+	 * @param {String} id
+	 */
 	deleteTask = async (id) => {
 		for (const item of this.tasks) {
 			if (item.id === `${prefix}-${id}`) {
