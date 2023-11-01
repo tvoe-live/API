@@ -795,7 +795,7 @@ router.post('/notification', async (req, res) => {
 	const day = new Date().getDay()
 	const months = (tariff.duration / (1000 * 60 * 60 * 24 * 30)) % 12
 
-	await paymentTasks.createTask(
+	const task = await paymentTasks.createTask(
 		user._id.toString(),
 		`${minutis} ${hours} ${day} */${months} *`,
 		async () => {
@@ -807,6 +807,25 @@ router.post('/notification', async (req, res) => {
 						Amount: tariff.price * 100,
 						OrderId: paymentLogId,
 						Token: token,
+						PayType: 'O',
+						Language: 'ru',
+						Receipt: {
+							Items: [
+								{
+									Name: `Подписка на ${tariff.name}`, // Наименование товара
+									Price: tariff.price * 100, // Цена в копейках
+									Quantity: 1, // Количество или вес товара
+									Amount: tariff.price * 100, // Стоимость товара в копейках. Произведение Quantity и Price
+									PaymentMethod: 'lfull_prepayment', // Признак способа расчёта (предоплата 100%)
+									PaymentObject: 'commodity', // Признак предмета расчёта (товар)
+									Tax: 'vat20', // Ставка НДС (ставка 20%)
+								},
+							],
+							FfdVersion: '1.05', // Версия ФФД
+							Email: user.email || 'support@tvoe.team',
+							Phone: user.phone || '+74956635979',
+							Taxation: 'usn_income', // Упрощенная СН (доходы)
+						},
 					},
 					{ headers: { 'Content-Type': 'application/json' } }
 				)
@@ -847,6 +866,8 @@ router.post('/notification', async (req, res) => {
 			}
 		}
 	)
+
+	task.start()
 
 	return res.status(200).send('OK')
 })
