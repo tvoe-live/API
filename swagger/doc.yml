@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   title: API https://tvoe-dev.ru/
   version: v1
-  description: Изменения 25.10.2023 - 1) Роуты POST profile/notification,  DELETE profile/notification, PATCH profile/notification, GET profile/notification/count,  GET profile/notifications/countAll   переместились в POST admin/notification,  DELETE admin/notification, PATCH admin/notification, GET admin/notification/count,  GET admin/notifications/countAll соответственно. 2) В ответе ендпоинта GET search/oftenSeek удалил несколько полей, оставив id, дату релиза, url, постер, название
+  description: Изменения 25.10.2023 - 1) Роуты POST profile/notification,  DELETE profile/notification, PATCH profile/notification, GET profile/notification/count,  GET profile/notifications/countAll   переместились в POST admin/notification,  DELETE admin/notification, PATCH admin/notification, GET admin/notification/count,  GET admin/notifications/countAll соответственно. 2) В ответе ендпоинта GET search/oftenSeek удалил несколько полей, оставив id, дату релиза, url, постер, название. Изменения 01.11.2023 в ендпоинте admin/promocodes/count переименовано поле promocodelogs в items
 servers:
   - url: https://api.1390760-cu92735.tw1.ru/
 
@@ -5464,8 +5464,9 @@ paths:
                   createdAt:
                     type: date
                     description: Дата и время создания промокода
-                  promocodeslogs:
+                  items:
                     type: array
+                    description: Массив promocodelogs ( записей применения промокодов )
                     items:
                       type: object
                       properties:
@@ -5513,7 +5514,7 @@ paths:
                   startAt: '2023-09-01T00:00:00.000Z'
                   finishAt: '2023-10-01T00:00:00.000Z'
                   createdAt: '2023-09-22T09:24:14.077Z'
-                  promocodeslogs:
+                  items:
                     - _id: 650d5db6981100537fb33f7e
                       createdAt: '2023-04-01T09:26:14.932Z'
                       user:
