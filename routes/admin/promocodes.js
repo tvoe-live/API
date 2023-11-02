@@ -97,7 +97,7 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 		discountFormat,
 		sizeDiscount,
 		startAt,
-		finishAt = null,
+		finishAt = '3000-01-01',
 		maxAmountActivation = null,
 		isActive = false,
 		isOnlyForNewUsers = true,
@@ -109,6 +109,14 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 	if (discountFormat !== 'free-month' && !tariffName)
 		return resError({ res, msg: 'Не передан tariffName' })
 	if (!value) return resError({ res, msg: 'Не передан value' })
+
+	if (discountFormat === 'percentages' && (sizeDiscount < 1 || sizeDiscount > 99)) {
+		return resError({ res, msg: 'Не допустимый процент скидки' })
+	}
+
+	if (discountFormat === 'rubles' && (sizeDiscount < 1 || sizeDiscount > 800)) {
+		return resError({ res, msg: 'Не допустимая величина скидки' })
+	}
 
 	if (!startAt)
 		return resError({

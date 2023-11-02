@@ -5264,13 +5264,16 @@ paths:
               properties:
                 maxAmountActivation:
                   type: number
-                  description: Максимальное количество возможных активаций этого промокода пользователями вместе взятыми
+                  description: Максимальное количество возможных активаций этого промокода пользователями вместе взятыми. По умолчанию если это поле не передать, то промокод не имеет ограничений по количеству активаций
+                  required: false
                 isOnlyForNewUsers:
                   type: boolean
                   description: Доступен ли промокод только новым пользователм или всем. По умолчанию true - только для новых пользователей
+                  required: false
                 isActive:
                   type: boolean
                   description: Является ли промокод активным в данный момент времени. По умолчанию false
+                  required: false
                 tariffName:
                   type: string
                   description: Название тарифа - '1 месяц', '3 месяца', '6 месяцев'
@@ -5288,7 +5291,8 @@ paths:
                   description: Дата и время начала действия промокода. В формате YYYY-MM-DD HH:mm
                 finishAt:
                   type: date
-                  description: Дата и время окончания действия промокода. В формате YYYY-MM-DD HH:mm
+                  required: false
+                  description: Дата и время окончания действия промокода. В формате YYYY-MM-DD HH:mm. Если не передавать то промокод будет считаться бессрочным
       responses:
         '200':
           description: OK
