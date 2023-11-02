@@ -1611,6 +1611,22 @@
 															"name": { "type": "string", "description": "Название тарифа" },
 															"price": { "type": "number", "description": "Цена тарифа" }
 														}
+													},
+													"promocode": {
+														"type": "object",
+														"description": "Описание примененного при оплате промокода. Если промокод не был применен во время оплаты, это поля нет",
+														"required": false,
+														"properties": {
+															"_id": { "type": "string", "description": "Id промокода" },
+															"discountFormat": {
+																"type": "string",
+																"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+															},
+															"sizeDiscount": {
+																"type": "number",
+																"description": "Размер скидки. Если discountFormat = percentages, то sizeDiscount выражается в процентах. Если discountFormat = rubles, то sizeDiscount - в рублях"
+															}
+														}
 													}
 												}
 											}
@@ -1663,6 +1679,11 @@
 												"_id": "63dbe1687f457bc81bc920cb",
 												"name": "6 месяцев",
 												"price": 899
+											},
+											"promocode": {
+												"_id": "653bb72f9d1dd6ecf4493105",
+												"discountFormat": "percentages",
+												"sizeDiscount": 24
 											}
 										}
 									]

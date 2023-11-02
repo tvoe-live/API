@@ -106,6 +106,8 @@ router.get('/', verify.token, async (req, res) => {
 								startAt: true,
 								finishAt: true,
 								notificationType: true,
+								promocodeId: true,
+								sum: true,
 								tariff: {
 									_id: true,
 									name: true,
@@ -113,6 +115,28 @@ router.get('/', verify.token, async (req, res) => {
 								amount: {
 									$cond: ['$withdrawAmount', '$withdrawAmount', '$amount'],
 								},
+							},
+						},
+						{
+							$lookup: {
+								from: 'promocodes',
+								localField: 'promocodeId',
+								foreignField: '_id',
+								pipeline: [
+									{
+										$project: {
+											discountFormat: true,
+											sizeDiscount: true,
+										},
+									},
+								],
+								as: 'promocode',
+							},
+						},
+						{ $unwind: { path: '$promocode', preserveNullAndEmptyArrays: true } },
+						{
+							$project: {
+								promocodeId: false,
 							},
 						},
 						{ $sort: { _id: -1 } },
