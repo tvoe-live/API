@@ -93,17 +93,16 @@ router.get('/', verify.token, verify.isAdmin, async (req, res) => {
 router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 	const {
 		value,
-		startAt,
-		finishAt,
-		maxAmountActivation,
 		tariffName,
 		discountFormat,
 		sizeDiscount,
+		startAt,
+		finishAt = null,
+		maxAmountActivation = null,
 		isActive = false,
 		isOnlyForNewUsers = true,
 	} = req.body
 
-	if (!maxAmountActivation) return resError({ res, msg: 'Не передан maxAmountActivation' })
 	if (!discountFormat) return resError({ res, msg: 'Не передан discountFormat' })
 	if (discountFormat !== 'free-month' && !sizeDiscount)
 		return resError({ res, msg: 'Не передан sizeDiscount' })
@@ -115,11 +114,6 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 		return resError({
 			res,
 			msg: 'Не передана дата и время начала действия промокода - параметр startAt',
-		})
-	if (!finishAt)
-		return resError({
-			res,
-			msg: 'Не передана дата и время начала действия промокода - параметр finishAt',
 		})
 
 	const existTariff = Tariff.findOne({ name: tariffName })
