@@ -835,6 +835,7 @@
 									"properties": {
 										"_id": { "type": "string", "description": "Profile id" },
 										"email": { "type": "string", "description": "Email user(profile)" },
+										"phone": { "type": "string", "description": "Номер телефона" },
 										"avatar": { "type": "string", "description": "Path to img src profile user" },
 										"firstname": { "type": "string", "description": "Имя этого человека" },
 										"subscribe": {
@@ -870,6 +871,7 @@
 										"firstname": "Иван",
 										"allowTrialTariff": false,
 										"role": "admin",
+										"phone": 79107718345,
 										"subscribe": {
 											"startAt": "2021-04-13T07:41:42.000Z",
 											"finishAt": "2021-04-13T07:41:42.000Z",
