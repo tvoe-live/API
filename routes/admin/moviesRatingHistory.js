@@ -270,8 +270,6 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 								userId: false,
 								movieId: false,
 								__v: false,
-								// createdAt: false,
-								// updatedAt: false,
 							},
 						},
 						{ $sort: { _id: -1 } }, // Была сортировка updatedAt
