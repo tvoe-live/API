@@ -2,7 +2,7 @@ const cron = require('node-cron')
 const cronTaskModel = require('../models/cronTask')
 
 /**
- * Класс-помошник для управления скроновскими задачами
+ * Класс-помошник для управления кроновскими задачами
  */
 class Tasks {
 	constructor(_prefix) {
@@ -19,6 +19,11 @@ class Tasks {
 		)
 	}
 
+	static async restart(name, callback) {
+		const tasks = await cronTaskModel.find({ prefix, name })
+		tasks.forEach((item) => cron.schedule(item.period, callback))
+	}
+
 	/**
 	 * Метод для создания новой задачи
 	 *
@@ -27,20 +32,19 @@ class Tasks {
 	 * @param {Function} callback - анонимная функция, которая будет выполнятся
 	 * @returns созданную задачу (по умолчанию она не запущенная)
 	 */
-	createTask = async (id = null, period, callback, isStart = false) => {
+	createTask = async (name, period, callback, isStart = false) => {
 		cron.schedule(period, callback, {
 			scheduled: isStart ? true : false,
 			name: id ? `${this.prefix}-${id}` : `${this.prefix}-${this.tasks.length}`,
 		})
 
 		await cronTaskModel.create({
-			id: id ? `${this.prefix}-${id}` : `${this.prefix}-${this.tasks.length}`,
-			prefix: this.prefix,
+			name,
 			period,
 		})
 
 		this.tasks.push({
-			id: id ? `${this.prefix}-${id}` : `${this.prefix}-${this.tasks.length}`,
+			name,
 			period,
 		})
 

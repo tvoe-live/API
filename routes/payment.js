@@ -7,7 +7,6 @@ const {
 } = process.env
 const express = require('express')
 const router = express.Router()
-const cron = require('node-cron')
 const axios = require('axios')
 const crypto = require('crypto')
 const mongoose = require('mongoose')
@@ -18,13 +17,10 @@ const resError = require('../helpers/resError')
 const PaymentLog = require('../models/paymentLog')
 const PromocodeLog = require('../models/promocodeLog')
 const isValidObjectId = require('../helpers/isValidObjectId')
-const { Tasks } = require('../helpers/createTask')
 
 /*
  * Тарифы, создание и обработка платежей
  */
-
-const paymentTasks = new Tasks('payment')
 
 // Получить токен для проверки подлинности запросов
 const getToken = (params) => {
@@ -252,8 +248,6 @@ router.post('/createPayment', verify.token, async (req, res) => {
 			msg: 'Не валидное значение selectedTariffId',
 		})
 	}
-
-	await paymentTasks.deleteTask(req.user._id)
 
 	const benefitsFromPromocodes = await PromocodeLog.aggregate([
 		{
@@ -642,6 +636,8 @@ router.post('/notification', async (req, res) => {
 	const paymentLog = await PaymentLog.findOne({ _id: paymentLogId }) // Нахождение платежа в БД по ID
 
 	const user = await User.findOne({ _id: paymentLog.userId }) // Нахождение пользователя платежа
+	user.RebillId = rebillId
+	await user.save()
 	const tariff = await Tariff.findOne({ _id: paymentLog.tariffId }) // Нахождение оплаченого тарифа
 	const tariffDuration = Number(tariff.duration) // Длительность тарифа
 
@@ -710,7 +706,7 @@ router.post('/notification', async (req, res) => {
 		})
 
 		if (referalUser.refererUserId) {
-			await User.findByIdAndUpdate(a.refererUserId, {
+			await User.findByIdAndUpdate(referalUser.refererUserId, {
 				$inc: {
 					'referral.balance': addToBalance / 2,
 				},
@@ -789,87 +785,6 @@ router.post('/notification', async (req, res) => {
 		default:
 			break
 	}
-
-	const minutis = new Date().getMinutes()
-	const hours = new Date().getHours()
-	const day = new Date().getDay()
-	const months = (tariff.duration / (1000 * 60 * 60 * 24 * 30)) % 12
-
-	await paymentTasks.init()
-
-	const taskId = await paymentTasks.createTask(
-		user._id.toString(),
-		`${minutis} ${hours} ${day} */${months} *`,
-		async () => {
-			try {
-				const { data: initResponse } = await axios.post(
-					'https://securepay.tinkoff.ru/v2/Init',
-					{
-						TerminalKey: PAYMENT_TERMINAL_KEY, // ID терминала
-						Amount: tariff.price * 100,
-						OrderId: paymentLogId,
-						Token: token,
-						PayType: 'O',
-						Language: 'ru',
-						Receipt: {
-							Items: [
-								{
-									Name: `Подписка на ${tariff.name}`, // Наименование товара
-									Price: tariff.price * 100, // Цена в копейках
-									Quantity: 1, // Количество или вес товара
-									Amount: tariff.price * 100, // Стоимость товара в копейках. Произведение Quantity и Price
-									PaymentMethod: 'lfull_prepayment', // Признак способа расчёта (предоплата 100%)
-									PaymentObject: 'commodity', // Признак предмета расчёта (товар)
-									Tax: 'vat20', // Ставка НДС (ставка 20%)
-								},
-							],
-							FfdVersion: '1.05', // Версия ФФД
-							Email: user.email || 'support@tvoe.team',
-							Phone: user.phone || '+74956635979',
-							Taxation: 'usn_income', // Упрощенная СН (доходы)
-						},
-					},
-					{ headers: { 'Content-Type': 'application/json' } }
-				)
-
-				const { data: chargeResponse } = await axios.post(
-					'https://securepay.tinkoff.ru/v2/Charge',
-					{
-						TerminalKey: PAYMENT_TERMINAL_KEY, // ID терминала
-						PaymentId: initResponse.PaymentId,
-						RebillId: rebillId,
-						Token: token,
-					}
-				)
-
-				if (chargeResponse.Status === 'CONFIRMED') {
-					await User.updateOne(
-						{ _id: user._id },
-						{
-							$set: {
-								subscribe: {
-									startAt,
-									finishAt,
-									tariffId: paymentLog.tariffId,
-								},
-								allowTrialTariff: false,
-							},
-						}
-					)
-
-					await shareWithReferrer({
-						amount,
-						userId: user._id,
-						refererUserId: user.refererUserId,
-					})
-				}
-			} catch (error) {
-				console.log(error)
-			}
-		}
-	)
-
-	paymentTasks.startTask(taskId)
 
 	return res.status(200).send('OK')
 })

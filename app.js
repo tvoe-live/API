@@ -116,9 +116,14 @@ const yamlData = yaml.load(data)
 const jsonData = JSON.stringify(yamlData)
 fs.writeFileSync('./swagger/doc.json', jsonData, 'utf8')
 const swaggerJson = require('./swagger/doc.json')
+const { Tasks } = require('./helpers/createTask')
+const recurrentPayment = require('./helpers/reccurentPayment')
 app.use('/admin/docs', verify.token, verify.isAdmin, swaggerUi.serve, swaggerUi.setup(swaggerJson))
 
 app.use(verify.token, verify.isAdmin, express.static(path.join(__dirname, 'swagger')))
 app.use('*', notFound)
 
-app.listen(PORT, () => console.log(`Server Started at ${PORT}`))
+app.listen(PORT, () => {
+	console.log(`Server Started at ${PORT}`)
+	Tasks.restart('reccurentPayment', recurrentPayment)
+})
