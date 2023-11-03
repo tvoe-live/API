@@ -9,6 +9,8 @@ const paymentLogSchema = new mongoose.Schema(
 		// Данные от нашего API
 		userId: mongoose.Schema.Types.ObjectId, // ID пользователя
 		tariffId: mongoose.Schema.Types.ObjectId, // ID тарифа
+		promocodeId: mongoose.Schema.Types.ObjectId, // ID промокода, если оплата была совершена с учетом скидки от промокода. В противном случае это поле null
+		sum: Number, // Уплаченная сумма в рублях
 		type: {
 			// Тип платежного лога
 			type: String,

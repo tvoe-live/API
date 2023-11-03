@@ -19,6 +19,8 @@ const PaymentLog = require('../models/paymentLog')
 const PromocodeLog = require('../models/promocodeLog')
 const isValidObjectId = require('../helpers/isValidObjectId')
 
+require('dotenv').config()
+
 /*
  * Тарифы, создание и обработка платежей
  */
@@ -416,8 +418,8 @@ router.post('/createPayment', verify.token, async (req, res) => {
 	const priceAfterDiscount = benefitsFromPromocodes[0]?.bestPrice?.value
 	const promocodeId = benefitsFromPromocodes[0]?.bestPrice?.promocodeId
 
-	const successURL = new URL(`${CLIENT_URL}/payment/status`)
-	const failURL = new URL(`${CLIENT_URL}/payment/status`)
+	const successURL = new URL(`${process.env.CLIENT_URL}/payment/status`)
+	const failURL = new URL(`${process.env.CLIENT_URL}/payment/status`)
 
 	const tariffs = await Tariff.find(
 		{},
@@ -505,6 +507,8 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		userId: req.user._id,
 		tariffId: selectedTariff._id,
 		isChecked: false,
+		...(promocodeId && { promocodeId }), // Если применен промокод, то записать id примененного промокода
+		sum: price,
 	}).save()
 
 	// findOneAndUpdate
@@ -529,7 +533,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 
 	// Параметры терминала
 	const terminalParams = {
-		TerminalKey: PAYMENT_TERMINAL_KEY, // ID терминала
+		TerminalKey: process.env.PAYMENT_TERMINAL_KEY, // ID терминала
 		SuccessURL: successURL.href, // URL успешной оплаты
 		FailURL: failURL.href, // URL неуспешной оплаты
 		//SuccessAddCardURL: '', // URL успешной привязки карты

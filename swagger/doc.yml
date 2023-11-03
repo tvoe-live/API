@@ -1695,6 +1695,9 @@ paths:
                         finishAt:
                           type: Date
                           description: Дата окончания срока действия оплаты
+                        sum:
+                          type: number
+                          description: Заплаченная сумма в рублях
                         tariff:
                           type: object
                           properties:
@@ -1707,6 +1710,20 @@ paths:
                             price:
                               type: number
                               description: Цена тарифа
+                        promocode:
+                          type: object
+                          description: Описание примененного при оплате промокода. Если промокод не был применен во время оплаты, это поля нет
+                          required: false
+                          properties:
+                            _id:
+                              type: string
+                              description: Id промокода
+                            discountFormat:
+                              type: string
+                              description: Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)
+                            sizeDiscount:
+                              type: number
+                              description: Размер скидки. Если discountFormat = percentages, то sizeDiscount выражается в процентах. Если discountFormat = rubles, то sizeDiscount - в рублях
               example:
                 currentSubscribe:
                   startAt: '2023-06-07T15:33:23.0680000Z'
@@ -1736,12 +1753,17 @@ paths:
                 items:
                   - _id: 6480a3432fc38dca80429f30
                     type: issued-by-admin
+                    sum: 683
                     startAt: 2023-06-07T15:33:23.0680000Z
                     finishAt: 2023-12-04T15:33:23.0680000Z
                     tariff:
                       _id: 63dbe1687f457bc81bc920cb
                       name: 6 месяцев
                       price: 899
+                    promocode:
+                      _id: 653bb72f9d1dd6ecf4493105
+                      discountFormat: percentages
+                      sizeDiscount: 24
 
   /profile/devices:
     get:
