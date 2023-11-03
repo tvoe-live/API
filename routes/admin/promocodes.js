@@ -93,17 +93,16 @@ router.get('/', verify.token, verify.isAdmin, async (req, res) => {
 router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 	const {
 		value,
-		startAt,
-		finishAt,
-		maxAmountActivation,
 		tariffName,
 		discountFormat,
 		sizeDiscount,
+		startAt,
+		finishAt = '3000-01-01',
+		maxAmountActivation = null,
 		isActive = false,
 		isOnlyForNewUsers = true,
 	} = req.body
 
-	if (!maxAmountActivation) return resError({ res, msg: 'Не передан maxAmountActivation' })
 	if (!discountFormat) return resError({ res, msg: 'Не передан discountFormat' })
 	if (discountFormat !== 'free-month' && !sizeDiscount)
 		return resError({ res, msg: 'Не передан sizeDiscount' })
@@ -111,15 +110,18 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 		return resError({ res, msg: 'Не передан tariffName' })
 	if (!value) return resError({ res, msg: 'Не передан value' })
 
+	if (discountFormat === 'percentages' && (sizeDiscount < 1 || sizeDiscount > 99)) {
+		return resError({ res, msg: 'Не допустимый процент скидки' })
+	}
+
+	if (discountFormat === 'rubles' && (sizeDiscount < 1 || sizeDiscount > 800)) {
+		return resError({ res, msg: 'Не допустимая величина скидки' })
+	}
+
 	if (!startAt)
 		return resError({
 			res,
 			msg: 'Не передана дата и время начала действия промокода - параметр startAt',
-		})
-	if (!finishAt)
-		return resError({
-			res,
-			msg: 'Не передана дата и время начала действия промокода - параметр finishAt',
 		})
 
 	const existTariff = Tariff.findOne({ name: tariffName })

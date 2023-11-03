@@ -207,6 +207,7 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 											poster: {
 												src: true,
 											},
+											url: { $concat: ['/p/', '$alias'] },
 										},
 									},
 								],
@@ -229,6 +230,18 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 													else: '$phone',
 												},
 											},
+											isHaveSubscribe: {
+												$cond: {
+													if: {
+														$and: [
+															{ $ne: ['$subscribe', null] },
+															{ $gt: ['$subscribe.finishAt', new Date()] },
+														],
+													},
+													then: true,
+													else: false,
+												},
+											},
 										},
 									},
 									{
@@ -239,6 +252,7 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 											subscribe: true,
 											firstname: true,
 											phone: true,
+											isHaveSubscribe: true,
 										},
 									},
 								],
@@ -256,8 +270,6 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 								userId: false,
 								movieId: false,
 								__v: false,
-								createdAt: false,
-								updatedAt: false,
 							},
 						},
 						{ $sort: { _id: -1 } }, // Была сортировка updatedAt

@@ -835,6 +835,7 @@
 									"properties": {
 										"_id": { "type": "string", "description": "Profile id" },
 										"email": { "type": "string", "description": "Email user(profile)" },
+										"phone": { "type": "string", "description": "Номер телефона" },
 										"avatar": { "type": "string", "description": "Path to img src profile user" },
 										"firstname": { "type": "string", "description": "Имя этого человека" },
 										"subscribe": {
@@ -870,6 +871,7 @@
 										"firstname": "Иван",
 										"allowTrialTariff": false,
 										"role": "admin",
+										"phone": 79107718345,
 										"subscribe": {
 											"startAt": "2021-04-13T07:41:42.000Z",
 											"finishAt": "2021-04-13T07:41:42.000Z",
@@ -5049,7 +5051,9 @@
 						}
 					}
 				}
-			},
+			}
+		},
+		"/admin/moviesRatingHistory/rating": {
 			"delete": {
 				"summary": "Админ панель удаление отзывов",
 				"tags": ["Admin"],
@@ -5164,10 +5168,16 @@
 														"type": "number",
 														"description": "Оценка фильма пользователем"
 													},
+													"createdAt": { "type": "string", "description": "Дата создания отзыва" },
+													"updatedAt": {
+														"type": "string",
+														"description": "Дата обновления отзыва"
+													},
 													"movie": {
 														"type": "object",
 														"properties": {
 															"name": { "type": "string", "description": "Название фильма" },
+															"url": { "type": "string", "description": "Путь к фильму" },
 															"poster": {
 																"type": "object",
 																"properties": {
@@ -5184,6 +5194,10 @@
 														"properties": {
 															"_id": { "type": "string", "description": "Profile id" },
 															"email": { "type": "string", "description": "Email user" },
+															"isHaveSubscribe": {
+																"type": "boolean",
+																"description": "Есть ли подписка у пользователя в настоящий момент"
+															},
 															"phone": {
 																"type": "string",
 																"description": "Номер телефона пользователя. Это поле может отсутствовать",
@@ -5234,14 +5248,17 @@
 													"rating": 1,
 													"isPublished": true,
 													"isDeleted": false,
+													"createdAt": "2023-10-12T08:23:25.645Z",
+													"updatedAt": "2023-10-12T08:23:28.915Z",
 													"review": "12",
-													"movie": { "name": "HLS" },
+													"movie": { "name": "HLS", "url": "/p/giperdrayv" },
 													"user": {
 														"_id": "63c952c66396809788e004a6",
 														"email": "agdias@yandex.ru",
 														"avatar": null,
 														"firstname": "Агдас",
-														"role": "admin"
+														"role": "admin",
+														"isHaveSubscribe": true
 													}
 												},
 												{
@@ -5249,9 +5266,12 @@
 													"rating": 6,
 													"isPublished": false,
 													"isDeleted": false,
+													"createdAt": "2023-10-12T08:23:25.645Z",
+													"updatedAt": "2023-10-12T08:23:28.915Z",
 													"review": "1",
 													"movie": {
 														"name": "Название",
+														"url": "/p/filmname",
 														"poster": { "src": "/images/651c249e3d51bdf82b354936.jpg" }
 													},
 													"user": {
@@ -5259,7 +5279,8 @@
 														"email": "agdias@yandex.ru",
 														"avatar": null,
 														"firstname": "Агдас",
-														"role": "admin"
+														"role": "admin",
+														"isHaveSubscribe": false
 													}
 												}
 											]

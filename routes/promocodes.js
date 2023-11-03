@@ -29,8 +29,9 @@ router.patch('/activate', verify.token, async (req, res) => {
 		}
 
 		if (
-			promocode.finishAt < new Date() ||
-			promocode.currentAmountActivation >= promocode.maxAmountActivation
+			(promocode.finishAt && promocode.finishAt < new Date()) ||
+			(promocode.currentAmountActivation &&
+				promocode.currentAmountActivation >= promocode.maxAmountActivation)
 		) {
 			return resError({ res, msg: 'Срок действия указанного промокода истек' })
 		}
