@@ -5,22 +5,10 @@ const cronTaskModel = require('../models/cronTask')
  * Класс-помошник для управления кроновскими задачами
  */
 class Tasks {
-	constructor(_prefix) {
-		this.prefix = _prefix
-	}
-
 	tasks = []
-	prefix
-
-	async init() {
-		this.tasks = await cronTaskModel.find(
-			{ prefix: this.prefix, isDeleted: false },
-			{ _id: false, __v: false }
-		)
-	}
 
 	static async restart(name, callback) {
-		const tasks = await cronTaskModel.find({ prefix, name })
+		const tasks = await cronTaskModel.find({ name, name })
 		tasks.forEach((item) => cron.schedule(item.period, callback))
 	}
 
@@ -35,7 +23,7 @@ class Tasks {
 	createTask = async (name, period, callback, isStart = false) => {
 		cron.schedule(period, callback, {
 			scheduled: isStart ? true : false,
-			name: id ? `${this.prefix}-${id}` : `${this.prefix}-${this.tasks.length}`,
+			name,
 		})
 
 		await cronTaskModel.create({
@@ -48,7 +36,7 @@ class Tasks {
 			period,
 		})
 
-		return this.tasks[this.tasks.length - 1].id
+		return this.tasks[this.tasks.length - 1].name
 	}
 
 	/**
@@ -65,10 +53,8 @@ class Tasks {
 	 * @param {String} id - Идентификатор по котораму будет искаться задача
 	 * @returns Возвращает найденную задачу
 	 */
-	stopTask = (id) =>
-		this.tasks.find(
-			(item) => item.id === `${this.prefix}-${id}` && cron.getTasks().get(item.id).stop()
-		)
+	stopTask = (name) =>
+		this.tasks.find((item) => item.name === name && cron.getTasks().get(item.name).stop())
 
 	/**
 	 * Получить крон-задачу
@@ -76,21 +62,7 @@ class Tasks {
 	 * @param {String} id - Идентификатор по которому будет искаться задача
 	 * @returns Найденную задачу
 	 */
-	getTask = (id) => cron.getTasks().get(`${this.prefix}-${id}`)
-
-	/**
-	 *
-	 * @param {String} id - Идентификатор по котораму будет искаться задача
-	 */
-	deleteTask = async (id) => {
-		for (const item of this.tasks) {
-			if (item.id === `${prefix}-${id}`) {
-				cron.getTasks().get(item.id).stop()
-				item.isDeleted = true
-				await item.save()
-			}
-		}
-	}
+	getTask = (name) => cron.getTasks().get(name)
 }
 
 module.exports = {
