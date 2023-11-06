@@ -15,17 +15,12 @@ class Tasks {
 	/**
 	 * Метод для создания новой задачи
 	 *
-	 * @param {String} id - идентификатор по которому можно найти задачу
+	 * @param {String} name - имя шаблона задачи
 	 * @param {String} period - указание периода/времени выполнения задачи в cron-формате
-	 * @param {Function} callback - анонимная функция, которая будет выполнятся
+
 	 * @returns созданную задачу (по умолчанию она не запущенная)
 	 */
-	createTask = async (name, period, callback, isStart = false) => {
-		cron.schedule(period, callback, {
-			scheduled: isStart ? true : false,
-			name,
-		})
-
+	createTask = async (name, period) => {
 		await cronTaskModel.create({
 			name,
 			period,
@@ -38,14 +33,6 @@ class Tasks {
 
 		return this.tasks[this.tasks.length - 1].name
 	}
-
-	/**
-	 * Запустить крон-задачу
-	 *
-	 * @param {String} id - Идентификатор крон-задачи
-	 * @returns
-	 */
-	startTask = (id) => cron.getTasks().get(id).start()
 
 	/**
 	 * Остановить крон-задачу

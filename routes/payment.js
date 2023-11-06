@@ -17,6 +17,7 @@ const resError = require('../helpers/resError')
 const PaymentLog = require('../models/paymentLog')
 const PromocodeLog = require('../models/promocodeLog')
 const isValidObjectId = require('../helpers/isValidObjectId')
+const NodeRSA = require('node-rsa')
 
 /*
  * Тарифы, создание и обработка платежей
@@ -636,8 +637,6 @@ router.post('/notification', async (req, res) => {
 	const paymentLog = await PaymentLog.findOne({ _id: paymentLogId }) // Нахождение платежа в БД по ID
 
 	const user = await User.findOne({ _id: paymentLog.userId }) // Нахождение пользователя платежа
-	user.RebillId = rebillId
-	await user.save()
 	const tariff = await Tariff.findOne({ _id: paymentLog.tariffId }) // Нахождение оплаченого тарифа
 	const tariffDuration = Number(tariff.duration) // Длительность тарифа
 
@@ -697,18 +696,16 @@ router.post('/notification', async (req, res) => {
 	const shareWithReferrer = async ({ userId, amount, refererUserId }) => {
 		if (!userId || !amount || !refererUserId) return
 
-		const addToBalance = amount * (REFERRAL_PERCENT_BONUSE / 100)
-
 		const referalUser = await User.findByIdAndUpdate(refererUserId, {
 			$inc: {
-				'referral.balance': addToBalance,
+				'referral.balance': amount * (process.env.FIRST_STEP_REFFERAL / 100),
 			},
 		})
 
 		if (referalUser.refererUserId) {
 			await User.findByIdAndUpdate(referalUser.refererUserId, {
 				$inc: {
-					'referral.balance': addToBalance / 2,
+					'referral.balance': amount * (process.env.SECOND_STEP_REFFERAL / 100),
 				},
 			})
 		}
@@ -716,6 +713,11 @@ router.post('/notification', async (req, res) => {
 
 	switch (status) {
 		case 'AUTHORIZED': // Деньги захолдированы на карте клиента. Ожидается подтверждение операции
+			await User.findByIdAndUpdate(user._id, {
+				$set: {
+					RebillId: rebillId,
+				},
+			})
 		case 'CONFIRMED': // Операция подтверждена
 			// Обновить время подписки пользователю
 			await User.updateOne(
@@ -727,6 +729,7 @@ router.post('/notification', async (req, res) => {
 							finishAt,
 							tariffId: paymentLog.tariffId,
 						},
+						RebillId: rebillId,
 						allowTrialTariff: false,
 					},
 				}

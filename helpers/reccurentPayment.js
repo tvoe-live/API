@@ -22,18 +22,16 @@ const getToken = (params) => {
 const shareWithReferrer = async (userId, amount, refererUserId) => {
 	if (!userId || !amount || !refererUserId) return
 
-	const addToBalance = amount * (REFERRAL_PERCENT_BONUSE / 100)
-
 	const referalUser = await user.findByIdAndUpdate(refererUserId, {
 		$inc: {
-			'referral.balance': addToBalance,
+			'referral.balance': amount * (process.env.FIRST_STEP_REFFERAL / 100),
 		},
 	})
 
 	if (referalUser.refererUserId) {
 		await user.findByIdAndUpdate(referalUser.refererUserId, {
 			$inc: {
-				'referral.balance': addToBalance / 2,
+				'referral.balance': amount * (process.env.SECOND_STEP_REFFERAL / 100),
 			},
 		})
 	}
