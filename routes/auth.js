@@ -188,6 +188,15 @@ router.post('/login', async (req, res) => {
 					sameSite: isLocalhost ? 'lax' : 'none',
 				})
 
+				res.cookie('authorizationType', 'yandex', {
+					path: '/',
+					priority: 'high',
+					domain: hostname,
+					maxAge: 31536000000,
+					secure: !isLocalhost,
+					sameSite: isLocalhost ? 'lax' : 'none',
+				})
+
 				return res.status(200).json({ token })
 			})
 			.catch((err) => {
@@ -420,6 +429,22 @@ router.post('/sms/compare', async (req, res) => {
 		phoneCheckingLog.isConfirmed = true
 		await phoneCheckingLog.save()
 
+		// Получение данных пользователя, если он авторизован
+		await verify.token(req)
+
+		if (req.user) {
+			await User.findOneAndUpdate(
+				{ _id: req.user._id },
+				{
+					phone,
+				}
+			)
+
+			await User.updateMany({ phone, _id: { $ne: req.user._id } }, { $set: { phone: null } })
+
+			return resSuccess({ res, msg: 'Номер телефона привязан' })
+		}
+
 		// Поиск пользователя в БД
 		let user = await User.findOne({ phone })
 
@@ -482,6 +507,15 @@ router.post('/sms/compare', async (req, res) => {
 		const isLocalhost = hostname === 'localhost' && !req.headers.origin?.endsWith('ngrok-free.app')
 
 		res.cookie('token', token, {
+			path: '/',
+			priority: 'high',
+			domain: hostname,
+			maxAge: 31536000000,
+			secure: !isLocalhost,
+			sameSite: isLocalhost ? 'lax' : 'none',
+		})
+
+		res.cookie('authorizationType', 'sms', {
 			path: '/',
 			priority: 'high',
 			domain: hostname,
