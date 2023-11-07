@@ -89,14 +89,6 @@ router.patch('/phone', verify.token, async (req, res) => {
 	const userId = req.user._id
 
 	try {
-		// if (referer !== process.env.REFERER && referer !== process.env.DEV_REFERER) {
-		// 	return resError({
-		// 		res,
-		// 		alert: true,
-		// 		msg: 'С вашего адреса запрос запрещен',
-		// 	})
-		// }
-
 		// if (req.useragent?.isBot) {
 		// 	return resError({
 		// 		res,
@@ -121,7 +113,7 @@ router.patch('/phone', verify.token, async (req, res) => {
 			})
 		}
 
-		if (phone === req.user.phone) {
+		if (phone === req.user.authPhone) {
 			return resError({
 				res,
 				alert: true,
@@ -164,7 +156,7 @@ router.patch('/phone', verify.token, async (req, res) => {
 		})
 
 		const response = await fetch(
-			`https://smsc.ru/sys/send.php?login=${process.env.LOGIN}&psw=${process.env.PASSWORD}&phones=${phone}&mes=${code}`
+			`https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}`
 		)
 
 		if (response.status === 200) {
@@ -265,7 +257,7 @@ router.post('/change-phone/compare', verify.token, async (req, res) => {
 			},
 			{
 				$set: {
-					phone,
+					authPhone: phone,
 				},
 				$inc: { __v: 1 },
 			}
@@ -275,11 +267,11 @@ router.post('/change-phone/compare', verify.token, async (req, res) => {
 		await User.findOneAndUpdate(
 			{
 				_id: { $ne: req.user._id },
-				phone,
+				authPhone: phone,
 			},
 			{
 				$set: {
-					phone: null,
+					authPhone: null,
 				},
 				$inc: { __v: 1 },
 			}

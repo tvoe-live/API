@@ -5204,6 +5204,10 @@
 																"type": "boolean",
 																"description": "Есть ли подписка у пользователя в настоящий момент"
 															},
+															"isReferral": {
+																"type": "boolean",
+																"description": "Является лишь юзер участником рефералки ( приглашал ли он других пользователей)"
+															},
 															"phone": {
 																"type": "string",
 																"description": "Номер телефона пользователя. Это поле может отсутствовать",
@@ -5264,7 +5268,8 @@
 														"avatar": null,
 														"firstname": "Агдас",
 														"role": "admin",
-														"isHaveSubscribe": true
+														"isHaveSubscribe": true,
+														"isReferral": false
 													}
 												},
 												{
@@ -5286,7 +5291,8 @@
 														"avatar": null,
 														"firstname": "Агдас",
 														"role": "admin",
-														"isHaveSubscribe": false
+														"isHaveSubscribe": false,
+														"isReferral": true
 													}
 												}
 											]

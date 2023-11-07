@@ -4874,6 +4874,9 @@ paths:
                             isHaveSubscribe:
                               type: boolean
                               description: Есть ли подписка у пользователя в настоящий момент
+                            isReferral:
+                              type: boolean
+                              description: Является лишь юзер участником рефералки ( приглашал ли он других пользователей)
                             phone:
                               type: string
                               description: Номер телефона пользователя. Это поле может отсутствовать
@@ -4921,6 +4924,7 @@ paths:
                           firstname: Агдас
                           role: admin
                           isHaveSubscribe: true
+                          isReferral: false
                       - _id: 651f09aabf5691f203899d9c
                         rating: 6
                         isPublished: false
@@ -4940,6 +4944,7 @@ paths:
                           firstname: Агдас
                           role: admin
                           isHaveSubscribe: false
+                          isReferral: true
 
   /admin/moviesRatingHistory/publish:
     post:
