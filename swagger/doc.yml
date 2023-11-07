@@ -1002,7 +1002,10 @@ paths:
                     description: Email user(profile)
                   phone:
                     type: string
-                    description: Номер телефона
+                    description: Номер телефона от яндекса
+                  authPhone:
+                    type: string
+                    description: Номер телефона, подтвержденный через смс
                   avatar:
                     type: string
                     description: Path to img src profile user
@@ -7393,10 +7396,10 @@ paths:
               type: object
               properties:
                 phone:
-                  type: number
+                  type: string
                   description: Номер телефона, начинающегося с цифры "7" и состоящий из 11 цифр без пробелов и разделяющих символов. Например 79107718366
                   required: true
-                  example: 79107718366
+                  example: '79107718366'
       responses:
         '200':
           description: OK
@@ -7427,7 +7430,7 @@ paths:
               type: object
               properties:
                 phone:
-                  type: number
+                  type: string
                   description: Номер телефона, начинающегося с цифры "7" и состоящий из 11 цифр без пробелов и разделяющих символов.
                   required: true
                   example: 79107718366

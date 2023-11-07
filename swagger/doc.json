@@ -835,7 +835,11 @@
 									"properties": {
 										"_id": { "type": "string", "description": "Profile id" },
 										"email": { "type": "string", "description": "Email user(profile)" },
-										"phone": { "type": "string", "description": "Номер телефона" },
+										"phone": { "type": "string", "description": "Номер телефона от яндекса" },
+										"authPhone": {
+											"type": "string",
+											"description": "Номер телефона, подтвержденный через смс"
+										},
 										"avatar": { "type": "string", "description": "Path to img src profile user" },
 										"firstname": { "type": "string", "description": "Имя этого человека" },
 										"subscribe": {
@@ -1606,6 +1610,7 @@
 														"type": "Date",
 														"description": "Дата окончания срока действия оплаты"
 													},
+													"sum": { "type": "number", "description": "Заплаченная сумма в рублях" },
 													"tariff": {
 														"type": "object",
 														"properties": {
@@ -1675,6 +1680,7 @@
 										{
 											"_id": "6480a3432fc38dca80429f30",
 											"type": "issued-by-admin",
+											"sum": 683,
 											"startAt": "2023-06-07T15:33:23.068Z",
 											"finishAt": "2023-12-04T15:33:23.068Z",
 											"tariff": {
@@ -5712,15 +5718,18 @@
 								"properties": {
 									"maxAmountActivation": {
 										"type": "number",
-										"description": "Максимальное количество возможных активаций этого промокода пользователями вместе взятыми"
+										"description": "Максимальное количество возможных активаций этого промокода пользователями вместе взятыми. По умолчанию если это поле не передать, то промокод не имеет ограничений по количеству активаций",
+										"required": false
 									},
 									"isOnlyForNewUsers": {
 										"type": "boolean",
-										"description": "Доступен ли промокод только новым пользователм или всем. По умолчанию true - только для новых пользователей"
+										"description": "Доступен ли промокод только новым пользователм или всем. По умолчанию true - только для новых пользователей",
+										"required": false
 									},
 									"isActive": {
 										"type": "boolean",
-										"description": "Является ли промокод активным в данный момент времени. По умолчанию false"
+										"description": "Является ли промокод активным в данный момент времени. По умолчанию false",
+										"required": false
 									},
 									"tariffName": {
 										"type": "string",
@@ -5741,7 +5750,8 @@
 									},
 									"finishAt": {
 										"type": "date",
-										"description": "Дата и время окончания действия промокода. В формате YYYY-MM-DD HH:mm"
+										"required": false,
+										"description": "Дата и время окончания действия промокода. В формате YYYY-MM-DD HH:mm. Если не передавать то промокод будет считаться бессрочным"
 									}
 								}
 							}
@@ -8191,10 +8201,10 @@
 								"type": "object",
 								"properties": {
 									"phone": {
-										"type": "number",
+										"type": "string",
 										"description": "Номер телефона, начинающегося с цифры \"7\" и состоящий из 11 цифр без пробелов и разделяющих символов. Например 79107718366",
 										"required": true,
-										"example": 79107718366
+										"example": "79107718366"
 									}
 								}
 							}
@@ -8237,7 +8247,7 @@
 								"type": "object",
 								"properties": {
 									"phone": {
-										"type": "number",
+										"type": "string",
 										"description": "Номер телефона, начинающегося с цифры \"7\" и состоящий из 11 цифр без пробелов и разделяющих символов.",
 										"required": true,
 										"example": 79107718366

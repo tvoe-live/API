@@ -35,6 +35,7 @@ router.get('/', verify.token, async (req, res) => {
 			allowTrialTariff: true,
 			disabledNotifications: true,
 			phone: true,
+			authPhone: true,
 		}
 	)
 
