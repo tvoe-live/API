@@ -188,15 +188,6 @@ router.post('/login', async (req, res) => {
 					sameSite: isLocalhost ? 'lax' : 'none',
 				})
 
-				res.cookie('authorizationType', 'yandex', {
-					path: '/',
-					priority: 'high',
-					domain: hostname,
-					maxAge: 31536000000,
-					secure: !isLocalhost,
-					sameSite: isLocalhost ? 'lax' : 'none',
-				})
-
 				return res.status(200).json({ token })
 			})
 			.catch((err) => {
@@ -436,22 +427,25 @@ router.post('/sms/compare', async (req, res) => {
 			await User.findOneAndUpdate(
 				{ _id: req.user._id },
 				{
-					phone,
+					authPhone: phone,
 				}
 			)
 
-			await User.updateMany({ phone, _id: { $ne: req.user._id } }, { $set: { phone: null } })
+			await User.updateMany(
+				{ authPhone: phone, _id: { $ne: req.user._id } },
+				{ $set: { authPhone: null } }
+			)
 
 			return resSuccess({ res, msg: 'Номер телефона привязан' })
 		}
 
 		// Поиск пользователя в БД
-		let user = await User.findOne({ phone })
+		let user = await User.findOne({ authPhone: phone })
 
 		// Если пользователя нет в БД, создаем нового
 		if (!user) {
 			user = await new User({
-				phone,
+				authPhone: phone,
 				lastVisitAt: Date.now(),
 			}).save()
 
@@ -507,15 +501,6 @@ router.post('/sms/compare', async (req, res) => {
 		const isLocalhost = hostname === 'localhost' && !req.headers.origin?.endsWith('ngrok-free.app')
 
 		res.cookie('token', token, {
-			path: '/',
-			priority: 'high',
-			domain: hostname,
-			maxAge: 31536000000,
-			secure: !isLocalhost,
-			sameSite: isLocalhost ? 'lax' : 'none',
-		})
-
-		res.cookie('authorizationType', 'sms', {
 			path: '/',
 			priority: 'high',
 			domain: hostname,
