@@ -45,8 +45,9 @@ const recurrentPayment = async () => {
 				$lte: new Date().toISOString(),
 				$gte: new Date(new Date() - 3600000).toISOString(),
 			},
-			RebillId: { $exist: true },
+			RebillId: true,
 		})
+		console.log('zxc', users)
 		for (const user of users) {
 			const userTariff = await tariff.findById(user.subscribe.tariffId)
 			const userPaymentLog = await paymentLog.create({

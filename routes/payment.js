@@ -17,7 +17,6 @@ const resError = require('../helpers/resError')
 const PaymentLog = require('../models/paymentLog')
 const PromocodeLog = require('../models/promocodeLog')
 const isValidObjectId = require('../helpers/isValidObjectId')
-const NodeRSA = require('node-rsa')
 
 /*
  * Тарифы, создание и обработка платежей

@@ -8,7 +8,7 @@ class Tasks {
 	tasks = []
 
 	static async restart(name, callback) {
-		const tasks = await cronTaskModel.find({ name, name })
+		const tasks = await cronTaskModel.find({ name })
 		tasks.forEach((item) => cron.schedule(item.period, callback))
 	}
 
