@@ -2,6 +2,7 @@ const { default: axios } = require('axios')
 const tariff = require('../models/tariff')
 const user = require('../models/user')
 const paymentLog = require('../models/paymentLog')
+const notification = require('../models/notification')
 
 const getToken = (params) => {
 	const concatStr = Object.keys(params) // Собрать массив передаваемых данных в виде пар Ключ-Значения
@@ -100,6 +101,28 @@ const recurrentPayment = async () => {
 				Token: token,
 			})
 
+			if (chargePayment.Status === 'REJECTED') {
+				if (chargePayment.ErrorCode === '103') {
+					await notification.create({
+						receiversIds: [user._id],
+						title: 'Недостаточно средств на счете для продления подписки',
+						willPublishedAt: Date.now(),
+						type: 'PROFILE',
+						deleted: false,
+					})
+				}
+
+				if (chargePayment.ErrorCode === '116') {
+					await notification.create({
+						receiversIds: [user._id],
+						title: 'Недостаточно средств на карте для продления подписки',
+						willPublishedAt: Date.now(),
+						type: 'PROFILE',
+						deleted: false,
+					})
+				}
+			}
+
 			if (chargePayment.Status === 'CONFIRMED') {
 				user.subscribe = {
 					startAt: new Date(),
@@ -110,6 +133,14 @@ const recurrentPayment = async () => {
 				await user.save()
 
 				await shareWithReferrer(user._id, userTariff.price, user.refererUserId)
+
+				await notification.create({
+					receiversIds: [user._id],
+					title: 'Подписка продлена',
+					willPublishedAt: Date.now(),
+					type: 'PROFILE',
+					deleted: false,
+				})
 			}
 		}
 	} catch (error) {
