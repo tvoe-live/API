@@ -102,6 +102,10 @@ const recurrentPayment = async () => {
 			})
 
 			if (chargePayment.Status === 'REJECTED') {
+				if (chargePayment.ErrorCode === '10') {
+					console.log('Невозможна реализация автоплатежей')
+				}
+
 				if (chargePayment.ErrorCode === '103') {
 					await notification.create({
 						receiversIds: [user._id],
