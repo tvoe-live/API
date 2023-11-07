@@ -47,6 +47,7 @@ const carousel = [
 			cover: { src: true },
 			genreName: { $first: '$genres.name' },
 			countPageViewed: { $size: '$countPageViewed' },
+			shortDesc: true,
 		},
 		sort: { countPageViewed: -1, raisedUpAt: -1, publishedAt: -1 },
 	}),
