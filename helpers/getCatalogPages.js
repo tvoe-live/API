@@ -40,7 +40,7 @@ const getCatalogPages = async ({ categoryAlias, showGenreName }) => {
 			$project: {
 				_id: false,
 				...projectGenreName,
-				rating: { $round: ['$rating', 0] },
+				rating: '$rating',
 				genreAlias: '$_id.genreAlias',
 				dateReleased: '$_id.dateReleased',
 				categoryAlias: '$_id.categoryAlias',
