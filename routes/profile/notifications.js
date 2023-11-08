@@ -25,7 +25,6 @@ const uploadMemoryStorage = multer({ storage: memoryStorage })
 router.get('/', verify.token, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
-
 	const lookupAndMatch = [
 		{
 			$match: {
@@ -39,6 +38,15 @@ router.get('/', verify.token, async (req, res) => {
 					{
 						type: {
 							$nin: req.user.disabledNotifications,
+						},
+					},
+					{
+						$expr: {
+							$and: [
+								{ $gte: [new Date(), '$willPublishedAt'] },
+								{ $ne: ['$deleted', true] },
+								{ $gte: ['$createdAt', req.user.createdAt] },
+							],
 						},
 					},
 				],
@@ -57,13 +65,6 @@ router.get('/', verify.token, async (req, res) => {
 					},
 				],
 				as: 'notificationReadLog',
-			},
-		},
-		{
-			$match: {
-				$expr: {
-					$and: [{ $gte: [new Date(), '$willPublishedAt'] }, { $ne: ['$deleted', true] }],
-				},
 			},
 		},
 	]
