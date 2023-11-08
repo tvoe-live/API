@@ -70,7 +70,8 @@ const getCatalogPages = async ({ categoryAlias, showGenreName }) => {
 	)
 
 	// Страницы с объединением жанров из фильмов и сериалов
-	const collectionAndGenres = categoryAndGenresAndDatesAndRating
+	const collectionAndGenres = resultPages
+		.filter((page) => page.genreAlias !== '' && page.categoryAlias !== '')
 		.map((page) => ({
 			genreName: page.genreName,
 			genreAlias: page.genreAlias,
@@ -89,7 +90,8 @@ const getCatalogPages = async ({ categoryAlias, showGenreName }) => {
 		)
 
 	// Страницы с категорией и жанром
-	const categoryAndGenres = categoryAndGenresAndDatesAndRating
+	const categoryAndGenres = resultPages
+		.filter((page) => page.genreAlias !== '' && page.categoryAlias !== '')
 		.map((page) => ({
 			genreName: page.genreName,
 			genreAlias: page.genreAlias,
@@ -108,7 +110,8 @@ const getCatalogPages = async ({ categoryAlias, showGenreName }) => {
 		)
 
 	// Страницы с категорией и годом
-	const categoryAndDates = categoryAndGenresAndDatesAndRating
+	const categoryAndDates = resultPages
+		.filter((page) => page.dateReleased !== '' && page.categoryAlias !== '')
 		.map((page) => ({
 			dateReleased: page.dateReleased,
 			categoryAlias: page.categoryAlias,
@@ -126,7 +129,8 @@ const getCatalogPages = async ({ categoryAlias, showGenreName }) => {
 		)
 
 	// Страницы с категорией и рейтингом
-	const categoryAndRating = categoryAndGenresAndDatesAndRating
+	const categoryAndRating = resultPages
+		.filter((page) => page.rating !== null && page.categoryAlias !== '')
 		.map((page) => ({
 			rating: page.rating,
 			categoryAlias: page.categoryAlias,
@@ -148,7 +152,8 @@ const getCatalogPages = async ({ categoryAlias, showGenreName }) => {
 		)
 
 	// Страницы с категорией, рейтингом и жанром
-	const categoryAndRatingAndGengre = categoryAndGenresAndDatesAndRating
+	const categoryAndRatingAndGengre = resultPages
+		.filter((page) => page.rating !== null && page.categoryAlias !== '' && page.genreAlias !== '')
 		.map((page) => ({
 			rating: page.rating,
 			categoryAlias: page.categoryAlias,
@@ -172,7 +177,10 @@ const getCatalogPages = async ({ categoryAlias, showGenreName }) => {
 		)
 
 	// Страницы с категорией, годом релиза и жанром
-	const categoryAndDatesAndGengre = categoryAndGenresAndDatesAndRating
+	const categoryAndDatesAndGengre = resultPages
+		.filter(
+			(page) => page.dateReleased !== '' && page.categoryAlias !== '' && page.genreAlias !== ''
+		)
 		.map((page) => ({
 			dateReleased: page.dateReleased,
 			categoryAlias: page.categoryAlias,
@@ -193,6 +201,29 @@ const getCatalogPages = async ({ categoryAlias, showGenreName }) => {
 				)
 		)
 
+	// Страницы с категорией, годом релиза и рейтингом
+	const categoryAndDatesAndRating = resultPages
+		.filter((page) => page.dateReleased !== '' && page.categoryAlias !== '' && page.rating !== null)
+		.map((page) => ({
+			dateReleased: page.dateReleased,
+			categoryAlias: page.categoryAlias,
+			rating: page.rating,
+		}))
+		.filter(
+			(
+				value,
+				index,
+				self // Фильтрация на уникальность
+			) =>
+				index ===
+				self.findIndex(
+					(t) =>
+						t.categoryAlias === value.categoryAlias &&
+						t.dateReleased === value.dateReleased &&
+						t.rating === value.rating
+				)
+		)
+
 	const result = [
 		...categoryPages,
 		...categoryAndRating,
@@ -202,6 +233,7 @@ const getCatalogPages = async ({ categoryAlias, showGenreName }) => {
 		...categoryAndGenresAndDatesAndRating,
 		...categoryAndRatingAndGengre,
 		...categoryAndDatesAndGengre,
+		...categoryAndDatesAndRating,
 	].flat()
 
 	return result
