@@ -225,9 +225,9 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 										$addFields: {
 											phone: {
 												$cond: {
-													if: { $ifNull: ['$phone', true] },
+													if: { $ifNull: ['$authPhone', true] },
 													then: '$initial_phone',
-													else: '$phone',
+													else: '$authPhone',
 												},
 											},
 											isHaveSubscribe: {
@@ -236,6 +236,20 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 														$and: [
 															{ $ne: ['$subscribe', null] },
 															{ $gt: ['$subscribe.finishAt', new Date()] },
+														],
+													},
+													then: true,
+													else: false,
+												},
+											},
+											isReferral: {
+												$cond: {
+													if: {
+														$and: [
+															{ $ne: ['$referral', null] },
+															{ $ne: ['$referral.userIds', null] },
+															{ $eq: [{ $type: '$referral.userIds' }, 'array'] },
+															{ $gt: [{ $size: '$referral.userIds' }, 0] },
 														],
 													},
 													then: true,

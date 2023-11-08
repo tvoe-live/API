@@ -81,67 +81,13 @@ router.post('/login', async (req, res) => {
 
 				if (!data.id) return res.status(400).json(data)
 
-				const {
-					id,
-					sex,
-					birthday,
-					last_name,
-					client_id,
-					first_name,
-					display_name,
-					default_email,
-					default_phone,
-					is_avatar_empty,
-					default_avatar_id,
-				} = data
-
-				const defaultEmail = default_email.toLowerCase()
+				const { id } = data
 
 				// Поиск пользователя в БД
 				let user = await User.findOne({ initial_id: id })
 
-				// Если пользователя нет в БД, создаем нового
 				if (!user) {
-					// Скачать аватар с поставщика регистрации
-					const avatar = !is_avatar_empty ? await downloadAvatar(res, default_avatar_id) : null
-
-					user = await new User({
-						initial_id: id,
-						initial_sex: sex,
-						initial_birthday: birthday,
-						initial_lastname: last_name,
-						initial_email: defaultEmail,
-						initial_client_id: client_id,
-						initial_firstname: first_name,
-						initial_displayName: display_name,
-						initial_phone: default_phone?.number,
-
-						sex: sex,
-						avatar: avatar,
-						birthday: birthday,
-						lastname: last_name,
-						email: defaultEmail,
-						firstname: first_name,
-						displayName: display_name,
-						phone: default_phone?.number,
-						lastVisitAt: Date.now(),
-					}).save()
-
-					if (refererUserId) {
-						// Поиск пользователя в БД, который пригласил на регистрацию
-						const refererUser = await User.findOneAndUpdate(
-							{ _id: refererUserId },
-							{
-								$addToSet: {
-									'referral.userIds': user._id,
-								},
-							}
-						)
-						// Привязать пользователя к рефереру
-						if (refererUser) {
-							await User.updateOne({ _id: user._id }, { $set: { refererUserId } })
-						}
-					}
+					resError({ res, msg: 'Регистрация через яндекс больше не доступна' })
 				}
 
 				// Генерируем токен
@@ -264,14 +210,6 @@ router.post('/sms/login', async (req, res) => {
 	const ip = req.ip
 
 	try {
-		// if (referer !== process.env.REFERER && referer !== process.env.DEV_REFERER) {
-		// 	return resError({
-		// 		res,
-		// 		alert: true,
-		// 		msg: 'С вашего адреса запрос запрещен',
-		// 	})
-		// }
-
 		// if (req.useragent?.isBot) {
 		// 	return resError({
 		// 		res,
