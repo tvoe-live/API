@@ -88,13 +88,13 @@ router.patch('/phone', verify.token, async (req, res) => {
 	const userId = req.user._id
 
 	try {
-		// if (req.useragent?.isBot) {
-		// 	return resError({
-		// 		res,
-		// 		alert: true,
-		// 		msg: 'Обнаружен бот',
-		// 	})
-		// }
+		if (req.useragent?.isBot) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Обнаружен бот',
+			})
+		}
 
 		if (!phone) {
 			return resError({
@@ -120,6 +120,23 @@ router.patch('/phone', verify.token, async (req, res) => {
 			})
 		}
 
+		let minuteAgo = new Date()
+		minuteAgo.setSeconds(minuteAgo.getSeconds() - 45)
+
+		const previousPhoneCheckingMinute = await PhoneChecking.find({
+			userId,
+			type: 'change',
+			createdAt: { $gt: minuteAgo },
+		})
+
+		if (!!previousPhoneCheckingMinute.length) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Можно запросить код только раз в 50 секунд',
+			})
+		}
+
 		let DayAgo = new Date()
 		DayAgo.setDate(DayAgo.getDate() - 1)
 
@@ -129,13 +146,13 @@ router.patch('/phone', verify.token, async (req, res) => {
 			type: 'change',
 		})
 
-		// if (previousPhoneChecking.length >= 3) {
-		// 	return resError({
-		// 		res,
-		// 		alert: true,
-		// 		msg: 'Нельзя менять телефон более 3 раз за сутки',
-		// 	})
-		// }
+		if (previousPhoneChecking.length >= 3) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Нельзя менять телефон более 3 раз за сутки',
+			})
+		}
 
 		const code = Math.floor(1000 + Math.random() * 9000) // 4 значный код для подтверждения
 		await PhoneChecking.updateMany(

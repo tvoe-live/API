@@ -206,17 +206,16 @@ router.post('/logout', verify.token, async (req, res) => {
 router.post('/sms/login', async (req, res) => {
 	const { phone } = req.body
 
-	const referer = req.header('Referer')
 	const ip = req.ip
 
 	try {
-		// if (req.useragent?.isBot) {
-		// 	return resError({
-		// 		res,
-		// 		alert: true,
-		// 		msg: 'Обнаружен бот',
-		// 	})
-		// }
+		if (req.useragent?.isBot) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Обнаружен бот',
+			})
+		}
 
 		if (!phone) {
 			return resError({
@@ -234,21 +233,37 @@ router.post('/sms/login', async (req, res) => {
 			})
 		}
 
+		let minuteAgo = new Date()
+		minuteAgo.setSeconds(minuteAgo.getSeconds() - 45)
+
+		const previousPhoneCheckingMinute = await PhoneChecking.find({
+			phone,
+			createdAt: { $gt: minuteAgo },
+		})
+
+		if (!!previousPhoneCheckingMinute.length) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Можно запросить код только раз в 50 секунд',
+			})
+		}
+
 		let DayAgo = new Date()
 		DayAgo.setDate(DayAgo.getDate() - 1)
 
-		// const previousPhoneChecking = await PhoneChecking.find({
-		// 	$or: [{ phone }, { ip }],
-		// 	createdAt: { $gt: DayAgo },
-		// })
+		const previousPhoneChecking = await PhoneChecking.find({
+			$or: [{ phone }, { ip }],
+			createdAt: { $gt: DayAgo },
+		})
 
-		// if (previousPhoneChecking.length >= 10) {
-		// 	return resError({
-		// 		res,
-		// 		alert: true,
-		// 		msg: 'Превышено число авторизаций за сутки',
-		// 	})
-		// }
+		if (previousPhoneChecking.length >= 10) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Превышено число авторизаций за сутки',
+			})
+		}
 
 		const code = Math.floor(1000 + Math.random() * 9000) // 4 значный код для подтверждения
 		await PhoneChecking.updateMany(
@@ -268,7 +283,7 @@ router.post('/sms/login', async (req, res) => {
 		})
 
 		const response = await fetch(
-			`https://smsc.ru/sys/send.php?login=${process.env.LOGIN}&psw=${process.env.PASSWORD}&phones=${phone}&mes=${code}`
+			`https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}`
 		)
 
 		if (response.status === 200) {
