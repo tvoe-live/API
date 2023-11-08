@@ -26,6 +26,8 @@ const userSchema = new mongoose.Schema(
 		displayName: String,
 		authPhone: String,
 
+		RebillId: String,
+
 		sessions: [
 			{
 				token: String,

@@ -7,7 +7,6 @@ const {
 } = process.env
 const express = require('express')
 const router = express.Router()
-
 const axios = require('axios')
 const crypto = require('crypto')
 const mongoose = require('mongoose')
@@ -544,8 +543,8 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		Amount: price * 100, // Цена тарифа (в копейках)
 		OrderId: paymentLog._id, // ID заказа
 		Description: `Подписка на ${selectedTariff.name}`, // Описание заказа (для СБП)
-		//CustomerKey:
-		//Recurrent:
+		CustomerKey: req.user._id,
+		Recurrent: 'Y',
 		PayType: 'O', // Тип проведения платежа ("O" - одностадийная оплата)
 		Language: 'ru', // Язык платежной формы
 		Receipt: {
@@ -700,20 +699,28 @@ router.post('/notification', async (req, res) => {
 	const shareWithReferrer = async ({ userId, amount, refererUserId }) => {
 		if (!userId || !amount || !refererUserId) return
 
-		const addToBalance = amount * (REFERRAL_PERCENT_BONUSE / 100)
+		const referalUser = await User.findByIdAndUpdate(refererUserId, {
+			$inc: {
+				'referral.balance': amount * (process.env.FIRST_STEP_REFFERAL / 100),
+			},
+		})
 
-		await User.updateOne(
-			{ _id: refererUserId },
-			{
+		if (referalUser.refererUserId) {
+			await User.findByIdAndUpdate(referalUser.refererUserId, {
 				$inc: {
-					'referral.balance': addToBalance,
+					'referral.balance': amount * (process.env.SECOND_STEP_REFFERAL / 100),
 				},
-			}
-		)
+			})
+		}
 	}
 
 	switch (status) {
 		case 'AUTHORIZED': // Деньги захолдированы на карте клиента. Ожидается подтверждение операции
+			await User.findByIdAndUpdate(user._id, {
+				$set: {
+					RebillId: rebillId,
+				},
+			})
 		case 'CONFIRMED': // Операция подтверждена
 			// Обновить время подписки пользователю
 			await User.updateOne(
@@ -725,6 +732,7 @@ router.post('/notification', async (req, res) => {
 							finishAt,
 							tariffId: paymentLog.tariffId,
 						},
+						RebillId: rebillId,
 						allowTrialTariff: false,
 					},
 				}
