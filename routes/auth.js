@@ -268,7 +268,7 @@ router.post('/sms/login', async (req, res) => {
 		})
 
 		const response = await fetch(
-			`https://smsc.ru/sys/send.php?login=${process.env.LOGIN}&psw=${process.env.PASSWORD}&phones=${phone}&mes=${code}`
+			`https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}`
 		)
 
 		if (response.status === 200) {
