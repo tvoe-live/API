@@ -46,6 +46,7 @@ const recurrentPayment = async () => {
 				$gte: new Date(new Date() - 3600000).toISOString(),
 			},
 			RebillId: true,
+			autoPayment: true,
 		})
 		console.log('zxc', users)
 		for (const user of users) {
