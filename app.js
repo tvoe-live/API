@@ -9,6 +9,9 @@ const expressUseragent = require('express-useragent')
 const yaml = require('js-yaml')
 const swaggerUi = require('swagger-ui-express')
 const verify = require('./middlewares/verify')
+const { Tasks } = require('./helpers/createTask')
+const recurrentPayment = require('./helpers/reccurentPayment')
+const subscribeRouter = require('./routes/profile/changeAutopayment')
 
 const { PORT, STATIC_DIR, IMAGES_DIR, VIDEOS_DIR, DATABASE_URL } = process.env
 
@@ -98,6 +101,7 @@ app.use('/profile/favorites', profileFavorites) // Моё > Избранное
 app.use('/profile/bookmarks', profileBookmarks) // Моё > Закладки
 app.use('/profile/notifications', profileNotifications) // Навигация > Уведомления
 app.use('/profile/withdrawal', profileWithdrawal) // Профиль > Журнал заявок на возврат денежных средств
+app.use('/profile/autopayment', subscribeRouter)
 
 app.use('/admin', admin) // Админ-панель
 app.use('/admin/users', adminUsers) // Админ-панель > Пользователи
@@ -116,8 +120,6 @@ const yamlData = yaml.load(data)
 const jsonData = JSON.stringify(yamlData)
 fs.writeFileSync('./swagger/doc.json', jsonData, 'utf8')
 const swaggerJson = require('./swagger/doc.json')
-const { Tasks } = require('./helpers/createTask')
-const recurrentPayment = require('./helpers/reccurentPayment')
 app.use('/admin/docs', verify.token, verify.isAdmin, swaggerUi.serve, swaggerUi.setup(swaggerJson))
 
 app.use(verify.token, verify.isAdmin, express.static(path.join(__dirname, 'swagger')))

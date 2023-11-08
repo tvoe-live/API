@@ -26,6 +26,10 @@ const userSchema = new mongoose.Schema(
 		displayName: String,
 
 		RebillId: String,
+		autoPayment: {
+			type: Boolean,
+			default: true,
+		},
 
 		sessions: [
 			{
