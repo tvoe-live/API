@@ -10,6 +10,7 @@ const yaml = require('js-yaml')
 const swaggerUi = require('swagger-ui-express')
 const verify = require('./middlewares/verify')
 const { Tasks } = require('./helpers/createTask')
+const repaymentTask = require('./helpers/repaymentTask')
 const recurrentPayment = require('./helpers/reccurentPayment')
 const subscribeRouter = require('./routes/profile/changeAutopayment')
 
@@ -128,4 +129,5 @@ app.use('*', notFound)
 app.listen(PORT, () => {
 	console.log(`Server Started at ${PORT}`)
 	Tasks.restart('reccurentPayment', recurrentPayment)
+	Tasks.restart('repayment', repaymentTask)
 })

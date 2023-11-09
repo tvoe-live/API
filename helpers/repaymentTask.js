@@ -1,8 +1,6 @@
 const { default: axios } = require('axios')
-const tariff = require('../models/tariff')
-const user = require('../models/user')
 const paymentLog = require('../models/paymentLog')
-const notification = require('../models/notification')
+const repaymentModel = require('../models/repayment')
 
 const getToken = (params) => {
 	const concatStr = Object.keys(params) // Собрать массив передаваемых данных в виде пар Ключ-Значения
@@ -38,30 +36,21 @@ const shareWithReferrer = async (userId, amount, refererUserId) => {
 	}
 }
 
-const recurrentPayment = async () => {
+const repaymentTask = async () => {
 	try {
-		const users = await user.find({
-			'subscribe.finishAt': {
-				$lte: new Date().toISOString(),
-				$gte: new Date(new Date() - 3600000).toISOString(),
-			},
-			RebillId: true,
-			autoPayment: true,
-		})
-		console.log('zxc', users)
-		for (const user of users) {
-			const userTariff = await tariff.findById(user.subscribe.tariffId)
+		const repaymentData = await repaymentModel.find().populate('user').populate('tariff')
+		for (item of repaymentData) {
 			const userPaymentLog = await paymentLog.create({
 				type: 'paid',
-				userId: user._id,
-				tariffId: userTariff._id,
+				userId: item.user._id,
+				tariffId: item.tariff._id,
 				isChecked: false,
 			})
 
 			const terminalParams = {
 				TerminalKey: process.env.PAYMENT_TERMINAL_KEY,
 				Password: process.env.PAYMENT_TERMINAL_PASSWORD,
-				Amount: userTariff.price * 100,
+				Amount: item.tariff.price * 100,
 				OrderId: userPaymentLog._id,
 				Description: `Подписка на ${userTariff.name}`,
 				PayType: 'O',
@@ -69,10 +58,10 @@ const recurrentPayment = async () => {
 				Receipt: {
 					Items: [
 						{
-							Name: `Подписка на ${userTariff.name}`, // Наименование товара
-							Price: userTariff.price * 100, // Цена в копейках
+							Name: `Подписка на ${item.tariff.name}`, // Наименование товара
+							Price: item.tariff.price * 100, // Цена в копейках
 							Quantity: 1, // Количество или вес товара
-							Amount: userTariff.price * 100, // Стоимость товара в копейках. Произведение Quantity и Price
+							Amount: item.tariff.price * 100, // Стоимость товара в копейках. Произведение Quantity и Price
 							PaymentMethod: 'lfull_prepayment', // Признак способа расчёта (предоплата 100%)
 							PaymentObject: 'commodity', // Признак предмета расчёта (товар)
 							Tax: 'vat20', // Ставка НДС (ставка 20%)
@@ -99,7 +88,7 @@ const recurrentPayment = async () => {
 			const { data: chargePayment } = await axios.post('https://securepay.tinkoff.ru/v2/Charge', {
 				TerminalKey: process.env.PAYMENT_TERMINAL_KEY,
 				PaymentId: initPayment.PaymentId,
-				RebillId: user.RebillId,
+				RebillId: item.user.RebillId,
 				Token: token,
 			})
 
@@ -110,22 +99,32 @@ const recurrentPayment = async () => {
 
 				if (chargePayment.ErrorCode === '103') {
 					await notification.create({
-						receiversIds: [user._id],
+						receiversIds: [item.user._id],
 						title: 'Недостаточно средств на счете для продления подписки',
 						willPublishedAt: Date.now(),
 						type: 'PROFILE',
 						deleted: false,
 					})
+
+					item.count++
+					if (item.count === 3) {
+						await repaymentModel.findByIdAndDelete(item._id)
+					}
 				}
 
 				if (chargePayment.ErrorCode === '116') {
 					await notification.create({
-						receiversIds: [user._id],
+						receiversIds: [item.user._id],
 						title: 'Недостаточно средств на карте для продления подписки',
 						willPublishedAt: Date.now(),
 						type: 'PROFILE',
 						deleted: false,
 					})
+
+					item.count++
+					if (item.count === 3) {
+						await repaymentModel.findByIdAndDelete(item._id)
+					}
 				}
 			}
 
@@ -138,15 +137,17 @@ const recurrentPayment = async () => {
 
 				await user.save()
 
-				await shareWithReferrer(user._id, userTariff.price, user.refererUserId)
+				await shareWithReferrer(item.user._id, item.tariff.price, user.refererUserId)
 
 				await notification.create({
-					receiversIds: [user._id],
+					receiversIds: [item.user._id],
 					title: 'Подписка продлена',
 					willPublishedAt: Date.now(),
 					type: 'PROFILE',
 					deleted: false,
 				})
+
+				await repaymentModel.findByIdAndDelete(item._id)
 			}
 		}
 	} catch (error) {
@@ -154,4 +155,4 @@ const recurrentPayment = async () => {
 	}
 }
 
-module.exports = recurrentPayment
+module.exports = repaymentTask
