@@ -55,9 +55,9 @@ router.get('/', async (req, res) => {
 		const pages = await getCatalogPages({ categoryAlias })
 		const page = pages.find(
 			(page) =>
-				(rating ? +page.rating === +rating : true) &&
-				(genreAlias ? page.genreAlias === genreAlias : true) &&
-				(dateReleased ? page.dateReleased === dateReleased : true) &&
+				(rating ? Math.floor(+page.rating) === Math.floor(+rating) : !('rating' in page)) &&
+				(genreAlias ? page.genreAlias === genreAlias : !('genreAlias' in page)) &&
+				(dateReleased ? page.dateReleased === dateReleased : !('dateReleased' in page)) &&
 				(categoryAlias !== 'collections' ? page.categoryAlias === categoryAlias : true)
 		)
 
@@ -80,7 +80,7 @@ router.get('/', async (req, res) => {
 			if (!rating) delete page.rating
 		}
 
-		if (rating) page.rating = { $gte: +rating } // Поиск по рейтингу >=
+		if (rating) page.rating = { $gte: Math.floor(+rating) } // Поиск по рейтингу >=
 
 		const lookupFromCategories = {
 			from: 'categories',
