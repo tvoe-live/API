@@ -88,13 +88,13 @@ router.patch('/phone', verify.token, async (req, res) => {
 	const userId = req.user._id
 
 	try {
-		// if (req.useragent?.isBot) {
-		// 	return resError({
-		// 		res,
-		// 		alert: true,
-		// 		msg: 'Обнаружен бот',
-		// 	})
-		// }
+		if (req.useragent?.isBot) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Обнаружен бот',
+			})
+		}
 
 		if (!phone) {
 			return resError({
@@ -116,7 +116,24 @@ router.patch('/phone', verify.token, async (req, res) => {
 			return resError({
 				res,
 				alert: true,
-				msg: 'К данному аккаунту уже привязан этот номер телефона',
+				msg: 'К аккаунту уже привязан этот номер телефона',
+			})
+		}
+
+		let minuteAgo = new Date()
+		minuteAgo.setSeconds(minuteAgo.getSeconds() - 55)
+
+		const previousPhoneCheckingMinute = await PhoneChecking.find({
+			userId,
+			type: 'change',
+			createdAt: { $gt: minuteAgo },
+		})
+
+		if (!!previousPhoneCheckingMinute.length) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Можно запросить код подтверждения только раз в 60 секунд',
 			})
 		}
 
@@ -129,13 +146,13 @@ router.patch('/phone', verify.token, async (req, res) => {
 			type: 'change',
 		})
 
-		// if (previousPhoneChecking.length >= 3) {
-		// 	return resError({
-		// 		res,
-		// 		alert: true,
-		// 		msg: 'Нельзя менять телефон более 3 раз за сутки',
-		// 	})
-		// }
+		if (previousPhoneChecking.length >= 3) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Превышен лимит изменения номера телефона за сутки',
+			})
+		}
 
 		const code = Math.floor(1000 + Math.random() * 9000) // 4 значный код для подтверждения
 		await PhoneChecking.updateMany(
@@ -164,13 +181,13 @@ router.patch('/phone', verify.token, async (req, res) => {
 				msg: 'Сообщение с кодом отправлено по указанному номеру телефона',
 				alert: true,
 			})
-		} else {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Что-то пошло не так. Попробуйе позже',
-			})
 		}
+
+		return resError({
+			res,
+			alert: true,
+			msg: 'Что-то пошло не так. Попробуйте позже',
+		})
 	} catch (error) {
 		return res.json(error)
 	}
