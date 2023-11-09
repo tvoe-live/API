@@ -257,13 +257,13 @@ router.post('/sms/login', async (req, res) => {
 			createdAt: { $gt: DayAgo },
 		})
 
-		if (previousPhoneChecking.length >= 10) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Превышен лимит авторизаций за сутки',
-			})
-		}
+		// if (previousPhoneChecking.length >= 10) {
+		// 	return resError({
+		// 		res,
+		// 		alert: true,
+		// 		msg: 'Превышен лимит авторизаций за сутки',
+		// 	})
+		// }
 
 		const code = Math.floor(1000 + Math.random() * 9000) // 4-значный код для подтверждения
 		await PhoneChecking.updateMany(
