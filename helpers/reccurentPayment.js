@@ -3,6 +3,7 @@ const tariff = require('../models/tariff')
 const user = require('../models/user')
 const paymentLog = require('../models/paymentLog')
 const notification = require('../models/notification')
+const repaymentModel = require('../models/repayment')
 
 const getToken = (params) => {
 	const concatStr = Object.keys(params) // Собрать массив передаваемых данных в виде пар Ключ-Значения
@@ -109,6 +110,11 @@ const recurrentPayment = async () => {
 				}
 
 				if (chargePayment.ErrorCode === '103') {
+					await repaymentModel.create({
+						tariff: userTariff._id,
+						user: user._id,
+					})
+
 					await notification.create({
 						receiversIds: [user._id],
 						title: 'Недостаточно средств на счете для продления подписки',
@@ -125,6 +131,11 @@ const recurrentPayment = async () => {
 						willPublishedAt: Date.now(),
 						type: 'PROFILE',
 						deleted: false,
+					})
+
+					await repaymentModel.create({
+						tariff: userTariff._id,
+						user: user._id,
 					})
 				}
 			}
