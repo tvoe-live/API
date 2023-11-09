@@ -234,7 +234,7 @@ router.post('/sms/login', async (req, res) => {
 		}
 
 		let minuteAgo = new Date()
-		minuteAgo.setSeconds(minuteAgo.getSeconds() - 45)
+		minuteAgo.setSeconds(minuteAgo.getSeconds() - 55)
 
 		const previousPhoneCheckingMinute = await PhoneChecking.find({
 			phone,
@@ -245,7 +245,7 @@ router.post('/sms/login', async (req, res) => {
 			return resError({
 				res,
 				alert: true,
-				msg: 'Можно запросить код только раз в 50 секунд',
+				msg: 'Можно запросить код подтверждения только раз в 60 секунд',
 			})
 		}
 
@@ -261,11 +261,11 @@ router.post('/sms/login', async (req, res) => {
 			return resError({
 				res,
 				alert: true,
-				msg: 'Превышено число авторизаций за сутки',
+				msg: 'Превышен лимит авторизаций за сутки',
 			})
 		}
 
-		const code = Math.floor(1000 + Math.random() * 9000) // 4 значный код для подтверждения
+		const code = Math.floor(1000 + Math.random() * 9000) // 4-значный код для подтверждения
 		await PhoneChecking.updateMany(
 			{ phone, code: { $ne: code }, type: 'authorization' },
 			{ $set: { isCancelled: true } }
@@ -288,13 +288,13 @@ router.post('/sms/login', async (req, res) => {
 
 		if (response.status === 200) {
 			return resSuccess({ res, msg: 'Сообщение с кодом отправлено по указанному номеру телефона' })
-		} else {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Что-то пошло не так. Попробуйе позже',
-			})
 		}
+
+		return resError({
+			res,
+			alert: true,
+			msg: 'Что-то пошло не так. Попробуйте позже',
+		})
 	} catch (error) {
 		return res.json(error)
 	}

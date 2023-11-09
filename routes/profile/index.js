@@ -116,12 +116,12 @@ router.patch('/phone', verify.token, async (req, res) => {
 			return resError({
 				res,
 				alert: true,
-				msg: 'К данному аккаунту уже привязан этот номер телефона',
+				msg: 'К аккаунту уже привязан этот номер телефона',
 			})
 		}
 
 		let minuteAgo = new Date()
-		minuteAgo.setSeconds(minuteAgo.getSeconds() - 45)
+		minuteAgo.setSeconds(minuteAgo.getSeconds() - 55)
 
 		const previousPhoneCheckingMinute = await PhoneChecking.find({
 			userId,
@@ -133,7 +133,7 @@ router.patch('/phone', verify.token, async (req, res) => {
 			return resError({
 				res,
 				alert: true,
-				msg: 'Можно запросить код только раз в 50 секунд',
+				msg: 'Можно запросить код подтверждения только раз в 60 секунд',
 			})
 		}
 
@@ -150,7 +150,7 @@ router.patch('/phone', verify.token, async (req, res) => {
 			return resError({
 				res,
 				alert: true,
-				msg: 'Нельзя менять телефон более 3 раз за сутки',
+				msg: 'Превышен лимит изменения номера телефона за сутки',
 			})
 		}
 
@@ -181,13 +181,13 @@ router.patch('/phone', verify.token, async (req, res) => {
 				msg: 'Сообщение с кодом отправлено по указанному номеру телефона',
 				alert: true,
 			})
-		} else {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Что-то пошло не так. Попробуйе позже',
-			})
 		}
+
+		return resError({
+			res,
+			alert: true,
+			msg: 'Что-то пошло не так. Попробуйте позже',
+		})
 	} catch (error) {
 		return res.json(error)
 	}
