@@ -730,7 +730,7 @@ router.post('/notification', async (req, res) => {
 							finishAt,
 							tariffId: paymentLog.tariffId,
 						},
-						RebillId: rebillId ? rebillId : null,
+						RebillId: rebillId || null,
 						allowTrialTariff: false,
 					},
 				}
