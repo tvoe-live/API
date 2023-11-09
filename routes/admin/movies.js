@@ -181,10 +181,6 @@ router.post('/', verify.token, verify.isManager, async (req, res) => {
 						},
 					}
 				)
-
-				schedule.scheduleJob(new Date(badge.finishAt), async function () {
-					await Movie.updateOne({ _id }, { $set: { badge: {} } })
-				})
 			}
 
 			if (categoryAlias) {
