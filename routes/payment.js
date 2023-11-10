@@ -510,22 +510,6 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		sum: price,
 	}).save()
 
-	// findOneAndUpdate
-	if (promocodeId) {
-		await PromocodeLog.findOneAndUpdate(
-			{
-				promocodeId,
-				userId: req.user._id,
-			},
-			{
-				$set: {
-					isPurchaseCompleted: true,
-				},
-				$inc: { __v: 1 },
-			}
-		)
-	}
-
 	// В url успешной страницы передать id созданного лога
 	successURL.searchParams.set('id', paymentLog._id)
 	failURL.searchParams.set('id', paymentLog._id)
@@ -745,6 +729,21 @@ router.post('/notification', async (req, res) => {
 				userId: user._id,
 				refererUserId: user.refererUserId,
 			})
+
+			if (paymentLog.promocodeId) {
+				await PromocodeLog.findOneAndUpdate(
+					{
+						promocodeId: paymentLog.promocodeId,
+						userId: user._id,
+					},
+					{
+						$set: {
+							isPurchaseCompleted: true,
+						},
+						$inc: { __v: 1 },
+					}
+				)
+			}
 
 			break
 		case 'REFUNDED': // Произведён возврат
