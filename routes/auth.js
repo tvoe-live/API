@@ -339,15 +339,15 @@ router.post('/sms/compare', async (req, res) => {
 		})
 	}
 
-	let DayAgo = new Date()
-	DayAgo.setDate(DayAgo.getDate() - 1)
+	let hourAgo = new Date()
+	hourAgo.setHours(hourAgo.getHours() - 1)
 
 	const phoneCheckingLog = await PhoneChecking.findOne({
 		phone,
 		isConfirmed: false,
 		isCancelled: false,
 		type: 'authorization',
-		createdAt: { $gt: DayAgo },
+		createdAt: { $gt: hourAgo },
 	})
 
 	if (phoneCheckingLog) {

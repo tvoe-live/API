@@ -232,15 +232,15 @@ router.post('/change-phone/compare', verify.token, async (req, res) => {
 		})
 	}
 
-	let DayAgo = new Date()
-	DayAgo.setDate(DayAgo.getDate() - 1)
+	let hourAgo = new Date()
+	hourAgo.setHours(hourAgo.getHours() - 1)
 
 	const phoneCheckingLog = await PhoneChecking.findOne({
 		phone,
 		isConfirmed: false,
 		isCancelled: false,
 		type: 'change',
-		createdAt: { $gt: DayAgo },
+		createdAt: { $gt: hourAgo },
 		userId: req.user._id,
 	})
 
