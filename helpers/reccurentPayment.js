@@ -49,7 +49,7 @@ const recurrentPayment = async () => {
 			RebillId: true,
 			autoPayment: true,
 		})
-		console.log('zxc', users)
+
 		for (const user of users) {
 			const userTariff = await tariff.findById(user.subscribe.tariffId)
 			const userPaymentLog = await paymentLog.create({
