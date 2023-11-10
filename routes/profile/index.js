@@ -147,13 +147,13 @@ router.patch('/phone', verify.token, async (req, res) => {
 			type: 'change',
 		})
 
-		if (previousPhoneChecking.length >= 3) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Превышен лимит изменения номера телефона за сутки',
-			})
-		}
+		// if (previousPhoneChecking.length >= 3) {
+		// 	return resError({
+		// 		res,
+		// 		alert: true,
+		// 		msg: 'Превышен лимит изменения номера телефона за сутки',
+		// 	})
+		// }
 
 		const code = Math.floor(1000 + Math.random() * 9000) // 4 значный код для подтверждения
 		await PhoneChecking.updateMany(

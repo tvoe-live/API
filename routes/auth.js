@@ -234,7 +234,7 @@ router.post('/sms/login', async (req, res) => {
 		}
 
 		let minuteAgo = new Date()
-		minuteAgo.setSeconds(minuteAgo.getSeconds() - 55)
+		minuteAgo.setSeconds(minuteAgo.getSeconds() - 5)
 
 		const previousPhoneCheckingMinute = await PhoneChecking.find({
 			phone,
@@ -245,7 +245,7 @@ router.post('/sms/login', async (req, res) => {
 			return resError({
 				res,
 				alert: true,
-				msg: 'Можно запросить код подтверждения только раз в 60 секунд',
+				msg: 'Можно запросить код подтверждения только раз в 10 секунд',
 			})
 		}
 
