@@ -91,18 +91,21 @@ router.get('/', verify.token, verify.isAdmin, async (req, res) => {
  */
 
 router.post('/', verify.token, verify.isAdmin, async (req, res) => {
-	const {
+	let {
 		value,
 		tariffName,
 		discountFormat,
 		sizeDiscount,
 		startAt,
-		finishAt = '3000-01-01',
-		maxAmountActivation = null,
+		finishAt,
+		maxAmountActivation,
 		isActive = false,
 		isOnlyForNewUsers = true,
 	} = req.body
 
+	if (!finishAt) {
+		finishAt = '3000-01-01'
+	}
 	if (!discountFormat) return resError({ res, msg: 'Не передан discountFormat' })
 	if (discountFormat !== 'free-month' && !sizeDiscount)
 		return resError({ res, msg: 'Не передан sizeDiscount' })
