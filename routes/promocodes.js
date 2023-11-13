@@ -59,7 +59,7 @@ router.patch('/activate', verify.token, async (req, res) => {
 
 		if (promocode.discountFormat === 'free-month') {
 			const tariff = await Tariff.findOne({ name: '1 месяц' })
-			const user = await User.findOne({ _id: req.user._id })
+			let user = await User.findOne({ _id: req.user._id })
 
 			if (!req.user.subscribe) {
 				const startAt = new Date()
@@ -71,24 +71,21 @@ router.patch('/activate', verify.token, async (req, res) => {
 					tariffId: tariff._id,
 				}
 			} else {
-				user.subscribe.finishAt = new Date(
-					user.subscribe.finishAt.getTime() + Number(tariff.duration)
-				)
+				user.subscribe = {
+					...user.subscribe,
+					finishAt: new Date(user.subscribe.finishAt.getTime() + Number(tariff.duration)),
+				}
 			}
-			user.save()
+			await user.save()
 
 			const today = new Date()
-			const year = today.getFullYear()
-			const month = today.getMonth()
-			const day = today.getDate()
-			const monthForward = new Date(year, month + 1, day)
 
 			return resSuccess({
 				res,
 				alert: true,
 				msg: 'Промокод успешно активирован',
 				startAt: getTrimDate(today),
-				finishAt: getTrimDate(monthForward),
+				finishAt: getTrimDate(user.subscribe.finishAt),
 				discountFormat: 'free-month',
 			})
 		}

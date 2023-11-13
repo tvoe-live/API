@@ -234,7 +234,7 @@ router.post('/sms/login', async (req, res) => {
 		}
 
 		let minuteAgo = new Date()
-		minuteAgo.setSeconds(minuteAgo.getSeconds() - 55)
+		minuteAgo.setSeconds(minuteAgo.getSeconds() - 5)
 
 		const previousPhoneCheckingMinute = await PhoneChecking.find({
 			phone,
@@ -245,7 +245,7 @@ router.post('/sms/login', async (req, res) => {
 			return resError({
 				res,
 				alert: true,
-				msg: 'Можно запросить код подтверждения только раз в 60 секунд',
+				msg: 'Можно запросить код подтверждения только раз в 10 секунд',
 			})
 		}
 
@@ -257,13 +257,13 @@ router.post('/sms/login', async (req, res) => {
 			createdAt: { $gt: DayAgo },
 		})
 
-		if (previousPhoneChecking.length >= 10) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Превышен лимит авторизаций за сутки',
-			})
-		}
+		// if (previousPhoneChecking.length >= 10) {
+		// 	return resError({
+		// 		res,
+		// 		alert: true,
+		// 		msg: 'Превышен лимит авторизаций за сутки',
+		// 	})
+		// }
 
 		const code = Math.floor(1000 + Math.random() * 9000) // 4-значный код для подтверждения
 		await PhoneChecking.updateMany(
@@ -339,15 +339,15 @@ router.post('/sms/compare', async (req, res) => {
 		})
 	}
 
-	let DayAgo = new Date()
-	DayAgo.setDate(DayAgo.getDate() - 1)
+	let hourAgo = new Date()
+	hourAgo.setHours(hourAgo.getHours() - 1)
 
 	const phoneCheckingLog = await PhoneChecking.findOne({
 		phone,
 		isConfirmed: false,
 		isCancelled: false,
 		type: 'authorization',
-		createdAt: { $gt: DayAgo },
+		createdAt: { $gt: hourAgo },
 	})
 
 	if (phoneCheckingLog) {
