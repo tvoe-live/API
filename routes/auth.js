@@ -204,7 +204,7 @@ router.post('/logout', verify.token, async (req, res) => {
  */
 
 router.post('/sms/login', async (req, res) => {
-	const { phone } = req.body
+	const { phone, imgcode } = req.body
 
 	const ip = req.ip
 
@@ -283,7 +283,7 @@ router.post('/sms/login', async (req, res) => {
 		})
 
 		const response = await fetch(
-			`https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}`
+			`https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}&userip=${ip}&imgcode=${imgcode}`
 		)
 
 		if (response.status === 200) {
