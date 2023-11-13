@@ -9,11 +9,9 @@ const resSuccess = require('../../helpers/resSuccess')
 const multer = require('multer')
 const mongoose = require('mongoose')
 const isValidObjectId = require('../../helpers/isValidObjectId')
-// const { uploadImageToS3 } = require('../../helpers/uploadImage')
 
 // Загрузка картинки в буффер
 const memoryStorage = multer.memoryStorage()
-const uploadMemoryStorage = multer({ storage: memoryStorage })
 
 /*
  * Уведомления

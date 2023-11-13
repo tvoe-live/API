@@ -109,14 +109,8 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 	if (discountFormat !== 'free-month' && !tariffName)
 		return resError({ res, msg: 'Не передан tariffName' })
 	if (!value) return resError({ res, msg: 'Не передан value' })
-
-	if (discountFormat === 'percentages' && (sizeDiscount < 1 || sizeDiscount > 99)) {
-		return resError({ res, msg: 'Не допустимый процент скидки' })
-	}
-
-	if (discountFormat === 'rubles' && (sizeDiscount < 1 || sizeDiscount > 800)) {
-		return resError({ res, msg: 'Не допустимая величина скидки' })
-	}
+	if (value.length > 32)
+		return resError({ res, msg: 'Длина промокода не может превышать 32 символа' })
 
 	if (!startAt)
 		return resError({
@@ -124,8 +118,16 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 			msg: 'Не передана дата и время начала действия промокода - параметр startAt',
 		})
 
-	const existTariff = Tariff.findOne({ name: tariffName })
+	const existTariff = await Tariff.findOne({ name: tariffName })
 	if (!existTariff) return resError({ res, msg: 'Указанного тарифа не существует' })
+
+	if (discountFormat === 'percentages' && (sizeDiscount < 1 || sizeDiscount > 99)) {
+		return resError({ res, msg: 'Не допустимый процент скидки' })
+	}
+
+	if (discountFormat === 'rubles' && (sizeDiscount < 1 || sizeDiscount > existTariff.price - 1)) {
+		return resError({ res, msg: 'Не допустимая величина скидки' })
+	}
 
 	const existPromocode = await Promocode.findOne({ value })
 	if (existPromocode) return resError({ res, msg: 'Промокод с таким названием уже существует' })

@@ -7423,8 +7423,8 @@ paths:
                   type: 'success'
                   msg: 'Сообщение с кодом отправлено по указанному номеру телефона'
 
-  /sms/compare:
-    patch:
+  auth/sms/compare:
+    post:
       summary: Авторизация через cмс
       tags:
         - Auth

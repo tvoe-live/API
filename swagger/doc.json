@@ -8242,8 +8242,8 @@
 				}
 			}
 		},
-		"/sms/compare": {
-			"patch": {
+		"auth/sms/compare": {
+			"post": {
 				"summary": "Авторизация через cмс",
 				"tags": ["Auth"],
 				"requestBody": {
