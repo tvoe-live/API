@@ -2,11 +2,19 @@ const express = require('express')
 const router = express.Router()
 const mongoose = require('mongoose')
 const Movie = require('../../models/movie')
+const MovieRating = require('../../models/movieRating')
 const verify = require('../../middlewares/verify')
 const resError = require('../../helpers/resError')
 const resSuccess = require('../../helpers/resSuccess')
 const getSearchQuery = require('../../middlewares/getSearchQuery')
-const schedule = require('node-schedule')
+
+// Возможные причины для удаления отзыва
+const validValues = [
+	'violationRightsOrContentConfidentialInformation', // Отзыв нарушает чьи-то права или содержит конфиденциальную информацию
+	'swearingInsultsOrCallsIllegalActions', // Мат, оскорбления или призыв к противоправным действиям
+	'linkOrAdvertising', // Отзыв со ссылкой или скрытой рекламой
+	'missingRelationshipToContent', // Отзыв не имеет отношения к контенту
+]
 
 /*
  * Админ-панель > Фильмы и сериалы
@@ -363,6 +371,96 @@ router.put('/raiseUp', verify.token, verify.isManager, async (req, res) => {
 			...set,
 			alert: true,
 			msg: 'Успешное поднятие',
+		})
+	} catch (err) {
+		return resError({ res, msg: err })
+	}
+})
+
+// Удаление рейтинга и комментария администратором
+router.delete('/rating', verify.token, verify.isManager, async (req, res) => {
+	let { reviewId, comment, reasons } = req.body
+
+	if (!reviewId) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Ожидается reviewId',
+		})
+	}
+
+	if (!comment && (!reasons || !Boolean(reasons?.length))) {
+		console.log('I am here')
+		return resError({
+			res,
+			alert: true,
+			msg: 'Ожидается comment и/или reasons',
+		})
+	}
+
+	reasons?.forEach((reason) => {
+		if (!validValues.includes(reason)) {
+			return resError({
+				res,
+				alert: true,
+				msg: `Причины ${reason} не существует. Возможные причины - ${validValues}`,
+			})
+		}
+	})
+
+	reviewId = mongoose.Types.ObjectId(reviewId)
+
+	try {
+		// Обнуление записи из БД
+		const { movieId } = await MovieRating.findOneAndUpdate(
+			{
+				_id: reviewId,
+			},
+			{
+				$set: {
+					isDeleted: true,
+					deletingInfo: {
+						...(!!comment && { comment }),
+						...(reasons && reasons.length ? { reasons } : { reasons: [] }),
+					},
+				},
+				$inc: { __v: 1 },
+			}
+		)
+
+		// Получить все оценки фильма
+		const movieRatingLogs = await MovieRating.aggregate([
+			{
+				$match: {
+					movieId,
+					isDeleted: { $ne: true },
+				},
+			},
+			{
+				$group: {
+					_id: null,
+					avg: { $avg: '$rating' },
+				},
+			},
+			{
+				$project: {
+					_id: false,
+					avg: true,
+				},
+			},
+		])
+
+		const newMovieRating = movieRatingLogs[0]?.avg || null
+
+		// Обновить среднюю оценку фильма
+		await Movie.updateOne({ _id: movieId }, { $set: { rating: newMovieRating } })
+
+		return resSuccess({
+			res,
+			movieId,
+			newMovieRating,
+			alert: true,
+			msg: 'Успешно удалено',
 		})
 	} catch (err) {
 		return resError({ res, msg: err })

@@ -4149,6 +4149,64 @@
 				}
 			}
 		},
+		"/admin/movies/rating": {
+			"delete": {
+				"summary": "Админ-панель > Удаление отзыва и комметария",
+				"tags": ["Admin"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"reviewId": { "type": "string", "description": "Id отзыва", "required": true },
+									"comment": { "type": "string", "description": "Комментарий", "required": false },
+									"reasons": {
+										"type": "array",
+										"required": false,
+										"description": "Массив возможных причин. Может включать в себя 'violationRightsOrContentConfidentialInformation' - Отзыв нарушает чьи-то права или содержит конфиденциальную информацию, 'swearingInsultsOrCallsIllegalActions' - Мат, оскорбления или призыв к противоправным действиям, 'linkOrAdvertising' - Отзыв со ссылкой или скрытой рекламой, 'missingRelationshipToContent' -  Отзыв не имеет отношения к контенту",
+										"items": { "type": "string" }
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"type": { "type": "string", "description": "Надпись success" },
+										"movieId": { "type": "string", "description": "Id фильма (mongoose.ObjectId)" },
+										"newMovieRating": {
+											"type": "number",
+											"description": "Новый рейтинг фильма после удаления оценки"
+										},
+										"alert": {
+											"type": "boolean",
+											"description": "Показывать ли уведомление на сайте"
+										},
+										"msg": { "type": "string", "description": "надпись Успешно удалено" }
+									},
+									"example": {
+										"type": "success",
+										"alert": true,
+										"msg": "Успешно удалено",
+										"newMovieRating": 9,
+										"movieId": "63ac8aa1b2c93ed2212186e7"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
 		"/admin/payment": {
 			"get": {
 				"summary": "Админ-панель > История пополнений",
