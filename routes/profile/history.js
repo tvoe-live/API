@@ -1,6 +1,5 @@
 const express = require('express')
 const router = express.Router()
-const Movie = require('../../models/movie')
 const MoviePageLog = require('../../models/moviePageLog')
 const verify = require('../../middlewares/verify')
 const resError = require('../../helpers/resError')
