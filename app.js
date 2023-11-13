@@ -104,8 +104,8 @@ app.use('/profile/favorites', profileFavorites) // Моё > Избранное
 app.use('/profile/bookmarks', profileBookmarks) // Моё > Закладки
 app.use('/profile/notifications', profileNotifications) // Навигация > Уведомления
 app.use('/profile/withdrawal', profileWithdrawal) // Профиль > Журнал заявок на возврат денежных средств
-app.use('/profile/autopayment', subscribeRouter)
-app.use('/profile/refferal', refferalRouter)
+app.use('/profile/autopayment', subscribeRouter) // Управление автоплатежами
+app.use('/profile/refferal', refferalRouter) // Профиль > статистика по реферальной программе
 
 app.use('/admin', admin) // Админ-панель
 app.use('/admin/users', adminUsers) // Админ-панель > Пользователи
