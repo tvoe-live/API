@@ -4,33 +4,10 @@ const refferalLinkModel = require('../models/refferalLink')
 
 const refferalLinkRouter = Router()
 
-refferalLinkRouter.post('/create', async (req, res) => {
-	try {
-		const createdLink = await refferalLinkModel.findOne({ user: req.query.id })
-
-		if (createdLink) {
-			return res.status(200).send({ link: `${process.env.API_URL}/${createdLink.code}` })
-		}
-
-		const { randomUUID } = new ShortUniqueId({ length: 10 })
-		const code = randomUUID()
-
-		const link = await refferalLinkModel.create({
-			code,
-			user: req.query.id,
-		})
-
-		return res.status(201).send({ link: `${process.env.API_URL}/${link.code}` })
-	} catch (error) {
-		console.log(error)
-		return res.status(500).send(error)
-	}
-})
-
 refferalLinkRouter.get('/', async (req, res) => {
 	try {
 		const link = await refferalLinkModel.findOne({ user: req.query.id }, { code: true }).lean()
-		return res.status(200).send({ link: `${process.env.API_URL}/${link.code}` })
+		return res.status(200).send({ link: `${process.env.API_URL}/link/${link.code}` })
 	} catch (error) {
 		return res.status(500).send(error)
 	}

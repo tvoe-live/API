@@ -12,6 +12,9 @@ const verify = require('../middlewares/verify')
 const resError = require('../helpers/resError')
 const resSuccess = require('../helpers/resSuccess')
 const { uploadImageToS3 } = require('../helpers/uploadImage')
+const refferalLinkModel = require('../models/refferalLink')
+
+const ShortUniqueId = require('short-unique-id')
 require('dotenv').config()
 
 /*
@@ -377,6 +380,18 @@ router.post('/sms/compare', async (req, res) => {
 		await verify.token(req)
 
 		if (req.user) {
+			const refferalLink = await refferalLinkModel.findOne({ user: req.user._id })
+			if (!refferalLink) {
+				const { randomUUID } = new ShortUniqueId({ length: 10 })
+				const code = randomUUID()
+
+				await refferalLinkModel.create({
+					user: user._id,
+					url: `https://1390760-cu92735.tw1.ru/?r=${user._id}`,
+					code,
+				})
+			}
+
 			await User.findOneAndUpdate(
 				{ _id: req.user._id },
 				{
@@ -401,6 +416,15 @@ router.post('/sms/compare', async (req, res) => {
 				authPhone: phone,
 				lastVisitAt: Date.now(),
 			}).save()
+
+			const { randomUUID } = new ShortUniqueId({ length: 10 })
+			const code = randomUUID()
+
+			await refferalLinkModel.create({
+				user: user._id,
+				url: `https://1390760-cu92735.tw1.ru/?r=${user._id}`,
+				code,
+			})
 
 			if (refererUserId) {
 				// Поиск пользователя в БД, который пригласил на регистрацию
