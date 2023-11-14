@@ -68,7 +68,7 @@ refferalRouter.get('/', async (req, res) => {
 		)
 			.reduce((acc, item) => acc.concat(item), [])
 			.map((item) => {
-				item.amount = (item.amount * (process.env.FIRST_STEP_REFFERAL / 100)).toFixed(2)
+				item.amount = Number((item.amount * (process.env.FIRST_STEP_REFFERAL / 100)).toFixed(2))
 				return { ...item, lvl: '1 уровень' }
 			})
 
