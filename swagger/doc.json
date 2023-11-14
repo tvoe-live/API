@@ -20,6 +20,126 @@
 			}
 		},
 		"schemas": {
+			"RefferalStatResponse": {
+				"type": "object",
+				"properties": {
+					"balance": {
+						"type": "integer",
+						"format": "int64",
+						"example": 1000,
+						"description": "Текущий баланс пользователя"
+					},
+					"firstLvlReferrals": {
+						"type": "integer",
+						"format": "int64",
+						"example": 10,
+						"description": "Кол-во рефералов 1го уровня"
+					},
+					"secondLvlReferrals": {
+						"type": "integer",
+						"format": "int64",
+						"example": 10,
+						"description": "Кол-во рефералов 2го уровня"
+					},
+					"authCount": {
+						"type": "integer",
+						"format": "int64",
+						"example": 10,
+						"description": "Кол-во регистраций"
+					}
+				}
+			},
+			"RefferalPaymentStat": {
+				"type": "array",
+				"items": {
+					"type": "object",
+					"properties": {
+						"userId": {
+							"type": "object",
+							"properties": {
+								"_id": {
+									"type": "string",
+									"description": "Id пользователя",
+									"example": "63ac7a31b2c93ed2212180d0"
+								},
+								"firstname": {
+									"type": "string",
+									"description": "Имя пользователя",
+									"example": "Евгений"
+								},
+								"lastname": {
+									"type": "string",
+									"description": "Отчество пользователя",
+									"example": "Васильевич"
+								},
+								"avatar": {
+									"type": "string",
+									"description": "Url на автар пользователя",
+									"example": "/images/64808068904s40e5d4c1b555.jpg"
+								}
+							}
+						},
+						"tariffId": {
+							"type": "object",
+							"properties": {
+								"_id": {
+									"type": "string",
+									"description": "Id пользователя",
+									"example": "63ac7a31b2c93ed2212180d0"
+								},
+								"name": { "type": "string", "description": "Название тарифа", "example": "1 месяц" }
+							}
+						},
+						"amount": {
+							"type": "integer",
+							"format": "int64",
+							"example": 10,
+							"description": "Бонус от попленения реферала"
+						},
+						"lvl": {
+							"type": "string",
+							"description": "Уровень реферала (1й уровень/2й уровень)",
+							"example": "1й уровень"
+						},
+						"createdAt": {
+							"type": "string",
+							"format": "date-time",
+							"description": "Дата оплаты тарифа"
+						}
+					}
+				}
+			},
+			"RefferalWithdrawalStatResponse": {
+				"type": "array",
+				"items": {
+					"type": "object",
+					"properties": {
+						"amount": {
+							"type": "integer",
+							"format": "int64",
+							"description": "Стоимость оплаты",
+							"example": 1500
+						},
+						"card": {
+							"type": "object",
+							"properties": {
+								"number": {
+									"type": "string",
+									"description": "Номер карты",
+									"example": "1234567890123456"
+								},
+								"cardholder": {
+									"type": "string",
+									"description": "Владелец карты (ФИО)",
+									"example": "qq wwwww eeee"
+								}
+							}
+						},
+						"status": { "type": "string", "description": "Статус оплаты", "example": "pending" },
+						"createdAt": { "type": "string", "format": "date-time", "description": "Дата списания" }
+					}
+				}
+			},
 			"AuthLog": {
 				"type": "object",
 				"properties": {
@@ -820,6 +940,75 @@
 		]
 	},
 	"paths": {
+		"/profile/refferal": {
+			"get": {
+				"summary": "Получить истоирию реф.бонусов",
+				"tags": ["Profile"],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "id",
+						"required": true,
+						"schema": { "type": "string", "format": "uuid" }
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/RefferalPaymentStat" }
+							}
+						}
+					}
+				}
+			}
+		},
+		"/profile/refferal/stat": {
+			"get": {
+				"summary": "Получить общую статистику по реферально программе",
+				"tags": ["Profile"],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "id",
+						"required": true,
+						"schema": { "type": "string", "format": "uuid" }
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/RefferalStatResponse" }
+							}
+						}
+					}
+				}
+			}
+		},
+		"/profile/refferal/withdrawal": {
+			"get": {
+				"summary": "Получить историю списаний",
+				"tags": ["Profile"],
+				"parameters": [
+					{
+						"in": "query",
+						"name": "id",
+						"required": true,
+						"schema": { "type": "string", "format": "uuid" }
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/RefferalWithdrawalStatResponse" }
+							}
+						}
+					}
+				}
+			}
+		},
 		"/profile": {
 			"get": {
 				"summary": "Получение профиля",
