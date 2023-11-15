@@ -59,7 +59,7 @@ refferalRouter.get('/', async (req, res) => {
 					{ userId: true, tariffId: true, _id: false, amount: true, createdAt: true }
 				)
 				.populate('tariffId', ['name'])
-				.populate('userId', ['firstname', 'lastname'])
+				.populate('userId', ['firstname', 'lastname', 'avatar'])
 				.lean()
 		)
 
@@ -84,7 +84,7 @@ refferalRouter.get('/', async (req, res) => {
 					{ userId: true, tariffId: true, _id: false, amount: true, createdAt: true }
 				)
 				.populate('tariffId', ['name'])
-				.populate('userId', ['firstname', 'lastname'])
+				.populate('userId', ['firstname', 'lastname', 'avatar'])
 				.lean()
 		)
 
