@@ -134,6 +134,7 @@ router.get('/movie', async (req, res) => {
 											$match: {
 												review: { $ne: null },
 												isDeleted: { $ne: true },
+												isPublished: true,
 											},
 										},
 									],
@@ -189,6 +190,7 @@ router.get('/movie', async (req, res) => {
 											$match: {
 												review: { $ne: null },
 												isDeleted: { $ne: true },
+												isPublished: true,
 											},
 										},
 										{
@@ -497,7 +499,7 @@ router.post('/rating', verify.token, async (req, res) => {
 	}
 })
 
-// Удаление рейтинга и комментария
+// Удаление рейтинга и комментария пользователем
 router.delete('/rating', verify.token, async (req, res) => {
 	let { movieId } = req.body
 
