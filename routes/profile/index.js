@@ -147,13 +147,13 @@ router.patch('/phone', verify.token, async (req, res) => {
 			type: 'change',
 		})
 
-		if (previousPhoneChecking.length >= 3) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Превышен лимит изменения номера телефона за сутки',
-			})
-		}
+		// if (previousPhoneChecking.length >= 3) {
+		// 	return resError({
+		// 		res,
+		// 		alert: true,
+		// 		msg: 'Превышен лимит изменения номера телефона за сутки',
+		// 	})
+		// }
 
 		const code = Math.floor(1000 + Math.random() * 9000) // 4 значный код для подтверждения
 		await PhoneChecking.updateMany(
@@ -232,15 +232,15 @@ router.post('/change-phone/compare', verify.token, async (req, res) => {
 		})
 	}
 
-	let DayAgo = new Date()
-	DayAgo.setDate(DayAgo.getDate() - 1)
+	let hourAgo = new Date()
+	hourAgo.setHours(hourAgo.getHours() - 1)
 
 	const phoneCheckingLog = await PhoneChecking.findOne({
 		phone,
 		isConfirmed: false,
 		isCancelled: false,
 		type: 'change',
-		createdAt: { $gt: DayAgo },
+		createdAt: { $gt: hourAgo },
 		userId: req.user._id,
 	})
 
