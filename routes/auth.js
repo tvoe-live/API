@@ -387,7 +387,7 @@ router.post('/sms/compare', async (req, res) => {
 
 				await refferalLinkModel.create({
 					user: user._id,
-					url: `https://1390760-cu92735.tw1.ru/?r=${user._id}`,
+					url: `${process.env.CLIENT_URL}?r=${user._id}`,
 					code,
 				})
 			}
@@ -422,7 +422,7 @@ router.post('/sms/compare', async (req, res) => {
 
 			await refferalLinkModel.create({
 				user: user._id,
-				url: `https://1390760-cu92735.tw1.ru/?r=${user._id}`,
+				url: `${process.env.CLIENT_URL}?r=${user._id}`,
 				code,
 			})
 
