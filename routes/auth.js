@@ -200,11 +200,62 @@ router.post('/logout', verify.token, async (req, res) => {
 })
 
 /*
+ *  Проверка требуется ли капча
+ */
+
+router.post('/sms/capcha', async (req, res) => {
+	const { phone } = req.body
+
+	const ip = req.ip
+
+	try {
+		if (!phone) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Не получен phone',
+			})
+		}
+
+		if (!regex.test(phone)) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Номер телефона должен начинаться с "7" и состоять из 11 цифр',
+			})
+		}
+
+		const prevPhoneChecking = await PhoneChecking.find({
+			phone,
+		})
+			.sort({ createdAt: -1 })
+			.limit(3)
+
+		const prevIpChecking = await PhoneChecking.find({
+			ip,
+		})
+			.sort({ createdAt: -1 })
+			.limit(3)
+
+		if (
+			(prevPhoneChecking.length === 3 && prevPhoneChecking.every((log) => !log.isConfirmed)) ||
+			(prevIpChecking.length === 3 && prevIpChecking.every((log) => !log.isConfirmed))
+		) {
+			return resSuccess({ res, value: true })
+		}
+
+		return resSuccess({ res, value: false })
+	} catch (error) {
+		return res.json(error)
+	}
+})
+
+/*
  *  Отправка 4 значного кода через смс для авторизации / регистрации
  */
 
 router.post('/sms/login', async (req, res) => {
-	const { phone } = req.body
+	const { phone, imgcode } = req.body
 
 	const ip = req.ip
 
@@ -257,17 +308,43 @@ router.post('/sms/login', async (req, res) => {
 			createdAt: { $gt: DayAgo },
 		})
 
-		// if (previousPhoneChecking.length >= 10) {
-		// 	return resError({
-		// 		res,
-		// 		alert: true,
-		// 		msg: 'Превышен лимит авторизаций за сутки',
-		// 	})
-		// }
+		if (previousPhoneChecking.length >= 10) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Превышен лимит авторизаций за сутки',
+			})
+		}
+
+		const prevPhoneChecking2 = await PhoneChecking.find({
+			phone,
+		})
+			.sort({ createdAt: -1 })
+			.limit(3)
+
+		const prevIpChecking = await PhoneChecking.find({
+			ip,
+		})
+			.sort({ createdAt: -1 })
+			.limit(3)
+
+		// Если последние 3 заявки на подтверждения для указанного номера телефона или ip адреса клиента не были подтверждены правильным смс кодом, необходимо показать капчу
+		if (
+			(prevPhoneChecking2.length === 3 &&
+				prevPhoneChecking2.every((log) => !log.isConfirmed) &&
+				!imgcode) ||
+			(prevIpChecking.length === 3 && prevIpChecking.every((log) => !log.isConfirmed) && !imgcode)
+		) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Требуется imgcode',
+			})
+		}
 
 		const code = Math.floor(1000 + Math.random() * 9000) // 4-значный код для подтверждения
 		await PhoneChecking.updateMany(
-			{ phone, code: { $ne: code }, type: 'authorization' },
+			{ phone, code: { $ne: code }, type: 'authorization', isCancelled: false },
 			{ $set: { isCancelled: true } }
 		)
 
@@ -282,9 +359,22 @@ router.post('/sms/login', async (req, res) => {
 			type: 'authorization',
 		})
 
-		const response = await fetch(
-			`https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}`
-		)
+		const url = imgcode
+			? `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}&imgcode=${imgcode}&userip=${ip}&op=1`
+			: `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}`
+		ip
+
+		const response = await fetch(url)
+
+		const x = await response?.text()
+
+		if (x.startsWith('ERROR = 10')) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Символы указаны неверно',
+			})
+		}
 
 		if (response.status === 200) {
 			return resSuccess({ res, msg: 'Сообщение с кодом отправлено по указанному номеру телефона' })
