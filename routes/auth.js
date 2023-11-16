@@ -366,9 +366,9 @@ router.post('/sms/login', async (req, res) => {
 
 		const response = await fetch(url)
 
-		const x = await response?.text()
+		const responseText = await response?.text()
 
-		if (x.startsWith('ERROR = 10')) {
+		if (responseText.startsWith('ERROR = 10')) {
 			return resError({
 				res,
 				alert: true,
