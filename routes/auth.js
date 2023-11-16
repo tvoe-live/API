@@ -447,6 +447,18 @@ router.post('/sms/compare', async (req, res) => {
 		const userId = user._id
 		const token = await generateAccessToken(userId)
 
+		const refferalLink = await refferalLinkModel.findOne({ user: userId })
+		if (!refferalLink) {
+			const { randomUUID } = new ShortUniqueId({ length: 10 })
+			const code = randomUUID()
+
+			await refferalLinkModel.create({
+				user: user._id,
+				url: `${process.env.CLIENT_URL}?r=${userId}`,
+				code,
+			})
+		}
+
 		await User.updateOne(
 			{ _id: userId },
 			{

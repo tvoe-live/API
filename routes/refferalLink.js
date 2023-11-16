@@ -1,9 +1,14 @@
 const { Router } = require('express')
-const ShortUniqueId = require('short-unique-id')
 const refferalLinkModel = require('../models/refferalLink')
 
+/**
+ * Роут для работы с реф.ссылками
+ */
 const refferalLinkRouter = Router()
 
+/**
+ * Получение реф.ссылки пользователя
+ */
 refferalLinkRouter.get('/', async (req, res) => {
 	try {
 		const link = await refferalLinkModel.findOne({ user: req.query.id }, { code: true }).lean()
@@ -13,6 +18,9 @@ refferalLinkRouter.get('/', async (req, res) => {
 	}
 })
 
+/**
+ * Обработка реф.ссылки
+ */
 refferalLinkRouter.get('/:code', async (req, res) => {
 	try {
 		const link = await refferalLinkModel.findOne({ code: req.params.code })
