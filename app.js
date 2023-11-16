@@ -15,6 +15,7 @@ const repaymentTask = require('./helpers/repaymentTask')
 const recurrentPayment = require('./helpers/reccurentPayment')
 const subscribeRouter = require('./routes/profile/changeAutopayment')
 const refferalRouter = require('./routes/profile/refferal')
+const refferalLinkRouter = require('./routes/refferalLink')
 
 const { PORT, STATIC_DIR, IMAGES_DIR, VIDEOS_DIR, DATABASE_URL } = process.env
 
@@ -93,6 +94,7 @@ app.use('/catalog', catalog) // Фильмы / сериалы с фильтро�
 app.use('/referral', referral) // Реферальная программа
 app.use('/promocodes', promocodes) // Промокоды
 app.use('/complaints', complaints) // Жалобы
+app.use('/link', refferalLinkRouter) // Реферальные ссылки
 app.use('/collections', collections) // Подборки и жанры для главной страницы
 
 app.use('/profile', profile) // Профиль

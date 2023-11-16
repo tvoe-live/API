@@ -12,6 +12,9 @@ const verify = require('../middlewares/verify')
 const resError = require('../helpers/resError')
 const resSuccess = require('../helpers/resSuccess')
 const { uploadImageToS3 } = require('../helpers/uploadImage')
+const refferalLinkModel = require('../models/refferalLink')
+
+const ShortUniqueId = require('short-unique-id')
 require('dotenv').config()
 
 /*
@@ -467,6 +470,18 @@ router.post('/sms/compare', async (req, res) => {
 		await verify.token(req)
 
 		if (req.user) {
+			const refferalLink = await refferalLinkModel.findOne({ user: req.user._id })
+			if (!refferalLink) {
+				const { randomUUID } = new ShortUniqueId({ length: 10 })
+				const code = randomUUID()
+
+				await refferalLinkModel.create({
+					user: user._id,
+					url: `${process.env.CLIENT_URL}?r=${user._id}`,
+					code,
+				})
+			}
+
 			await User.findOneAndUpdate(
 				{ _id: req.user._id },
 				{
@@ -492,6 +507,15 @@ router.post('/sms/compare', async (req, res) => {
 				lastVisitAt: Date.now(),
 			}).save()
 
+			const { randomUUID } = new ShortUniqueId({ length: 10 })
+			const code = randomUUID()
+
+			await refferalLinkModel.create({
+				user: user._id,
+				url: `${process.env.CLIENT_URL}?r=${user._id}`,
+				code,
+			})
+
 			if (refererUserId) {
 				// Поиск пользователя в БД, который пригласил на регистрацию
 				const refererUser = await User.findOneAndUpdate(
@@ -512,6 +536,18 @@ router.post('/sms/compare', async (req, res) => {
 		// Генерируем токен
 		const userId = user._id
 		const token = await generateAccessToken(userId)
+
+		const refferalLink = await refferalLinkModel.findOne({ user: userId })
+		if (!refferalLink) {
+			const { randomUUID } = new ShortUniqueId({ length: 10 })
+			const code = randomUUID()
+
+			await refferalLinkModel.create({
+				user: user._id,
+				url: `${process.env.CLIENT_URL}?r=${userId}`,
+				code,
+			})
+		}
 
 		await User.updateOne(
 			{ _id: userId },
