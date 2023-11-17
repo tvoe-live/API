@@ -130,9 +130,8 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 		return resError({ res, msg: 'Не допустимая величина скидки', alert: true })
 	}
 
-	const existPromocode = await Promocode.findOne({ value })
-	if (existPromocode)
-		return resError({ res, msg: 'Промокод с таким названием уже существует', alert: true })
+	const existPromocode = await Promocode.findOne({ value, deleted: { $ne: true } })
+	if (existPromocode) return resError({ res, msg: 'Промокод с таким названием уже существует', alert: true })
 
 	try {
 		await Promocode.create({
