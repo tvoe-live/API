@@ -539,7 +539,8 @@ router.get('/', getSearchQuery, async (req, res) => {
 		query = query.slice(1, query.length - 1)
 
 	const editSpace = query?.replace(/ /gi, '\\s.*')
-	const RegExpQuery = new RegExp(editSpace?.replace(/[eё]/gi, '[её]'), 'i')
+	console.log('editSpace:', editSpace)
+	const RegExpQuery = new RegExp(editSpace?.replace(/[её]/gi, '[её]'), 'i')
 
 	const queryInglishKeyboard = ru.fromEn(query)
 	const editSpaceEnglish = queryInglishKeyboard?.replace(/ /gi, '\\s.*')
@@ -583,6 +584,10 @@ router.get('/', getSearchQuery, async (req, res) => {
 		return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength)
 	}
 
+	function toLowerCase(name, editSpace) {
+		return name.toLowerCase() === editSpace.toLowerCase()
+	}
+
 	const mainAgregation = [
 		{
 			$addFields: {
@@ -598,6 +603,14 @@ router.get('/', getSearchQuery, async (req, res) => {
 					$function: {
 						body: findMatch,
 						args: [queryInglishKeyboard, '$name'],
+						lang: 'js',
+					},
+				},
+
+				exactNameMatch: {
+					$function: {
+						body: toLowerCase,
+						args: ['$name', editSpace],
 						lang: 'js',
 					},
 				},
@@ -662,6 +675,7 @@ router.get('/', getSearchQuery, async (req, res) => {
 						...mainAgregation,
 						{
 							$project: {
+								exactNameMatch: true,
 								name: true,
 								dataReleased: true,
 								poster: true,
@@ -725,6 +739,7 @@ router.get('/', getSearchQuery, async (req, res) => {
 						},
 						{
 							$sort: {
+								exactNameMatch: -1,
 								nameMatch: -1,
 								nameEnglishMatch: -1,
 								nameWithMissprintMatch: -1,
@@ -736,6 +751,7 @@ router.get('/', getSearchQuery, async (req, res) => {
 						},
 						{
 							$project: {
+								exactNameMatch: false,
 								nameMatch: false,
 								nameEnglishMatch: false,
 								nameWithMissprintMatch: false,
