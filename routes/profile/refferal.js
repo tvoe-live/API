@@ -75,7 +75,7 @@ refferalRouter.get('/', async (req, res) => {
 		// Получение данных реф.пользователей 1го уровня
 		const refferalUsersFirstLvl = await user.find(
 			{ _id: { $in: mainUser.referral.userIds } },
-			{ _id: true }
+			{ _id: true, referral: true }
 		)
 
 		// Получение данных об оплате тарифов реф.пользователей 1го уровня
@@ -103,7 +103,10 @@ refferalRouter.get('/', async (req, res) => {
 		const referalUsersSecondLvlPromises = refferalUsersFirstLvl.map((usr) =>
 			user.find({ _id: { $in: usr.referral.userIds } }, { _id: true })
 		)
-		const refferalUsersSecondLvl = await Promise.all(referalUsersSecondLvlPromises)
+		const refferalUsersSecondLvl = (await Promise.all(referalUsersSecondLvlPromises)).reduce(
+			(acc, item) => acc.concat(item),
+			[]
+		)
 
 		// Получение данных об оплате тарифов реф.пользователей 2го уровня
 		const refferalUsersSecondLvlPaymentLogPromises = refferalUsersSecondLvl.map((usr) =>
