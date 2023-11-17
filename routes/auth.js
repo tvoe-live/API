@@ -3,6 +3,8 @@ const router = express.Router()
 const axios = require('axios')
 const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose')
+const requestIP = require('request-ip')
+const IP = require('ip')
 
 const User = require('../models/user')
 const AuthLog = require('../models/authLog')
@@ -261,7 +263,15 @@ router.post('/sms/login', async (req, res) => {
 	const { phone, imgcode } = req.body
 
 	const ip = req.ip
+	const ipAddresses = req.header('x-forwarded-for')
+	const ipAddress = requestIP.getClientIp(req)
+	const x = IP.address()
+
 	console.log('ip:', ip)
+	console.log('req.clientIp:', req.clientIp)
+	console.log('req.header(x-forwarded-for):', ipAddresses)
+	console.log('requestIP.getClientIp(req):', ipAddress)
+	console.log('IP.address();:', x)
 
 	try {
 		if (req.useragent?.isBot) {
