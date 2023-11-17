@@ -311,13 +311,13 @@ router.post('/sms/login', async (req, res) => {
 			createdAt: { $gt: DayAgo },
 		})
 
-		if (previousPhoneChecking.length >= 10) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Превышен лимит авторизаций за сутки',
-			})
-		}
+		// if (previousPhoneChecking.length >= 10) {
+		// 	return resError({
+		// 		res,
+		// 		alert: true,
+		// 		msg: 'Превышен лимит авторизаций за сутки',
+		// 	})
+		// }
 
 		const prevPhoneChecking2 = await PhoneChecking.find({
 			phone,
