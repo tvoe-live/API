@@ -539,7 +539,6 @@ router.get('/', getSearchQuery, async (req, res) => {
 		query = query.slice(1, query.length - 1)
 
 	const editSpace = query?.replace(/ /gi, '\\s.*')
-	console.log('editSpace:', editSpace)
 	const RegExpQuery = new RegExp(editSpace?.replace(/[её]/gi, '[её]'), 'i')
 
 	const queryInglishKeyboard = ru.fromEn(query)
