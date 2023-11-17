@@ -29,9 +29,9 @@ database.once('connected', () => console.log('Database Connected'))
 process.on('uncaughtException', (exception) => console.log(`ERROR:`, exception))
 
 const app = express()
+app.set('trust proxy', true)
 app.use(requestIp.mw())
 
-app.set('trust proxy', true)
 app.use(
 	cors({
 		origin: true,

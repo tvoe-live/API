@@ -272,6 +272,11 @@ router.post('/sms/login', async (req, res) => {
 	console.log('req.header(x-forwarded-for):', ipAddresses)
 	console.log('requestIP.getClientIp(req):', ipAddress)
 	console.log('IP.address();:', x)
+	console.log('req.headers[cf-connecting-ip]:', req.headers['cf-connecting-ip'])
+	console.log('req.headers[x-real-ip]:', req.headers['x-real-ip'])
+	console.log('req.connection.remoteAddress]:', req.connection?.remoteAddress)
+	console.log('req.socket.remoteAddress]:', req.socket.remoteAddress)
+	console.log('req.connection?.socket?.remoteAddress:', req.connection?.socket?.remoteAddress)
 
 	try {
 		if (req.useragent?.isBot) {
@@ -400,6 +405,7 @@ router.post('/sms/login', async (req, res) => {
 			msg: 'Что-то пошло не так. Попробуйте позже',
 		})
 	} catch (error) {
+		console.log('error:', error)
 		return res.json(error)
 	}
 })
