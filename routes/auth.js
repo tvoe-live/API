@@ -261,6 +261,7 @@ router.post('/sms/login', async (req, res) => {
 	const { phone, imgcode } = req.body
 
 	const ip = req.ip
+	console.log('ip:', ip)
 
 	try {
 		if (req.useragent?.isBot) {
