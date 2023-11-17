@@ -614,12 +614,21 @@ router.get('/', getSearchQuery, async (req, res) => {
 						lang: 'js',
 					},
 				},
+
+				movieNameWithoutDash: {
+					$replaceAll: {
+						input: '$name',
+						find: '-',
+						replacement: ' ',
+					},
+				},
 			},
 		},
 		{
 			$match: {
 				$or: [
 					{ name: RegExpQuery },
+					{ movieNameWithoutDash: RegExpQuery },
 					{ name: RegExpQueryInglishKeyboard },
 					{ origName: RegExpQuery },
 					{ shortDesc: RegExpQuery },
