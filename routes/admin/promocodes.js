@@ -103,34 +103,35 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 		isOnlyForNewUsers = true,
 	} = req.body
 
-	if (!discountFormat) return resError({ res, msg: 'Не передан discountFormat' })
+	if (!discountFormat) return resError({ res, msg: 'Не передан discountFormat', alert: true })
 	if (discountFormat !== 'free-month' && !sizeDiscount)
-		return resError({ res, msg: 'Не передан sizeDiscount' })
+		return resError({ res, msg: 'Не передан sizeDiscount', alert: true })
 	if (discountFormat !== 'free-month' && !tariffName)
-		return resError({ res, msg: 'Не передан tariffName' })
-	if (!value) return resError({ res, msg: 'Не передан value' })
+		return resError({ res, msg: 'Не передан tariffName', alert: true })
+	if (!value) return resError({ res, msg: 'Не передан value', alert: true })
 	if (value.length > 32)
-		return resError({ res, msg: 'Длина промокода не может превышать 32 символа' })
+		return resError({ res, msg: 'Длина промокода не может превышать 32 символа', alert: true })
 
 	if (!startAt)
 		return resError({
 			res,
 			msg: 'Не передана дата и время начала действия промокода - параметр startAt',
+			alert: true,
 		})
 
 	const existTariff = await Tariff.findOne({ name: tariffName })
-	if (!existTariff) return resError({ res, msg: 'Указанного тарифа не существует' })
+	if (!existTariff) return resError({ res, msg: 'Указанного тарифа не существует', alert: true })
 
 	if (discountFormat === 'percentages' && (sizeDiscount < 1 || sizeDiscount > 99)) {
-		return resError({ res, msg: 'Не допустимый процент скидки' })
+		return resError({ res, msg: 'Не допустимый процент скидки', alert: true })
 	}
 
 	if (discountFormat === 'rubles' && (sizeDiscount < 1 || sizeDiscount > existTariff.price - 1)) {
-		return resError({ res, msg: 'Не допустимая величина скидки' })
+		return resError({ res, msg: 'Не допустимая величина скидки', alert: true })
 	}
 
 	const existPromocode = await Promocode.findOne({ value, deleted: { $ne: true } })
-	if (existPromocode) return resError({ res, msg: 'Промокод с таким названием уже существует' })
+	if (existPromocode) return resError({ res, msg: 'Промокод с таким названием уже существует', alert: true })
 
 	try {
 		await Promocode.create({
