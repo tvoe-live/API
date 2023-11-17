@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const mongoose = require('mongoose')
 const Movie = require('../../models/movie')
+const Notification = require('../../models/notification')
 const MovieRating = require('../../models/movieRating')
 const verify = require('../../middlewares/verify')
 const resError = require('../../helpers/resError')
@@ -9,12 +10,13 @@ const resSuccess = require('../../helpers/resSuccess')
 const getSearchQuery = require('../../middlewares/getSearchQuery')
 
 // Возможные причины для удаления отзыва
-const validValues = [
-	'violationRightsOrContentConfidentialInformation', // Отзыв нарушает чьи-то права или содержит конфиденциальную информацию
-	'swearingInsultsOrCallsIllegalActions', // Мат, оскорбления или призыв к противоправным действиям
-	'linkOrAdvertising', // Отзыв со ссылкой или скрытой рекламой
-	'missingRelationshipToContent', // Отзыв не имеет отношения к контенту
-]
+const validValues = {
+	violationRightsOrContentConfidentialInformation:
+		'Отзыв нарушает чьи-то права или содержит конфиденциальную информацию',
+	swearingInsultsOrCallsIllegalActions: 'Мат, оскорбления или призыв к противоправным действиям',
+	linkOrAdvertising: 'Отзыв со ссылкой или скрытой рекламой',
+	missingRelationshipoContent: 'Отзыв не имеет отношения к контенту',
+}
 
 /*
  * Админ-панель > Фильмы и сериалы
@@ -399,11 +401,11 @@ router.delete('/rating', verify.token, verify.isManager, async (req, res) => {
 	}
 
 	reasons?.forEach((reason) => {
-		if (!validValues.includes(reason)) {
+		if (!Object.keys(validValues).includes(reason)) {
 			return resError({
 				res,
 				alert: true,
-				msg: `Причины ${reason} не существует. Возможные причины - ${validValues}`,
+				msg: `Причины ${reason} не существует. Возможные причины - ${Object.keys(validValues)}`,
 			})
 		}
 	})
@@ -411,6 +413,14 @@ router.delete('/rating', verify.token, verify.isManager, async (req, res) => {
 	reviewId = mongoose.Types.ObjectId(reviewId)
 
 	try {
+		const { userId, review } = await MovieRating.findOne({
+			_id: reviewId,
+		})
+
+		if (!review) {
+			return resError({ res, msg: 'Пользователь не оставлял комментарий', alert: true })
+		}
+
 		// Обнуление записи из БД
 		const { movieId } = await MovieRating.findOneAndUpdate(
 			{
@@ -454,6 +464,30 @@ router.delete('/rating', verify.token, verify.isManager, async (req, res) => {
 
 		// Обновить среднюю оценку фильма
 		await Movie.updateOne({ _id: movieId }, { $set: { rating: newMovieRating } })
+
+		let textForDescr = ''
+
+		if (comment) {
+			textForDescr += `Комментарий администратора: ${comment}`
+		}
+
+		if (reasons && reasons.length >= 1) {
+			reasons.forEach((reason, index) => {
+				if (index === 0) {
+					textForDescr += ' Нарушенные правила: '
+				}
+				textForDescr += `- ${validValues[reason]}; `
+			})
+		}
+
+		// Создание индивидуального уведомления для пользователя
+		Notification.create({
+			title: `Ваш отзыв "${review}" не был опубликован из-за нарушений правил сервиса:`,
+			description: textForDescr,
+			type: 'PROFILE',
+			receiversIds: [userId],
+			willPublishedAt: new Date(),
+		})
 
 		return resSuccess({
 			res,
