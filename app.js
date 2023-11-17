@@ -4,6 +4,7 @@ require('dotenv').config()
 const cors = require('cors')
 const express = require('express')
 const mongoose = require('mongoose')
+const requestIp = require('request-ip')
 const bodyParser = require('body-parser')
 const expressUseragent = require('express-useragent')
 const yaml = require('js-yaml')
@@ -28,6 +29,8 @@ database.once('connected', () => console.log('Database Connected'))
 process.on('uncaughtException', (exception) => console.log(`ERROR:`, exception))
 
 const app = express()
+app.use(requestIp.mw())
+
 app.set('trust proxy', true)
 app.use(
 	cors({
