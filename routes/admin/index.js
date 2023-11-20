@@ -8,6 +8,7 @@ const movieRating = require('../../models/movieRating')
 const promocode = require('../../models/promocode')
 const tariff = require('../../models/tariff')
 const paymentLog = require('../../models/paymentLog')
+const moviePageLog = require('../../models/moviePageLog')
 
 /*
  * Админ-панель > Основное
@@ -32,14 +33,78 @@ router.get('/stat/auth', async (_, res) => {
 	}
 })
 
+router.get('/stat/views', async (req, res) => {
+	try {
+		const views = (
+			await moviePageLog.find({}, { movieId: true }).populate('movieId', 'series')
+		).reduce(
+			(acc, item) => {
+				if (item.movieId && item.movieId.series.length === 0) {
+					acc.films++
+				} else if (item.movieId && item.movieId.series.length > 0) {
+					acc.serials++
+				}
+
+				return acc
+			},
+			{
+				serials: 0,
+				films: 0,
+			}
+		)
+		return res.status(200).send(views)
+	} catch (error) {
+		console.log(error)
+		return res.status(500).send(error)
+	}
+})
+
+router.get('/stat/referral', async (_, res) => {
+	try {
+		const usersCount = (
+			await user.find({ deleted: { $exists: false } }, { referral: true, subscribe: true })
+		).reduce(
+			(acc, item, _, arr) => {
+				acc.users = arr.length
+				if (item.referral.userIds) {
+					acc.invites += item.referral.userIds.length
+				}
+				if (item.subscribe) {
+					acc.subscribe++
+				}
+
+				return acc
+			},
+			{
+				users: 0,
+				invites: 0,
+				subscribe: 0,
+			}
+		)
+
+		return res.status(200).send(usersCount)
+	} catch (error) {
+		console.log(error)
+		return res.status(500).send(error)
+	}
+})
+
 router.get('/stat/film', async (_, res) => {
 	try {
-		const filmsCountPromise = movie.find({ series: { $size: 0 } }).count()
-		const serialsCountPromise = movie.find({ series: { $not: { $size: 0 } } }).count()
+		const filmsCountPromise = movie.find({ series: { $size: 0 } }, { _id: true }).count()
+		const serialsCountPromise = movie
+			.find({ series: { $not: { $size: 0 } } }, { _id: true })
+			.count()
 
 		const [filmsCount, serialsCount] = await Promise.all([filmsCountPromise, serialsCountPromise])
 
-		return res.status(200).send({ filmsCount, serialsCount })
+		const avgRating =
+			(await movieRating.find({ isPublished: true }, { rating: true, _id: false })).reduce(
+				(acc, item) => (acc += item.rating),
+				0
+			) / (await movieRating.find({ isPublished: true }).count())
+
+		return res.status(200).send({ filmsCount, serialsCount, avgRating })
 	} catch (error) {
 		console.log(error)
 		return res.status(500).send(error)
@@ -75,18 +140,33 @@ router.get('/stat/user', async (_, res) => {
 			.count()
 		const deletedUsersCountPromise = user.find({ deleted: { $exists: true } }).count()
 		const adminsCountPromise = user.find({ role: 'admin' }).count()
+		const onlineUsersCountPromise = user
+			.find({ lastVisitAt: { $gte: new Date(new Date() - 1000 * 30) } })
+			.count()
 
-		const [activeUsersCount, notActiveUsersCount, deletedUsersCount, adminsCount] =
-			await Promise.all([
-				activeUsersCountPromise,
-				notActiveUsersCountPromise,
-				deletedUsersCountPromise,
-				adminsCountPromise,
-			])
+		const [
+			activeUsersCount,
+			notActiveUsersCount,
+			deletedUsersCount,
+			adminsCount,
+			onlineUsersCount,
+		] = await Promise.all([
+			activeUsersCountPromise,
+			notActiveUsersCountPromise,
+			deletedUsersCountPromise,
+			adminsCountPromise,
+			onlineUsersCountPromise,
+		])
 
 		return res
 			.status(200)
-			.send({ activeUsersCount, notActiveUsersCount, deletedUsersCount, adminsCount })
+			.send({
+				activeUsersCount,
+				notActiveUsersCount,
+				deletedUsersCount,
+				adminsCount,
+				onlineUsersCount,
+			})
 	} catch (error) {
 		return res.status(500).send(error)
 	}
@@ -111,14 +191,12 @@ router.get('/stat/comments', async (_, res) => {
 				publishedCommentsCountPromise,
 			])
 
-		return res
-			.status(200)
-			.send({
-				newCommentCount,
-				moderateCommentsCount,
-				deletedCommentsCount,
-				publishedCommentsCount,
-			})
+		return res.status(200).send({
+			newCommentCount,
+			moderateCommentsCount,
+			deletedCommentsCount,
+			publishedCommentsCount,
+		})
 	} catch (error) {
 		return res.status(500).send(error)
 	}
