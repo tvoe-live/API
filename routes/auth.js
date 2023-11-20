@@ -348,18 +348,18 @@ router.post('/sms/login', async (req, res) => {
 			.limit(3)
 
 		// Если последние 3 заявки на подтверждения для указанного номера телефона или ip адреса клиента не были подтверждены правильным смс кодом, необходимо показать капчу
-		if (
-			(prevPhoneChecking2.length === 3 &&
-				prevPhoneChecking2.every((log) => !log.isConfirmed) &&
-				!imgcode) ||
-			(prevIpChecking.length === 3 && prevIpChecking.every((log) => !log.isConfirmed) && !imgcode)
-		) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Требуется imgcode',
-			})
-		}
+		// if (
+		// 	(prevPhoneChecking2.length === 3 &&
+		// 		prevPhoneChecking2.every((log) => !log.isConfirmed) &&
+		// 		!imgcode) ||
+		// 	(prevIpChecking.length === 3 && prevIpChecking.every((log) => !log.isConfirmed) && !imgcode)
+		// ) {
+		// 	return resError({
+		// 		res,
+		// 		alert: true,
+		// 		msg: 'Требуется imgcode',
+		// 	})
+		// }
 
 		const code = Math.floor(1000 + Math.random() * 9000) // 4-значный код для подтверждения
 		await PhoneChecking.updateMany(
