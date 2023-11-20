@@ -4,6 +4,7 @@ const user = require('../models/user')
 const paymentLog = require('../models/paymentLog')
 const notification = require('../models/notification')
 const repaymentModel = require('../models/repayment')
+const crypto = require('crypto')
 
 const getToken = (params) => {
 	const concatStr = Object.keys(params) // Собрать массив передаваемых данных в виде пар Ключ-Значения
@@ -41,14 +42,17 @@ const shareWithReferrer = async (userId, amount, refererUserId) => {
 
 const recurrentPayment = async () => {
 	try {
-		const users = await user.find({
-			'subscribe.finishAt': {
-				$lte: new Date().toISOString(),
-				$gte: new Date(new Date() - 3600000).toISOString(),
+		const start = new Date()
+		const finish = new Date(start - 3600000)
+
+		const users = await user.find(
+			{
+				'subscribe.finishAt': { $lt: start, $gte: finish },
+				RebillId: { $exists: true },
+				autoPayment: true,
 			},
-			RebillId: true,
-			autoPayment: true,
-		})
+			{ _id: true, subscribe: true, RebillId: true }
+		)
 
 		for (const user of users) {
 			const userTariff = await tariff.findById(user.subscribe.tariffId)
@@ -97,11 +101,19 @@ const recurrentPayment = async () => {
 				{ headers: { 'Content-Type': 'application/json' } }
 			)
 
+			const chargeToken = getToken({
+				TerminalKey: process.env.PAYMENT_TERMINAL_KEY,
+				PaymentId: String(initPayment.PaymentId),
+				Password: process.env.PAYMENT_TERMINAL_PASSWORD,
+				RebillId: user.RebillId,
+			})
+
 			const { data: chargePayment } = await axios.post('https://securepay.tinkoff.ru/v2/Charge', {
 				TerminalKey: process.env.PAYMENT_TERMINAL_KEY,
 				PaymentId: initPayment.PaymentId,
 				RebillId: user.RebillId,
-				Token: token,
+				Password: process.env.PAYMENT_TERMINAL_PASSWORD,
+				Token: chargeToken,
 			})
 
 			if (chargePayment.Status === 'REJECTED') {
@@ -141,9 +153,11 @@ const recurrentPayment = async () => {
 			}
 
 			if (chargePayment.Status === 'CONFIRMED') {
+				const startAt = start
+
 				user.subscribe = {
-					startAt: new Date(),
-					finishAt: new Date() + userTariff.duration,
+					startAt,
+					finishAt: new Date(startAt.getTime() + Number(userTariff.duration)),
 					tariffId: userTariff._id,
 				}
 
