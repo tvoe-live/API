@@ -286,7 +286,7 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 								__v: false,
 							},
 						},
-						{ $sort: { _id: -1 } }, // Была сортировка updatedAt
+						{ $sort: { updatedAt: -1 } }, // Была сортировка updatedAt
 						{ $skip: skip },
 						{ $limit: limit },
 					],
@@ -323,9 +323,18 @@ router.post('/publish', verify.token, verify.isAdmin, async (req, res) => {
 	}
 
 	try {
-		const movieRating = await MovieRating.findOne({ _id })
+		const { isDeleted, isPublished } = await MovieRating.findOne({ _id })
+
+		if (isDeleted && !isPublished) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Невозможно опубликовать удаленный отзыв',
+			})
+		}
+
 		const set = {
-			isPublished: !movieRating.isPublished,
+			isPublished: !isPublished,
 		}
 
 		await MovieRating.updateOne({ _id }, { $set: set })
