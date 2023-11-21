@@ -86,7 +86,7 @@ refferalRouter.get('/', async (req, res) => {
 						userId: usr._id,
 						$or: [{ status: 'CONFIRMED' }, { status: 'success' }],
 						type: 'paid',
-						createdAt: { $gte: new Date('2023-8-16') },
+						createdAt: { $gte: new Date('2023-11-21') },
 					},
 					{ userId: true, tariffId: true, _id: false, amount: true, createdAt: true }
 				)
