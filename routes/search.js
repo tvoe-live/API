@@ -86,7 +86,7 @@ router.get('/oftenSeek', async (req, res) => {
 						$match: {
 							$expr: {
 								$and: [
-									{ $ne: ['$publishedAt', null] },
+									{ $ne: ['publishedAt', null] },
 									{
 										$or: [
 											{

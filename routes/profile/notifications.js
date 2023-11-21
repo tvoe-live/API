@@ -206,7 +206,6 @@ router.patch('/settings', verify.token, async (req, res) => {
 
 		return resSuccess({
 			res,
-			alert: true,
 			msg: 'Успешно обновлено',
 		})
 	} catch (err) {
