@@ -1,4 +1,5 @@
 const { Router } = require('express')
+const verify = require('../middlewares/verify')
 const refferalLinkModel = require('../models/refferalLink')
 
 /**
@@ -9,30 +10,12 @@ const refferalLinkRouter = Router()
 /**
  * Получение реф.ссылки пользователя
  */
-refferalLinkRouter.get('/', async (req, res) => {
+refferalLinkRouter.get('/', verify.token, async (req, res) => {
 	try {
-		const link = await refferalLinkModel.findOne({ user: req.query.id }, { code: true }).lean()
-		return res.status(200).send({ link: `${process.env.API_URL}/link/${link.code}` })
-	} catch (error) {
-		return res.status(500).send(error)
-	}
-})
-
-/**
- * Обработка реф.ссылки
- */
-refferalLinkRouter.get('/:code', async (req, res) => {
-	try {
-		const link = await refferalLinkModel.findOne({ code: req.params.code })
-
-		if (!link) {
-			return res.status(400).send({ msg: 'Данной ссылки не существует' })
-		}
-
-		link.count++
-		await link.save()
-
-		return res.redirect(link.url)
+		console.log('zxc')
+		const authedUser = !!req.user // Авторизован ли пользователь? true / false
+		const link = authedUser ? `${process.env.CLIENT_URL}?r=${req.user._id}` : null // Реферальная ссылка
+		return res.status(200).send({ link })
 	} catch (error) {
 		return res.status(500).send(error)
 	}
