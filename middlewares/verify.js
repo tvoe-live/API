@@ -129,6 +129,7 @@ const token = async (req, res, next) => {
 
 		next && next()
 	} catch (error) {
+		console.log(error)
 		if (!res) return
 
 		//await logout({ res });

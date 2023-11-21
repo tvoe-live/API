@@ -2,7 +2,7 @@ const { Router } = require('express')
 const user = require('../../models/user')
 const paymentLog = require('../../models/paymentLog')
 const referralWithdrawalLog = require('../../models/referralWithdrawalLog')
-const refferalLinkModel = require('../../models/refferalLink')
+const verify = require('../../middlewares/verify')
 
 /**
  * Роут для получения истории начисления бонусов с реф.системы, истории выводов и статистики
@@ -12,13 +12,11 @@ const refferalRouter = Router()
 /**
  * Получение статистики по реф.системе
  */
-refferalRouter.get('/stat', async (req, res) => {
+refferalRouter.get('/stat', verify.token, async (req, res) => {
 	try {
 		// Получаем данные пользователя по реферальной программе и данные его реф.ссылки
-		const [mainUser, userLinkClickCount] = await Promise.all([
-			user.findById(req.query.id, { referral: true }).lean(),
-			refferalLinkModel.findOne({ user: req.query.id }, { count: true, _id: false }).lean(),
-		])
+
+		const mainUser = await user.findById(req.user._id, { referral: true }).lean()
 		// Получаем реф.пользователей 1го уровня
 		const refferalUsersFirstLvl = await user
 			.find({ _id: { $in: mainUser.referral.userIds } }, { _id: true, referral: true })
@@ -38,7 +36,6 @@ refferalRouter.get('/stat', async (req, res) => {
 			firstLvlReferrals: refferalUsersFirstLvl.length,
 			secondLvlReferrals: refferalUsersSecondLvl.length,
 			authCount: refferalUsersFirstLvl.length + refferalUsersSecondLvl.length,
-			linkClicks: userLinkClickCount ? userLinkClickCount.count : 'ссылка не создана',
 		})
 	} catch (error) {
 		console.log(error)
@@ -49,12 +46,12 @@ refferalRouter.get('/stat', async (req, res) => {
 /**
  * Получение истории вывода средств
  */
-refferalRouter.get('/withdrawal', async (req, res) => {
+refferalRouter.get('/withdrawal', verify.token, async (req, res) => {
 	try {
 		// Получение истории выводов
 		const history = await referralWithdrawalLog
 			.find(
-				{ userId: req.query.id },
+				{ userId: req.user._id },
 				{ _id: false, approverUserId: false, userId: false, __v: false, updatedAt: false }
 			)
 			.lean()
@@ -67,10 +64,10 @@ refferalRouter.get('/withdrawal', async (req, res) => {
 /**
  * Получение истории начисления бонусов
  */
-refferalRouter.get('/', async (req, res) => {
+refferalRouter.get('/', verify.token, async (req, res) => {
 	try {
 		// Получение данных пользователя
-		const mainUser = await user.findById(req.query.id, { _id: true, referral: true }).lean()
+		const mainUser = await user.findById(req.user._id, { _id: true, referral: true }).lean()
 
 		// Получение данных реф.пользователей 1го уровня
 		const refferalUsersFirstLvl = await user.find(
