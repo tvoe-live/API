@@ -82,7 +82,12 @@ refferalRouter.get('/', async (req, res) => {
 		const refferalUsersFirstLvlPaymentLogPromises = refferalUsersFirstLvl.map((usr) =>
 			paymentLog
 				.find(
-					{ userId: usr._id, status: 'success', type: 'paid' },
+					{
+						userId: usr._id,
+						$or: [{ status: 'CONFIRMED' }, { status: 'success' }],
+						type: 'paid',
+						createdAt: { $gte: new Date('2023-8-16') },
+					},
 					{ userId: true, tariffId: true, _id: false, amount: true, createdAt: true }
 				)
 				.populate('tariffId', ['name'])
@@ -112,7 +117,12 @@ refferalRouter.get('/', async (req, res) => {
 		const refferalUsersSecondLvlPaymentLogPromises = refferalUsersSecondLvl.map((usr) =>
 			paymentLog
 				.find(
-					{ userId: usr._id, status: 'success', type: 'paid' },
+					{
+						userId: usr._id,
+						$or: [{ status: 'CONFIRMED' }, { status: 'success' }],
+						type: 'paid',
+						createdAt: { $gte: new Date('2023-08-16') },
+					},
 					{ userId: true, tariffId: true, _id: false, amount: true, createdAt: true }
 				)
 				.populate('tariffId', ['name'])
@@ -125,7 +135,7 @@ refferalRouter.get('/', async (req, res) => {
 		)
 			.reduce((acc, item) => acc.concat(item), [])
 			.map((item) => {
-				item.amount = (item.amount * (process.env.SECOND_STEP_REFFERAL / 100)).toFixed(2)
+				item.amount = Number((item.amount * (process.env.SECOND_STEP_REFFERAL / 100)).toFixed(2))
 				return { ...item, lvl: '2 уровень' }
 			})
 

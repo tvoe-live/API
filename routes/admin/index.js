@@ -9,6 +9,9 @@ const promocode = require('../../models/promocode')
 const tariff = require('../../models/tariff')
 const paymentLog = require('../../models/paymentLog')
 const moviePageLog = require('../../models/moviePageLog')
+const { default: axios } = require('axios')
+const { GetBucketAnalyticsConfigurationCommand } = require('@aws-sdk/client-s3')
+const customS3Client = require('../../helpers/customS3Client')
 
 /*
  * Админ-панель > Основное
@@ -33,7 +36,7 @@ router.get('/stat/auth', async (_, res) => {
 	}
 })
 
-router.get('/stat/views', async (req, res) => {
+router.get('/stat/views', async (_, res) => {
 	try {
 		const views = (
 			await moviePageLog.find({}, { movieId: true }).populate('movieId', 'series')
@@ -158,15 +161,13 @@ router.get('/stat/user', async (_, res) => {
 			onlineUsersCountPromise,
 		])
 
-		return res
-			.status(200)
-			.send({
-				activeUsersCount,
-				notActiveUsersCount,
-				deletedUsersCount,
-				adminsCount,
-				onlineUsersCount,
-			})
+		return res.status(200).send({
+			activeUsersCount,
+			notActiveUsersCount,
+			deletedUsersCount,
+			adminsCount,
+			onlineUsersCount,
+		})
 	} catch (error) {
 		return res.status(500).send(error)
 	}
