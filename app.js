@@ -4,7 +4,7 @@ require('dotenv').config()
 const cors = require('cors')
 const express = require('express')
 const mongoose = require('mongoose')
-const requestIp = require('request-ip')
+// const requestIp = require('request-ip')
 const bodyParser = require('body-parser')
 const expressUseragent = require('express-useragent')
 const yaml = require('js-yaml')
@@ -30,7 +30,7 @@ process.on('uncaughtException', (exception) => console.log(`ERROR:`, exception))
 
 const app = express()
 app.set('trust proxy', true)
-app.use(requestIp.mw())
+// app.use(requestIp.mw())
 
 app.use(
 	cors({
