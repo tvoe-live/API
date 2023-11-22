@@ -9,9 +9,6 @@ const promocode = require('../../models/promocode')
 const tariff = require('../../models/tariff')
 const paymentLog = require('../../models/paymentLog')
 const moviePageLog = require('../../models/moviePageLog')
-const { default: axios } = require('axios')
-const { GetBucketAnalyticsConfigurationCommand } = require('@aws-sdk/client-s3')
-const customS3Client = require('../../helpers/customS3Client')
 
 /*
  * Админ-панель > Основное
@@ -24,8 +21,12 @@ const customS3Client = require('../../helpers/customS3Client')
 // Кол-во оценок
 // Кол-во запросов в поиск
 
+/**
+ * Получение данных о динамике роста кол-ва пользователей
+ */
 router.get('/stat/auth', async (_, res) => {
 	try {
+		// Получение данных о пользователях за неделю
 		const users = await user.find(
 			{ createdAt: { $gte: new Date(new Date() - 1000 * 60 * 60 * 24 * 7) } },
 			{ _id: false, createdAt: true }
@@ -36,8 +37,12 @@ router.get('/stat/auth', async (_, res) => {
 	}
 })
 
+/**
+ * Получение данных о просмотрах
+ */
 router.get('/stat/views', async (_, res) => {
 	try {
+		// Выполнение запроса к БД о получении и агригирование данных для ответа
 		const views = (
 			await moviePageLog.find({}, { movieId: true }).populate('movieId', 'series')
 		).reduce(
@@ -62,8 +67,12 @@ router.get('/stat/views', async (_, res) => {
 	}
 })
 
+/**
+ * Получения данных по реф.программе
+ */
 router.get('/stat/referral', async (_, res) => {
 	try {
+		// Выполнение запроса к БД о получении и агригирование данных для ответа
 		const usersCount = (
 			await user.find({ deleted: { $exists: false } }, { referral: true, subscribe: true })
 		).reduce(
@@ -92,15 +101,23 @@ router.get('/stat/referral', async (_, res) => {
 	}
 })
 
+/**
+ * Получение данных о фильмах/сериалах
+ */
 router.get('/stat/film', async (_, res) => {
 	try {
+		// Формирование запроса к БД о получении фильмов
 		const filmsCountPromise = movie.find({ series: { $size: 0 } }, { _id: true }).count()
+
+		// Формирование запроса к БД о получении сериалов
 		const serialsCountPromise = movie
 			.find({ series: { $not: { $size: 0 } } }, { _id: true })
 			.count()
 
+		// Параллельное выполнение запросов
 		const [filmsCount, serialsCount] = await Promise.all([filmsCountPromise, serialsCountPromise])
 
+		// Расчет среднего рейтинга
 		const avgRating =
 			(await movieRating.find({ isPublished: true }, { rating: true, _id: false })).reduce(
 				(acc, item) => (acc += item.rating),
@@ -114,12 +131,21 @@ router.get('/stat/film', async (_, res) => {
 	}
 })
 
+/**
+ * Получение данных о контенте на сервисе
+ */
 router.get('/stat/content', async (_, res) => {
 	try {
+		// Формирование запроса к БД о получении опубликованного контента
 		const publishedContentPromise = movie.find({ publishedAt: { $exists: true } }).count()
+
+		// Формирование запроса к БД о получении не опубликованного контента
 		const notPublishedContentPromise = movie.find({ publishedAt: { $exists: false } }).count()
+
+		// Формирование запроса к БД о получении всего контента
 		const allContentPromise = movie.find().count()
 
+		// Параллельное выполнение запросов
 		const [publishedCount, notPublishedCount, allCount] = await Promise.all([
 			publishedContentPromise,
 			notPublishedContentPromise,
@@ -133,20 +159,33 @@ router.get('/stat/content', async (_, res) => {
 	}
 })
 
+/**
+ * Получение данных о пользователях
+ */
 router.get('/stat/user', async (_, res) => {
 	try {
+		// Формирование запроса к БД о получении активных пользователей
 		const activeUsersCountPromise = user
 			.find({ lastVisitAt: { $gte: new Date(new Date() - 1000 * 60 * 60 * 24 * 3) } })
 			.count()
+
+		// Формирование запроса к БД о получении не активных пользователей
 		const notActiveUsersCountPromise = user
 			.find({ lastVisitAt: { $lt: new Date(new Date() - 1000 * 60 * 60 * 24 * 3) } })
 			.count()
+
+		// Формирование запроса к БД о получении удаленных пользователей
 		const deletedUsersCountPromise = user.find({ deleted: { $exists: true } }).count()
+
+		// Формирование запроса к БД о получении пользователей с провами администратора
 		const adminsCountPromise = user.find({ role: 'admin' }).count()
+
+		// Формирование запроса к БД о получении пользователей онлайн
 		const onlineUsersCountPromise = user
 			.find({ lastVisitAt: { $gte: new Date(new Date() - 1000 * 30) } })
 			.count()
 
+		// Параллельное выполнение запросов
 		const [
 			activeUsersCount,
 			notActiveUsersCount,
@@ -173,17 +212,28 @@ router.get('/stat/user', async (_, res) => {
 	}
 })
 
+/**
+ * Получение данных об отзывах
+ */
 router.get('/stat/comments', async (_, res) => {
 	try {
+		//Формирование запроса к БД о получении новых отзывов
 		const newCommentCountPromise = movieRating
 			.find({ createdAt: { $gte: new Date(new Date() - 1000 * 60 * 60 * 24 * 3) } })
 			.count()
+
+		//Формирование запроса к БД о получении отзывов на модерации
 		const moderateCommentsCountPromise = movieRating
 			.find({ isPublished: false, isDeleted: false })
 			.count()
+
+		// Формирование запроса к БД о получении удаленных отзывах
 		const deletedCommentsCountPromise = movieRating.find({ isDeleted: true }).count()
+
+		//Формирование запроса к БД о получении опубликованных отзывах
 		const publishedCommentsCountPromise = movieRating.find({ isPublished: true }).count()
 
+		//Параллельное выполнение запросов
 		const [newCommentCount, moderateCommentsCount, deletedCommentsCount, publishedCommentsCount] =
 			await Promise.all([
 				newCommentCountPromise,
@@ -203,11 +253,18 @@ router.get('/stat/comments', async (_, res) => {
 	}
 })
 
+/**
+ * Получение данных о промокодах
+ */
 router.get('/stat/promocode', async (_, res) => {
 	try {
+		// Формирование запроса о получении активных промокодов
 		const activePromocodesCountPromise = promocode.find({ isActive: true }).count()
+
+		//Формирование запроса о получении неактивных промокодов
 		const notActivePromocodesCountPromise = promocode.find({ isActive: false }).count()
 
+		// Параллельное выполнение запросов
 		const [activePromocodesCount, notActivePromocodesCount] = await Promise.all([
 			activePromocodesCountPromise,
 			notActivePromocodesCountPromise,
@@ -219,9 +276,15 @@ router.get('/stat/promocode', async (_, res) => {
 	}
 })
 
+/**
+ * Получение данных о подписках
+ */
 router.get('/stat/subscribe', async (_, res) => {
 	try {
+		//Получение данных по тарифам
 		const tariffs = await tariff.find({}, { _id: true, name: true }).lean()
+
+		//Формирование запросов к БД
 		const subsribeCountByTariffsPromise = tariffs.map((t) =>
 			paymentLog
 				.find(
@@ -238,11 +301,13 @@ router.get('/stat/subscribe', async (_, res) => {
 				)
 				.lean()
 		)
+		// Параллельное выпполнение запросов и преобразование к итоговому результату
 		const subsribeCountByTariffs = (await Promise.all(subsribeCountByTariffsPromise)).reduce(
 			(acc, item) => acc.concat(item),
 			[]
 		)
 
+		// Выборка оплаченных тарифов
 		const paidSubsribes = subsribeCountByTariffs.reduce((acc, item) => {
 			if (
 				(item.status === 'CONFIRMED' ||
@@ -255,6 +320,7 @@ router.get('/stat/subscribe', async (_, res) => {
 			return acc
 		}, [])
 
+		// Выборка активных тарифов
 		const activeSubscribe = subsribeCountByTariffs.reduce((acc, item) => {
 			if (
 				item.finishAt > new Date() &&
@@ -269,6 +335,7 @@ router.get('/stat/subscribe', async (_, res) => {
 			return acc
 		}, [])
 
+		//Выборка тарифов по которым был совершен возврат
 		const refundedSubsribes = subsribeCountByTariffs.reduce((acc, item) => {
 			if (item.status === 'REFUNDED') {
 				acc = acc.concat(item)
@@ -276,6 +343,7 @@ router.get('/stat/subscribe', async (_, res) => {
 			return acc
 		}, [])
 
+		//Агригация и преобразование данных для ответа
 		const subsribeStatData = tariffs.reduce((acc, item) => {
 			acc[`${item.name}`] = {
 				paidSubsribes: paidSubsribes.filter(
@@ -299,9 +367,15 @@ router.get('/stat/subscribe', async (_, res) => {
 	}
 })
 
+/**
+ * Получение данных о тарифах
+ */
 router.get('/stat/tariff', async (_, res) => {
 	try {
+		//Получаем данные по тарифам
 		const tariffs = await tariff.find({}, { _id: true, name: true }).lean()
+
+		//Формирование запросов к БД
 		const subsribeCountByTariffsPromise = tariffs.map((t) =>
 			paymentLog
 				.find(
@@ -310,11 +384,13 @@ router.get('/stat/tariff', async (_, res) => {
 				)
 				.lean()
 		)
+		// Параллельное выполнение запросов к бд и преобразование к итоговому результату
 		const subsribeCountByTariffs = (await Promise.all(subsribeCountByTariffsPromise)).reduce(
 			(acc, item) => acc.concat(item),
 			[]
 		)
 
+		//Расчет дахода
 		const income = subsribeCountByTariffs
 			.reduce((acc, item) => {
 				if (
@@ -336,6 +412,7 @@ router.get('/stat/tariff', async (_, res) => {
 			}, 0)
 			.toFixed(2)
 
+		//Расчет возвратов
 		const consumption = subsribeCountByTariffs
 			.reduce((acc, item) => {
 				if (item.amount || (item.sum && item.status === 'REFUNDED')) {
@@ -351,6 +428,7 @@ router.get('/stat/tariff', async (_, res) => {
 			}, 0)
 			.toFixed(2)
 
+		//Агригация и преобразование данных для ответа
 		const tariffStatData = tariffs.reduce((acc, item) => {
 			acc[`${item.name}`] = {
 				count: subsribeCountByTariffs.filter(
@@ -388,28 +466,6 @@ router.get('/stat/tariff', async (_, res) => {
 		})
 	} catch (error) {
 		return res.status(500).send(error)
-	}
-})
-
-router.get('/categories', async (req, res) => {
-	try {
-		const categories = await Category.find(
-			{},
-			{
-				_id: false,
-				name: true,
-				alias: true,
-				aliasInUrl: true,
-				genres: {
-					name: true,
-					alias: true,
-				},
-			}
-		)
-
-		return res.status(200).json(categories)
-	} catch (error) {
-		return res.json(error)
 	}
 })
 
