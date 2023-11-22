@@ -40,6 +40,18 @@ components:
           format: int64
           example: 10
           description: Кол-во регистраций
+        link:
+          type: string
+          example: https://tvoe.live/r=<id>
+        card:
+          type: object
+          properties:
+            cardholder:
+              type: string
+              example: Ivan Ivanov
+            number:
+              type: string
+              example: '1234123412341234'
 
     RefferalPaymentStat:
       type: array
@@ -1082,48 +1094,6 @@ components:
     - name: Complaints
       description: Жалобы
 paths:
-  /profile/refferal:
-    get:
-      summary: Получить истоирию реф.бонусов
-      tags:
-        - Profile
-      parameters:
-        - $ref: '#/components/parameters/AuthorizationHeader'
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RefferalPaymentStat'
-
-  /profile/refferal/stat:
-    get:
-      summary: Получить общую статистику по реферально программе
-      tags:
-        - Profile
-      parameters:
-        - $ref: '#/components/parameters/AuthorizationHeader'
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RefferalStatResponse'
-
-  /profile/refferal/withdrawal:
-    get:
-      summary: Получить историю списаний
-      tags:
-        - Profile
-      parameters:
-        - $ref: '#/components/parameters/AuthorizationHeader'
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RefferalWithdrawalStatResponse'
-
   /profile:
     get:
       summary: Получение профиля
@@ -8752,34 +8722,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  link:
-                    type: string
-                    description: Реферальная ссылка
-                  referralPercentBonuse:
-                    type: number
-                    description: Бонус в процентах от реферала
-                  balance:
-                    type: number
-                    description: Текущий баланс с подписок рефералов
-                  card:
-                    type: object
-                    description: Данные карты для вывода баланса
-                    properties:
-                      number:
-                        type: string
-                        description: Номер карты
-                      balance:
-                        type: string
-                        cardholder: Владелец карты
-                example:
-                  link: deercvt4btf/?r=6480807e904d20e5d4c1b6db
-                  referralPercentBonuse: 50
-                  balance: 5000
-                  card:
-                    number: '1234123412341234'
-                    cardholder: Иванов СН
+                $ref: '#/components/schemas/RefferalStatResponse'
 
   /referral/invitedReferrals:
     get:
@@ -8804,63 +8747,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  totalSize:
-                    type: number
-                    description: Общее количество рефералов
-                  items:
-                    type: array
-                    uniqueItems: true
-                    minItems: 0
-                    items:
-                      type: object
-                      properties:
-                        payment:
-                          type: object
-                          properties:
-                            createdAt:
-                              type: string
-                              description: Дата создания
-                            status:
-                              type: string
-                              description: Статус
-                            bonuseAmount:
-                              type: string
-                              description: Бонусное количество рублей
-                        user:
-                          type: object
-                          properties:
-                            avatar:
-                              type: string
-                              description: Ссылка на файл картинку аватарки
-                            firstname:
-                              type: string
-                              description: Имя пользователя
-                example:
-                  totalSize: 3
-                  items:
-                    - payment:
-                        createdAt: '2023-08-20T17:10:21.990Z'
-                        status: CONFIRMED
-                        bonuseAmount: 249.5
-                      user:
-                        avatar: '/images/64808068904d20e5d4c1b555.jpg'
-                        firstname: Евгений
-                    - payment:
-                        createdAt: '2023-02-13T12:44:07.716Z'
-                        status: REFUNDED
-                        bonuseAmount: 96.515
-                      user:
-                        avatar:
-                        firstname: Гузаль
-                    - payment:
-                        createdAt: '2023-03-02T17:02:49.375Z'
-                        status: PARTIAL_REFUNDED
-                        bonuseAmount: 96.515
-                      user:
-                        avatar:
-                        firstname: Ринат
+                $ref: '#/components/schemas/RefferalPaymentResponse'
 
   /referral/withdrawalOfMoney:
     get:
@@ -8885,66 +8772,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  totalSize:
-                    type: number
-                    description: Всего записей
-                  items:
-                    type: array
-                    uniqueItems: true
-                    minItems: 0
-                    items:
-                      type: object
-                      properties:
-                        card:
-                          type: object
-                          properties:
-                            number:
-                              type: string
-                              description: Номер карты ( последние 4 символа)
-                        amount:
-                          type: object
-                          description: Сумма
-                        createdAt:
-                          type: string
-                          description: Дата создания
-                        status:
-                          type: string
-                          description: Статус
-                example:
-                  totalSize: 6
-                  items:
-                    - amount: 500
-                      card:
-                        number: '**** **** **** 1234'
-                      status: pending
-                      createdAt: '2023-08-07T07:49:53.803Z'
-                    - amount: 322
-                      card:
-                        number: '**** **** **** 1234'
-                      status: pending
-                      createdAt: '2023-08-06T17:55:55.609Z'
-                    - amount: 20
-                      card:
-                        number: '**** **** **** 4444'
-                      status: pending
-                      createdAt: '2023-08-05T20:19:56.715Z'
-                    - amount: 1000
-                      card:
-                        number: '**** **** **** 4444'
-                      status: pending
-                      createdAt: '2023-08-05T16:33:43.967Z'
-                    - amount: 2000
-                      card:
-                        number: '**** **** **** 4444'
-                      status: pending
-                      createdAt: '2023-07-20T03:26:17.630Z'
-                    - amount: 1000
-                      card:
-                        number: '**** **** **** 4444'
-                      status: pending
-                      createdAt: '2023-07-20T03:25:27.935Z'
+                $ref: '#/components/schemas/RefferalWithdrawalStatResponse'
 
   /referral/changeCard:
     patch:

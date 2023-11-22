@@ -15,7 +15,6 @@ const upMovieTask = require('./helpers/upMovieTask')
 const repaymentTask = require('./helpers/repaymentTask')
 const recurrentPayment = require('./helpers/reccurentPayment')
 const subscribeRouter = require('./routes/profile/changeAutopayment')
-const refferalRouter = require('./routes/profile/refferal')
 const refferalLinkRouter = require('./routes/refferalLink')
 
 const { PORT, STATIC_DIR, IMAGES_DIR, VIDEOS_DIR, DATABASE_URL } = process.env
@@ -104,7 +103,6 @@ app.use('/profile', profile) // Профиль
 app.use('/profile/payment', profilePayment) // Профиль > Подписка
 app.use('/profile/devices', profileDevices) // Профиль > Мои устройства
 app.use('/profile/history', profileHistory) // Моё > История просмотров
-app.use('/profile/refferal', refferalRouter) // Профиль > статистика по реферальной программе
 app.use('/profile/favorites', profileFavorites) // Моё > Избранное
 app.use('/profile/bookmarks', profileBookmarks) // Моё > Закладки
 app.use('/profile/autopayment', subscribeRouter) // Управление автоплатежами
