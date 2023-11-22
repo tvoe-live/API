@@ -260,13 +260,23 @@ router.post('/sms/capcha', async (req, res) => {
  */
 
 router.post('/sms/login', async (req, res) => {
-	console.log(1)
-
 	const { phone, imgcode } = req.body
 
-	const ip = req.clientIp
+	const ip = req.ip
+	const ipAddresses = req.header('x-forwarded-for')
+	const ipAddress = requestIP.getClientIp(req)
+	const x = IP.address()
 
-	console.log('req.clientIp:', ip)
+	console.log('ip:', ip)
+	console.log('req.clientIp:', req.clientIp)
+	console.log('req.header(x-forwarded-for):', ipAddresses)
+	console.log('requestIP.getClientIp(req):', ipAddress)
+	console.log('IP.address();:', x)
+	console.log('req.headers[cf-connecting-ip]:', req.headers['cf-connecting-ip'])
+	console.log('req.headers[x-real-ip]:', req.headers['x-real-ip'])
+	console.log('req.connection.remoteAddress]:', req.connection?.remoteAddress)
+	console.log('req.socket.remoteAddress]:', req.socket.remoteAddress)
+	console.log('req.connection?.socket?.remoteAddress:', req.connection?.socket?.remoteAddress)
 
 	try {
 		if (req.useragent?.isBot) {
