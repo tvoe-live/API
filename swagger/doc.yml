@@ -1088,12 +1088,7 @@ paths:
       tags:
         - Profile
       parameters:
-        - in: query
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
+        - $ref: '#/components/parameters/AuthorizationHeader'
       responses:
         '200':
           content:
@@ -1107,12 +1102,7 @@ paths:
       tags:
         - Profile
       parameters:
-        - in: query
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
+        - $ref: '#/components/parameters/AuthorizationHeader'
       responses:
         '200':
           content:
@@ -1126,12 +1116,7 @@ paths:
       tags:
         - Profile
       parameters:
-        - in: query
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
+        - $ref: '#/components/parameters/AuthorizationHeader'
       responses:
         '200':
           content:
