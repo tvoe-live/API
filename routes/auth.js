@@ -358,12 +358,11 @@ router.post('/sms/login', async (req, res) => {
 				!imgcode) ||
 			(prevIpChecking.length === 3 && prevIpChecking.every((log) => !log.isConfirmed) && !imgcode)
 		) {
-			console.log('требуется imgcode')
-			// return resError({
-			// 	res,
-			// 	alert: true,
-			// 	msg: 'Требуется imgcode',
-			// })
+			return resError({
+				res,
+				alert: true,
+				msg: 'Требуется imgcode',
+			})
 		}
 
 		const code = Math.floor(1000 + Math.random() * 9000) // 4-значный код для подтверждения
