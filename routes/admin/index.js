@@ -469,4 +469,29 @@ router.get('/stat/tariff', async (_, res) => {
 	}
 })
 
+/**
+ * Роут для категорий в админке
+ */
+router.get('/categories', async (req, res) => {
+	try {
+		const categories = await Category.find(
+			{},
+			{
+				_id: false,
+				name: true,
+				alias: true,
+				aliasInUrl: true,
+				genres: {
+					name: true,
+					alias: true,
+				},
+			}
+		)
+
+		return res.status(200).json(categories)
+	} catch (error) {
+		return res.json(error)
+	}
+})
+
 module.exports = router
