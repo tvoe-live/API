@@ -469,29 +469,4 @@ router.get('/stat/tariff', async (_, res) => {
 	}
 })
 
-/**
- * А это не я писал, ни богу, ни черту не известно, что это и для чего это (я у них спрашивал)
- */
-router.get('/categories', async (req, res) => {
-	try {
-		const categories = await Category.find(
-			{},
-			{
-				_id: false,
-				name: true,
-				alias: true,
-				aliasInUrl: true,
-				genres: {
-					name: true,
-					alias: true,
-				},
-			}
-		)
-
-		return res.status(200).json(categories)
-	} catch (error) {
-		return res.json(error)
-	}
-})
-
 module.exports = router
