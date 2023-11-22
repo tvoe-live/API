@@ -15,8 +15,8 @@ const refferalRouter = Router()
 refferalRouter.get('/stat', verify.token, async (req, res) => {
 	try {
 		// Получаем данные пользователя по реферальной программе и данные его реф.ссылки
-
 		const mainUser = await user.findById(req.user._id, { referral: true }).lean()
+
 		// Получаем реф.пользователей 1го уровня
 		const refferalUsersFirstLvl = await user
 			.find({ _id: { $in: mainUser.referral.userIds } }, { _id: true, referral: true })
@@ -81,7 +81,7 @@ refferalRouter.get('/', verify.token, async (req, res) => {
 				.find(
 					{
 						userId: usr._id,
-						$or: [{ status: 'CONFIRMED' }, { status: 'success' }],
+						$or: [{ status: 'CONFIRMED' }, { status: 'success' }, { status: 'AUTHORIZED' }],
 						type: 'paid',
 						createdAt: { $gte: new Date('2023-11-21') },
 					},
@@ -103,7 +103,12 @@ refferalRouter.get('/', verify.token, async (req, res) => {
 
 		// Получение данных реф.пользователей 2го уровня
 		const referalUsersSecondLvlPromises = refferalUsersFirstLvl.map((usr) =>
-			user.find({ _id: { $in: usr.referral.userIds } }, { _id: true })
+			user.find(
+				{
+					$and: [{ _id: { $in: usr.referral.userIds } }, { _id: { $not: { $eq: mainUser._id } } }],
+				},
+				{ _id: true }
+			)
 		)
 		const refferalUsersSecondLvl = (await Promise.all(referalUsersSecondLvlPromises)).reduce(
 			(acc, item) => acc.concat(item),
