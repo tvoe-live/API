@@ -276,6 +276,7 @@ router.post('/sms/login', async (req, res) => {
 	console.log('---')
 	console.log('phone:', phone)
 	console.log('req.headers[x-real-ip]:', req.headers['x-real-ip'])
+	console.log('ip:', ip)
 	console.log('---')
 	// console.log('req.connection.remoteAddress]:', req.connection?.remoteAddress)
 	// console.log('req.socket.remoteAddress]:', req.socket.remoteAddress)
