@@ -121,7 +121,7 @@ refferalRouter.get('/', verify.token, async (req, res) => {
 				.find(
 					{
 						userId: usr._id,
-						$or: [{ status: 'CONFIRMED' }, { status: 'success' }],
+						$or: [{ status: 'CONFIRMED' }, { status: 'success' }, { status: 'AUTHORIZED' }],
 						type: 'paid',
 						createdAt: { $gte: new Date('2023-08-16') },
 					},
