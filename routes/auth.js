@@ -262,7 +262,7 @@ router.post('/sms/capcha', async (req, res) => {
 router.post('/sms/login', async (req, res) => {
 	const { phone, imgcode } = req.body
 
-	const ip = req.ip
+	const ip = req.headers['x-real-ip']
 	// const ipAddresses = req.header('x-forwarded-for')
 	// const ipAddress = requestIP.getClientIp(req)
 	// const x = IP.address()
@@ -344,6 +344,8 @@ router.post('/sms/login', async (req, res) => {
 			.sort({ createdAt: -1 })
 			.limit(3)
 
+		console.log('prevPhoneChecking2:', prevPhoneChecking2)
+
 		const prevIpChecking = await PhoneChecking.find({
 			ip,
 		})
@@ -351,18 +353,19 @@ router.post('/sms/login', async (req, res) => {
 			.limit(3)
 
 		// Если последние 3 заявки на подтверждения для указанного номера телефона или ip адреса клиента не были подтверждены правильным смс кодом, необходимо показать капчу
-		// if (
-		// 	(prevPhoneChecking2.length === 3 &&
-		// 		prevPhoneChecking2.every((log) => !log.isConfirmed) &&
-		// 		!imgcode) ||
-		// 	(prevIpChecking.length === 3 && prevIpChecking.every((log) => !log.isConfirmed) && !imgcode)
-		// ) {
-		// 	return resError({
-		// 		res,
-		// 		alert: true,
-		// 		msg: 'Требуется imgcode',
-		// 	})
-		// }
+		if (
+			(prevPhoneChecking2.length === 3 &&
+				prevPhoneChecking2.every((log) => !log.isConfirmed) &&
+				!imgcode) ||
+			(prevIpChecking.length === 3 && prevIpChecking.every((log) => !log.isConfirmed) && !imgcode)
+		) {
+			console.log('требуется imgcode')
+			// return resError({
+			// 	res,
+			// 	alert: true,
+			// 	msg: 'Требуется imgcode',
+			// })
+		}
 
 		const code = Math.floor(1000 + Math.random() * 9000) // 4-значный код для подтверждения
 		await PhoneChecking.updateMany(
