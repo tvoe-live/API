@@ -214,40 +214,40 @@ router.post('/sms/capcha', async (req, res) => {
 	const ip = req.headers['x-real-ip']
 
 	try {
-		// if (!phone) {
-		// 	return resError({
-		// 		res,
-		// 		alert: true,
-		// 		msg: 'Не получен phone',
-		// 	})
-		// }
+		if (!phone) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Не получен phone',
+			})
+		}
 
-		// if (!regex.test(phone)) {
-		// 	return resError({
-		// 		res,
-		// 		alert: true,
-		// 		msg: 'Номер телефона должен начинаться с "7" и состоять из 11 цифр',
-		// 	})
-		// }
+		if (!regex.test(phone)) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Номер телефона должен начинаться с "7" и состоять из 11 цифр',
+			})
+		}
 
-		// const prevPhoneChecking = await PhoneChecking.find({
-		// 	phone,
-		// })
-		// 	.sort({ createdAt: -1 })
-		// 	.limit(3)
+		const prevPhoneChecking = await PhoneChecking.find({
+			phone,
+		})
+			.sort({ createdAt: -1 })
+			.limit(3)
 
-		// const prevIpChecking = await PhoneChecking.find({
-		// 	ip,
-		// })
-		// 	.sort({ createdAt: -1 })
-		// 	.limit(3)
+		const prevIpChecking = await PhoneChecking.find({
+			ip,
+		})
+			.sort({ createdAt: -1 })
+			.limit(3)
 
-		// if (
-		// 	(prevPhoneChecking.length === 3 && prevPhoneChecking.every((log) => !log.isConfirmed)) ||
-		// 	(prevIpChecking.length === 3 && prevIpChecking.every((log) => !log.isConfirmed))
-		// ) {
-		// 	return resSuccess({ res, value: true })
-		// }
+		if (
+			(prevPhoneChecking.length === 3 && prevPhoneChecking.every((log) => !log.isConfirmed)) ||
+			(prevIpChecking.length === 3 && prevIpChecking.every((log) => !log.isConfirmed))
+		) {
+			return resSuccess({ res, value: true })
+		}
 
 		return resSuccess({ res, value: false })
 	} catch (error) {
@@ -262,7 +262,7 @@ router.post('/sms/capcha', async (req, res) => {
 router.post('/sms/login', async (req, res) => {
 	const { phone, imgcode } = req.body
 
-	const ip = req.ip
+	const ip = req.headers['x-real-ip']
 	// const ipAddresses = req.header('x-forwarded-for')
 	// const ipAddress = requestIP.getClientIp(req)
 	// const x = IP.address()
