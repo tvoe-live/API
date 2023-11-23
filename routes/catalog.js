@@ -58,7 +58,7 @@ router.get('/', async (req, res) => {
 		const page = pages.find(
 			(page) =>
 				(rating ? Math.floor(+page.rating) === Math.floor(+rating) : !('rating' in page)) &&
-				(genreAlias && genres.length < 2
+				(genreAlias && genres?.length < 2
 					? page.genreAlias === genreAlias
 					: !('genreAlias' in page)) &&
 				(dateReleased ? page.dateReleased === dateReleased : !('dateReleased' in page)) &&
@@ -75,7 +75,7 @@ router.get('/', async (req, res) => {
 		}
 
 		// Поиск по нескольким жанрам ( через или)
-		if (genres.length > 1) {
+		if (genres?.length > 1) {
 			page.genreAlias = { $in: genres }
 		}
 
@@ -90,8 +90,6 @@ router.get('/', async (req, res) => {
 		}
 
 		if (rating) page.rating = { $gte: Math.floor(+rating) } // Поиск по рейтингу >=
-
-		console.log('page:', page)
 
 		const lookupFromCategories = {
 			from: 'categories',
