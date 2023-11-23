@@ -22,7 +22,6 @@ const resSuccess = require('../helpers/resSuccess')
 router.get('/', async (req, res) => {
 	// Получение данных пользователя, если он авторизован
 	await verify.token(req)
-	console.log('test', req.user, req.headers)
 
 	const authedUser = !!req.user // Авторизован ли пользователь? true / false
 	const link = authedUser ? `${CLIENT_URL}/?r=${req.user._id}` : null // Реферальная ссылка
@@ -54,6 +53,16 @@ router.get('/', async (req, res) => {
 				authCount = referralUsersFirstLvl.length + referralUsersSecondLvl.length
 			}
 		}
+
+		console.log('test', {
+			res,
+			balance,
+			firstLvlReferrals: referralUsersFirstLvl.length,
+			secondLvlReferrals: referralUsersSecondLvl.length,
+			authCount,
+			link,
+			card,
+		})
 
 		return resSuccess({
 			res,
