@@ -34,23 +34,24 @@ router.get('/', async (req, res) => {
 	try {
 		if (authedUser) {
 			const user = await User.findById(req.user._id, { referral: true }).lean()
+			if (user.referral) {
+				// Получение реф.пользователей 1-го уровня
+				referralUsersFirstLvl = await User.find(
+					{ _id: { $in: user.referral.userIds } },
+					{ _id: true, referral: true }
+				).lean()
 
-			// Получение реф.пользователей 1-го уровня
-			const referralUsersFirstLvl = await User.find(
-				{ _id: { $in: user.referral.userIds } },
-				{ _id: true, referral: true }
-			).lean()
+				// Получение реф.пользователей 2-го уровня
+				const referralUsersSecondLvlPromises = referralUsersFirstLvl
+					.filter((usr) => usr.referral)
+					.map((usr) => user.find({ _id: { $in: usr.referral.userIds } }, { _id: true }).lean())
+				referralUsersSecondLvl = (await Promise.all(referralUsersSecondLvlPromises)).reduce(
+					(acc, item) => acc.concat(item),
+					[]
+				)
 
-			// Получение реф.пользователей 2-го уровня
-			const referralUsersSecondLvlPromises = referralUsersFirstLvl.map((usr) =>
-				user.find({ _id: { $in: usr.referral.userIds } }, { _id: true }).lean()
-			)
-			const referralUsersSecondLvl = (await Promise.all(referralUsersSecondLvlPromises)).reduce(
-				(acc, item) => acc.concat(item),
-				[]
-			)
-
-			authCount = referralUsersFirstLvl.length + referralUsersSecondLvl.length
+				authCount = referralUsersFirstLvl.length + referralUsersSecondLvl.length
+			}
 		}
 
 		return resSuccess({
