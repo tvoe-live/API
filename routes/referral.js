@@ -16,6 +16,9 @@ const resSuccess = require('../helpers/resSuccess')
  * Реферальная программа
  */
 
+// Дата введения 2-уровневой реферальной программы
+const secondLvlDateRelease = new Date('2023-11-24')
+
 /*
  * Получение общих данных
  */
@@ -27,41 +30,76 @@ router.get('/', async (req, res) => {
 	const link = authedUser ? `${CLIENT_URL}/?r=${req.user._id}` : null // Реферальная ссылка
 	const card = authedUser ? req.user.referral.card : '' // Данные карты для вывода баланса
 	const balance = authedUser ? req.user.referral.balance : 0 // Текущий баланс с подписок рефералов
-	let referralUsersFirstLvl = [] // Реферальные пользователи 1-го уровня
-	let referralUsersSecondLvl = [] // Реферальные пользователи 2-го уровня
+	let firstLvlReferrals = 0 // Реферальные пользователи 1-го уровня
+	let secondLvlReferrals = 0 // Реферальные пользователи 2-го уровня
 	let authCount = 0 // Общее количество реферальных пользователей
 
 	try {
-		if (authedUser) {
-			const user = await User.findById(req.user._id, { referral: true }).lean()
-			if (user.referral) {
-				// Получение реф.пользователей 1-го уровня
-				referralUsersFirstLvl = await User.find(
-					{ _id: { $in: user.referral.userIds } },
-					{ _id: true, referral: true }
-				).lean()
+		if (authedUser && req.user.referral) {
+			// ID реф. пользователей всех уровней
+			const commonUserIds = [...req.user.referral.userIds]
 
-				// Получение реф.пользователей 2-го уровня
-				const referralUsersSecondLvlPromises = referralUsersFirstLvl
-					.filter((usr) => usr.referral)
-					.map((usr) => User.find({ _id: { $in: usr.referral.userIds } }, { _id: true }).lean())
-				referralUsersSecondLvl = (await Promise.all(referralUsersSecondLvlPromises)).reduce(
-					(acc, item) => acc.concat(item),
-					[]
-				)
+			// Получение реф. пользователей 1-го уровня
+			const referralUsersFirstLvl = commonUserIds.length
+				? await User.find(
+						{ _id: { $in: req.user.referral.userIds } },
+						{ _id: true, referral: true }
+				  ).lean()
+				: []
 
-				authCount = referralUsersFirstLvl.length + referralUsersSecondLvl.length
-			}
+			const secondUserIds = [] // ID пользователей 2-го уровня
+
+			referralUsersFirstLvl.forEach((referralUser) => {
+				if (!referralUser.referral) return
+
+				secondUserIds.push(...referralUser.referral.userIds)
+				commonUserIds.push(...referralUser.referral.userIds)
+			})
+
+			// Логи всех платежей реф. пользователей всех уровней
+			const paymentLogs = commonUserIds.length
+				? await PaymentLog.find(
+						{
+							userId: { $in: commonUserIds },
+							status: { $in: ['success', 'CONFIRMED', 'AUTHORIZED'] },
+							amount: { $ne: null },
+							type: 'paid',
+						},
+						{
+							_id: false,
+							userId: true,
+							tariffId: true,
+							amount: true,
+							status: true,
+							createdAt: true,
+						}
+				  )
+				: []
+
+			// Пробегаем по массивам с пользователями и считаем количество пользователей, проводивших оплаты
+			req.user.referral.userIds.forEach((userId) => {
+				const paymentLog = paymentLogs.find((l) => userId.toString() === l.userId.toString())
+				if (paymentLog) firstLvlReferrals++
+			})
+			secondUserIds.forEach((userId) => {
+				const paymentLog = paymentLogs.find((l) => userId.toString() === l.userId.toString())
+				if (!paymentLog || paymentLog.createdAt < secondLvlDateRelease) return
+				firstLvlReferrals++
+			})
+
+			authCount = commonUserIds.length
+			console.log(commonUserIds)
 		}
 
 		return resSuccess({
 			res,
-			balance,
-			firstLvlReferrals: referralUsersFirstLvl.length,
-			secondLvlReferrals: referralUsersSecondLvl.length,
-			authCount,
+			authedUser,
 			link,
 			card,
+			balance,
+			firstLvlReferrals,
+			secondLvlReferrals,
+			authCount,
 		})
 	} catch (err) {
 		return resError({ res, msg: err })
@@ -73,86 +111,91 @@ router.get('/', async (req, res) => {
  */
 router.get('/invitedReferrals', verify.token, async (req, res) => {
 	try {
-		// Получение данных пользователя
-		const user = await User.findById(req.user._id, { _id: true, referral: true }).lean()
+		// ID реф. пользователей всех уровней
+		const commonUserIds = [...req.user.referral.userIds]
 
-		// Получение данных реф.пользователей 1го уровня
-		const refferalUsersFirstLvl = await User.find(
-			{ _id: { $in: user.referral.userIds } },
-			{ _id: true, referral: true }
-		)
+		// Получение реф. пользователей 1-го уровня
+		const referralUsersFirstLvl = commonUserIds.length
+			? await User.find(
+					{ _id: { $in: commonUserIds } },
+					{ _id: true, firstname: true, avatar: true, referral: true }
+			  ).lean()
+			: []
 
-		// Получение данных об оплате тарифов реф.пользователей 1го уровня
-		const refferalUsersFirstLvlPaymentLogPromises = refferalUsersFirstLvl.map((usr) =>
-			PaymentLog.find(
-				{
-					userId: usr._id,
-					$or: [{ status: 'CONFIRMED' }, { status: 'success' }, { status: 'AUTHORIZED' }],
-					type: 'paid',
-					createdAt: { $gte: new Date('2023-11-21') },
+		const secondUserIds = [] // ID реф. пользователей 2-го уровня
+
+		referralUsersFirstLvl.forEach((referralUser) => {
+			if (!referralUser.referral) return
+
+			secondUserIds.push(...referralUser.referral.userIds)
+			commonUserIds.push(...referralUser.referral.userIds)
+		})
+
+		// Получение реф. пользователей 2-го уровня
+		const referralUsersSecondLvl = secondUserIds.length
+			? await User.find(
+					{ _id: { $in: secondUserIds } },
+					{ _id: true, firstname: true, avatar: true }
+			  ).lean()
+			: []
+
+		// Логи всех платежей реф. пользователей всех уровней
+		const paymentLogs = commonUserIds.length
+			? await PaymentLog.find(
+					{
+						userId: { $in: commonUserIds },
+						status: { $in: ['success', 'CONFIRMED', 'AUTHORIZED'] },
+						amount: { $ne: null },
+						type: 'paid',
+					},
+					{
+						_id: false,
+						userId: true,
+						tariffId: true,
+						amount: true,
+						status: true,
+						createdAt: true,
+					}
+			  )
+			: []
+
+		// История платежей
+		const items = []
+
+		// Пробегаем по массиву с логами и формируем из него результат вместе с данными профиля
+		paymentLogs.forEach((paymentLog) => {
+			const condition = (referralUser) =>
+				referralUser._id.toString() === paymentLog.userId.toString()
+
+			const firstLvlUser = referralUsersFirstLvl.find(condition)
+			const secondLvlUser = !firstLvlUser && referralUsersSecondLvl.find(condition)
+
+			// Если это пользователь 2-го уровня и лог был создан позже даты введения 2-го уровня, то выходим
+			if (secondLvlUser && paymentLog.createdAt < secondLvlDateRelease) return
+
+			items.push({
+				payment: {
+					createdAt: paymentLog.createdAt,
+					status: paymentLog.status,
+					bonuseAmount: Number(
+						(
+							paymentLog.amount *
+							((firstLvlUser ? FIRST_STEP_REFERRAL : SECOND_STEP_REFERRAL) / 100)
+						).toFixed(2)
+					),
+					tariffName: paymentLog.tariffId, // Нужно tariffName
+					level: firstLvlUser ? '1 уровень' : '2 уровень',
 				},
-				{ userId: true, tariffId: true, _id: false, amount: true, createdAt: true }
-			)
-				.populate('tariffId', ['name'])
-				.populate('userId', ['firstname', 'lastname', 'avatar'])
-				.lean()
-		)
-
-		const refferalUsersFirstLvlPaymentLog = (
-			await Promise.all(refferalUsersFirstLvlPaymentLogPromises)
-		)
-			.reduce((acc, item) => acc.concat(item), [])
-			.map((item) => {
-				item.amount = Number((item.amount * (FIRST_STEP_REFERRAL / 100)).toFixed(2))
-				return { ...item, lvl: '1 уровень' }
+				user: {
+					avatar: (firstLvlUser || secondLvlUser).avatar,
+					firstname: (firstLvlUser || secondLvlUser).firstname,
+				},
 			})
+		})
 
-		// Получение данных реф.пользователей 2го уровня
-		const referalUsersSecondLvlPromises = refferalUsersFirstLvl.map((usr) =>
-			User.find(
-				{
-					$and: [{ _id: { $in: usr.referral.userIds } }, { _id: { $not: { $eq: user._id } } }],
-				},
-				{ _id: true }
-			)
-		)
-		const refferalUsersSecondLvl = (await Promise.all(referalUsersSecondLvlPromises)).reduce(
-			(acc, item) => acc.concat(item),
-			[]
-		)
-
-		// Получение данных об оплате тарифов реф.пользователей 2го уровня
-		const refferalUsersSecondLvlPaymentLogPromises = refferalUsersSecondLvl.map((usr) =>
-			PaymentLog.find(
-				{
-					userId: usr._id,
-					$or: [{ status: 'CONFIRMED' }, { status: 'success' }, { status: 'AUTHORIZED' }],
-					type: 'paid',
-					createdAt: { $gte: new Date('2023-08-16') },
-				},
-				{ userId: true, tariffId: true, _id: false, amount: true, createdAt: true }
-			)
-				.populate('tariffId', ['name'])
-				.populate('userId', ['firstname', 'lastname', 'avatar'])
-				.lean()
-		)
-
-		const refferalUsersSecondLvlPaymentLog = (
-			await Promise.all(refferalUsersSecondLvlPaymentLogPromises)
-		)
-			.reduce((acc, item) => acc.concat(item), [])
-			.map((item) => {
-				item.amount = Number((item.amount * (SECOND_STEP_REFERRAL / 100)).toFixed(2))
-				return { ...item, lvl: '2 уровень' }
-			})
-
-		// Итоговые данные о начислении пользователей
-		const history = [].concat(refferalUsersFirstLvlPaymentLog, refferalUsersSecondLvlPaymentLog)
-
-		return res.status(200).send(history)
-	} catch (error) {
-		console.log(error)
-		res.status(500).send(error)
+		return resSuccess({ res, items, totalSize: items.length })
+	} catch (err) {
+		return resError({ res, msg: err })
 	}
 })
 
@@ -164,17 +207,64 @@ router.get('/withdrawalOfMoney', verify.token, async (req, res) => {
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	try {
-		// Получение истории выводов
-		const history = await ReferralWithdrawalLog.find(
-			{ userId: req.user._id },
-			{ _id: false, approverUserId: false, userId: false, __v: false, updatedAt: false }
-		)
-			.skip(skip)
-			.limit(limit)
-			.lean()
-		return res.status(200).send(history)
-	} catch (error) {
-		return res.status(500).send(error)
+		const result = await ReferralWithdrawalLog.aggregate([
+			{
+				$facet: {
+					// Всего записей
+					totalSize: [
+						{
+							$match: {
+								userId: req.user._id,
+							},
+						},
+						{
+							$group: {
+								_id: null,
+								count: { $sum: 1 },
+							},
+						},
+						{ $project: { _id: false } },
+						{ $limit: 1 },
+					],
+					// Список
+					items: [
+						{
+							$match: {
+								userId: req.user._id,
+							},
+						},
+						{
+							$project: {
+								_id: false,
+								amount: true,
+								createdAt: true,
+								card: {
+									number: {
+										$concat: ['**** **** **** ', { $substrBytes: ['$card.number', 12, 16] }],
+									},
+								},
+								status: true,
+							},
+						},
+						{ $sort: { createdAt: -1 } },
+						{ $skip: skip },
+						{ $limit: limit },
+					],
+				},
+			},
+			{ $limit: 1 },
+			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
+			{
+				$project: {
+					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+					items: '$items',
+				},
+			},
+		])
+
+		return resSuccess({ res, ...result[0] })
+	} catch (err) {
+		return resError({ res, msg: err })
 	}
 })
 
