@@ -24,6 +24,7 @@ router.patch('/activate', verify.token, async (req, res) => {
 
 	try {
 		const promocode = await Promocode.findOne({ value })
+
 		if (!promocode || promocode.deleted || promocode.startAt > new Date() || !promocode.isActive) {
 			return resError({ res, msg: 'Данный промокод не существует' })
 		}
@@ -57,9 +58,9 @@ router.patch('/activate', verify.token, async (req, res) => {
 		promocode.currentAmountActivation += 1
 		promocode.save()
 
-		if (promocode.discountFormat === 'free-month') {
-			const tariff = await Tariff.findOne({ name: '1 месяц' })
-			let user = await User.findOne({ _id: req.user._id })
+		if (promocode.discountFormat === 'free') {
+			const tariff = await Tariff.findOne({ name: promocode.tariffName })
+			const user = await User.findOne({ _id: req.user._id })
 
 			if (!req.user.subscribe) {
 				const startAt = new Date()
