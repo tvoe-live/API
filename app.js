@@ -1,21 +1,20 @@
 const fs = require('fs')
-const path = require('path')
 require('dotenv').config()
+const path = require('path')
 const cors = require('cors')
+const yaml = require('js-yaml')
 const express = require('express')
 const mongoose = require('mongoose')
 // const requestIp = require('request-ip')
 const bodyParser = require('body-parser')
-const expressUseragent = require('express-useragent')
-const yaml = require('js-yaml')
 const swaggerUi = require('swagger-ui-express')
 const verify = require('./middlewares/verify')
 const { Tasks } = require('./helpers/createTask')
 const upMovieTask = require('./helpers/upMovieTask')
+const expressUseragent = require('express-useragent')
 const repaymentTask = require('./helpers/repaymentTask')
 const recurrentPayment = require('./helpers/reccurentPayment')
 const subscribeRouter = require('./routes/profile/changeAutopayment')
-const refferalLinkRouter = require('./routes/refferalLink')
 
 const { PORT, STATIC_DIR, IMAGES_DIR, VIDEOS_DIR, DATABASE_URL } = process.env
 
@@ -96,7 +95,6 @@ app.use('/catalog', catalog) // Фильмы / сериалы с фильтро�
 app.use('/referral', referral) // Реферальная программа
 app.use('/promocodes', promocodes) // Промокоды
 app.use('/complaints', complaints) // Жалобы
-app.use('/link', refferalLinkRouter) // Реферальные ссылки
 app.use('/collections', collections) // Подборки и жанры для главной страницы
 
 app.use('/profile', profile) // Профиль

@@ -687,14 +687,14 @@ router.post('/notification', async (req, res) => {
 
 		const referalUser = await User.findByIdAndUpdate(refererUserId, {
 			$inc: {
-				'referral.balance': amount * (process.env.FIRST_STEP_REFFERAL / 100),
+				'referral.balance': amount * (process.env.FIRST_STEP_REFERRAL / 100),
 			},
 		})
 
 		if (referalUser.refererUserId) {
 			await User.findByIdAndUpdate(referalUser.refererUserId, {
 				$inc: {
-					'referral.balance': amount * (process.env.SECOND_STEP_REFFERAL / 100),
+					'referral.balance': amount * (process.env.SECOND_STEP_REFERRAL / 100),
 				},
 			})
 		}

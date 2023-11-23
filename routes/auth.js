@@ -14,10 +14,6 @@ const verify = require('../middlewares/verify')
 const resError = require('../helpers/resError')
 const resSuccess = require('../helpers/resSuccess')
 const { uploadImageToS3 } = require('../helpers/uploadImage')
-const refferalLinkModel = require('../models/refferalLink')
-
-const ShortUniqueId = require('short-unique-id')
-require('dotenv').config()
 
 /*
  * Авторизация / регистрация через Яндекс и разрушение сессии
