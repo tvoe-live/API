@@ -55,7 +55,6 @@ router.get('/', async (req, res) => {
 		}
 
 		console.log('test', {
-			res,
 			balance,
 			firstLvlReferrals: referralUsersFirstLvl.length,
 			secondLvlReferrals: referralUsersSecondLvl.length,
@@ -74,6 +73,7 @@ router.get('/', async (req, res) => {
 			card,
 		})
 	} catch (err) {
+		console.error(err)
 		return resError({ res, msg: err })
 	}
 })
