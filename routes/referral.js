@@ -22,6 +22,7 @@ const resSuccess = require('../helpers/resSuccess')
 router.get('/', async (req, res) => {
 	// Получение данных пользователя, если он авторизован
 	await verify.token(req)
+	console.log('test', req.user, req.headers)
 
 	const authedUser = !!req.user // Авторизован ли пользователь? true / false
 	const link = authedUser ? `${CLIENT_URL}/?r=${req.user._id}` : null // Реферальная ссылка
