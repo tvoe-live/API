@@ -59,12 +59,13 @@ router.get('/', async (req, res) => {
 
 		return resSuccess({
 			res,
+			authedUser,
+			link,
+			card,
 			balance,
 			firstLvlReferrals: referralUsersFirstLvl.length,
 			secondLvlReferrals: referralUsersSecondLvl.length,
 			authCount,
-			link,
-			card,
 		})
 	} catch (err) {
 		return resError({ res, msg: err })
