@@ -44,7 +44,7 @@ router.get('/', async (req, res) => {
 				// Получение реф.пользователей 2-го уровня
 				const referralUsersSecondLvlPromises = referralUsersFirstLvl
 					.filter((usr) => usr.referral)
-					.map((usr) => user.find({ _id: { $in: usr.referral.userIds } }, { _id: true }).lean())
+					.map((usr) => User.find({ _id: { $in: usr.referral.userIds } }, { _id: true }).lean())
 				referralUsersSecondLvl = (await Promise.all(referralUsersSecondLvlPromises)).reduce(
 					(acc, item) => acc.concat(item),
 					[]
@@ -53,15 +53,6 @@ router.get('/', async (req, res) => {
 				authCount = referralUsersFirstLvl.length + referralUsersSecondLvl.length
 			}
 		}
-
-		console.log('test', {
-			balance,
-			firstLvlReferrals: referralUsersFirstLvl.length,
-			secondLvlReferrals: referralUsersSecondLvl.length,
-			authCount,
-			link,
-			card,
-		})
 
 		return resSuccess({
 			res,
@@ -73,7 +64,6 @@ router.get('/', async (req, res) => {
 			card,
 		})
 	} catch (err) {
-		console.error(err)
 		return resError({ res, msg: err })
 	}
 })
