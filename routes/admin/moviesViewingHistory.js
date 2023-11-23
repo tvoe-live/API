@@ -14,6 +14,13 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
+	const dateFilterParam = req.query.start && {
+		$and: [
+			{ createdAt: { $gte: new Date(req.query.start) } },
+			{ createdAt: { $lt: new Date(req.query.end ? req.query.end : new Date()) } },
+		],
+	}
+
 	const searchMoviesMatch = req.RegExpQuery && {
 		name: req.RegExpQuery,
 	}
@@ -24,6 +31,12 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 				$facet: {
 					// Всего записей
 					totalSize: [
+						{
+							$match: {
+								...searchMoviesMatch,
+								...dateFilterParam,
+							},
+						},
 						{
 							$lookup: {
 								from: 'movies',
@@ -45,6 +58,11 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 					],
 					// Список
 					items: [
+						{
+							$match: {
+								...dateFilterParam,
+							},
+						},
 						{
 							$lookup: {
 								from: 'movies',

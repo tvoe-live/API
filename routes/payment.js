@@ -546,7 +546,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 				},
 			],
 			FfdVersion: '1.05', // Версия ФФД
-			Email: req.user.email || 'support@tvoe.team',
+			Email: req.user.email || 'no-relpy@tvoe.team',
 			Phone: req.user.phone || '+74956635979',
 			Taxation: 'usn_income', // Упрощенная СН (доходы)
 		},

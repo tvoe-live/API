@@ -19,6 +19,13 @@ const uploadMemoryStorage = multer({ storage: memoryStorage })
  *  Уведомления
  */
 
+const filterNotificationOptions = {
+	system: { type: 'SERVICE_NEWS' },
+	discount: { type: 'GIFT_AND_PROMOTIONS' },
+	profile: { type: 'PROFILE' },
+	unique: { type: 'CINEMA_NEWS' },
+}
+
 /*
  * Список всех уведомлений
  */
@@ -30,6 +37,15 @@ router.get('/', getSearchQuery, verify.token, verify.isAdmin, async (req, res) =
 	const editSpace = query?.replace(/ /gi, '\\s.*')
 	const RegExpQuery = new RegExp(editSpace?.replace(/[eё]/gi, '[её]'), 'i')
 
+	const notificationFilterParams =
+		req.query.status && filterNotificationOptions[`${req.query.status}`]
+	const dateFilterParam = req.query.start && {
+		$and: [
+			{ createdAt: { $gte: new Date(req.query.start) } },
+			{ createdAt: { $lt: new Date(req.query.end ? req.query.end : new Date()) } },
+		],
+	}
+
 	try {
 		Notification.aggregate(
 			[
@@ -40,6 +56,8 @@ router.get('/', getSearchQuery, verify.token, verify.isAdmin, async (req, res) =
 								$match: {
 									deleted: { $ne: true },
 									...(RegExpQuery && { title: RegExpQuery }),
+									...notificationFilterParams,
+									...dateFilterParam,
 								},
 							},
 							{
@@ -56,6 +74,8 @@ router.get('/', getSearchQuery, verify.token, verify.isAdmin, async (req, res) =
 								$match: {
 									deleted: { $ne: true },
 									...(RegExpQuery && { title: RegExpQuery }),
+									...notificationFilterParams,
+									...dateFilterParam,
 								},
 							},
 							{
