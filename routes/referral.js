@@ -32,26 +32,29 @@ router.get('/', async (req, res) => {
 	let authCount = 0 // Общее количество реферальных пользователей
 
 	try {
-		if (authedUser) {
-			const user = await User.findById(req.user._id, { referral: true }).lean()
-			if (user.referral) {
-				// Получение реф.пользователей 1-го уровня
-				referralUsersFirstLvl = await User.find(
-					{ _id: { $in: user.referral.userIds } },
-					{ _id: true, referral: true }
-				).lean()
+		if (authedUser && req.user.referral) {
+			// Получение реф.пользователей 1-го уровня
+			referralUsersFirstLvl = await User.find(
+				{ _id: { $in: req.user.referral.userIds } },
+				{ _id: true, referral: true }
+			).lean()
 
-				// Получение реф.пользователей 2-го уровня
-				const referralUsersSecondLvlPromises = referralUsersFirstLvl
-					.filter((usr) => usr.referral)
-					.map((usr) => User.find({ _id: { $in: usr.referral.userIds } }, { _id: true }).lean())
-				referralUsersSecondLvl = (await Promise.all(referralUsersSecondLvlPromises)).reduce(
-					(acc, item) => acc.concat(item),
-					[]
-				)
+			// ID пользователей следующего уровня
+			const commonUserIds = []
 
-				authCount = referralUsersFirstLvl.length + referralUsersSecondLvl.length
-			}
+			referralUsersFirstLvl.forEach((referralUser) => {
+				if (!referralUser.referral) return
+
+				commonUserIds.push(...referralUser.referral.userIds)
+			})
+
+			// Получение реф.пользователей 2-го уровня
+			referralUsersSecondLvl = await User.find(
+				{ _id: { $in: commonUserIds } },
+				{ _id: true, referral: true }
+			).lean()
+
+			authCount = referralUsersFirstLvl.length + referralUsersSecondLvl.length
 		}
 
 		return resSuccess({
