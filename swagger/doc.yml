@@ -6494,7 +6494,7 @@ paths:
           name: genreAlias
           schema:
             type: string
-          description: Жанр фильма или сериала
+          description: Жанр фильма или сериала. Может передаваться несколько значений через знак "|". Например genreAlias=boeviki|trillery найдет фильмы, содержащий как минимум 1 из переданных жанров
         - in: query
           name: dateReleased
           schema:
