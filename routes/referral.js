@@ -1,15 +1,16 @@
+const { CLIENT_URL, FIRST_STEP_REFERRAL, SECOND_STEP_REFERRAL } = process.env
+
 const express = require('express')
 const router = express.Router()
+
 const User = require('../models/user')
+const PaymentLog = require('../models/paymentLog')
+const ReferralWithdrawalLog = require('../models/referralWithdrawalLog')
+
 const verify = require('../middlewares/verify')
+
 const resError = require('../helpers/resError')
 const resSuccess = require('../helpers/resSuccess')
-const { CLIENT_URL, REFERRAL_PERCENT_BONUSE } = process.env
-const ReferralWithdrawalLog = require('../models/referralWithdrawalLog')
-const user = require('../models/user')
-const referralWithdrawalLog = require('../models/referralWithdrawalLog')
-const paymentLog = require('../models/paymentLog')
-require('dotenv').config()
 
 /*
  * Реферальная программа
@@ -26,35 +27,43 @@ router.get('/', async (req, res) => {
 	const link = authedUser ? `${CLIENT_URL}/?r=${req.user._id}` : null // Реферальная ссылка
 	const card = authedUser ? req.user.referral.card : '' // Данные карты для вывода баланса
 	const balance = authedUser ? req.user.referral.balance : 0 // Текущий баланс с подписок рефералов
+	let referralUsersFirstLvl = [] // Реферальные пользователи 1-го уровня
+	let referralUsersSecondLvl = [] // Реферальные пользователи 2-го уровня
+	let authCount = 0 // Общее количество реферальных пользователей
+
 	try {
-		// Получаем данные пользователя по реферальной программе и данные его реф.ссылки
-		const mainUser = await user.findById(req.user._id, { referral: true }).lean()
+		if (authedUser) {
+			const user = await User.findById(req.user._id, { referral: true }).lean()
 
-		// Получаем реф.пользователей 1го уровня
-		const refferalUsersFirstLvl = await user
-			.find({ _id: { $in: mainUser.referral.userIds } }, { _id: true, referral: true })
-			.lean()
+			// Получение реф.пользователей 1-го уровня
+			const referralUsersFirstLvl = await User.find(
+				{ _id: { $in: user.referral.userIds } },
+				{ _id: true, referral: true }
+			).lean()
 
-		// Получение ползователей 2го уровня
-		const referalUsersSecondLvlPromises = refferalUsersFirstLvl.map((usr) =>
-			user.find({ _id: { $in: usr.referral.userIds } }, { _id: true }).lean()
-		)
-		const refferalUsersSecondLvl = (await Promise.all(referalUsersSecondLvlPromises)).reduce(
-			(acc, item) => acc.concat(item),
-			[]
-		)
+			// Получение реф.пользователей 2-го уровня
+			const referralUsersSecondLvlPromises = referralUsersFirstLvl.map((usr) =>
+				user.find({ _id: { $in: usr.referral.userIds } }, { _id: true }).lean()
+			)
+			const referralUsersSecondLvl = (await Promise.all(referralUsersSecondLvlPromises)).reduce(
+				(acc, item) => acc.concat(item),
+				[]
+			)
 
-		return res.status(200).send({
+			authCount = referralUsersFirstLvl.length + referralUsersSecondLvl.length
+		}
+
+		return resSuccess({
+			res,
 			balance,
-			firstLvlReferrals: refferalUsersFirstLvl.length,
-			secondLvlReferrals: refferalUsersSecondLvl.length,
-			authCount: refferalUsersFirstLvl.length + refferalUsersSecondLvl.length,
+			firstLvlReferrals: referralUsersFirstLvl.length,
+			secondLvlReferrals: referralUsersSecondLvl.length,
+			authCount,
 			link,
 			card,
 		})
-	} catch (error) {
-		console.log(error)
-		return res.status(500).send(error)
+	} catch (err) {
+		return resError({ res, msg: err })
 	}
 })
 
@@ -64,26 +73,25 @@ router.get('/', async (req, res) => {
 router.get('/invitedReferrals', verify.token, async (req, res) => {
 	try {
 		// Получение данных пользователя
-		const mainUser = await user.findById(req.user._id, { _id: true, referral: true }).lean()
+		const user = await User.findById(req.user._id, { _id: true, referral: true }).lean()
 
 		// Получение данных реф.пользователей 1го уровня
-		const refferalUsersFirstLvl = await user.find(
-			{ _id: { $in: mainUser.referral.userIds } },
+		const refferalUsersFirstLvl = await User.find(
+			{ _id: { $in: user.referral.userIds } },
 			{ _id: true, referral: true }
 		)
 
 		// Получение данных об оплате тарифов реф.пользователей 1го уровня
 		const refferalUsersFirstLvlPaymentLogPromises = refferalUsersFirstLvl.map((usr) =>
-			paymentLog
-				.find(
-					{
-						userId: usr._id,
-						$or: [{ status: 'CONFIRMED' }, { status: 'success' }, { status: 'AUTHORIZED' }],
-						type: 'paid',
-						createdAt: { $gte: new Date('2023-11-21') },
-					},
-					{ userId: true, tariffId: true, _id: false, amount: true, createdAt: true }
-				)
+			PaymentLog.find(
+				{
+					userId: usr._id,
+					$or: [{ status: 'CONFIRMED' }, { status: 'success' }, { status: 'AUTHORIZED' }],
+					type: 'paid',
+					createdAt: { $gte: new Date('2023-11-21') },
+				},
+				{ userId: true, tariffId: true, _id: false, amount: true, createdAt: true }
+			)
 				.populate('tariffId', ['name'])
 				.populate('userId', ['firstname', 'lastname', 'avatar'])
 				.lean()
@@ -94,15 +102,15 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 		)
 			.reduce((acc, item) => acc.concat(item), [])
 			.map((item) => {
-				item.amount = Number((item.amount * (process.env.FIRST_STEP_REFFERAL / 100)).toFixed(2))
+				item.amount = Number((item.amount * (FIRST_STEP_REFERRAL / 100)).toFixed(2))
 				return { ...item, lvl: '1 уровень' }
 			})
 
 		// Получение данных реф.пользователей 2го уровня
 		const referalUsersSecondLvlPromises = refferalUsersFirstLvl.map((usr) =>
-			user.find(
+			User.find(
 				{
-					$and: [{ _id: { $in: usr.referral.userIds } }, { _id: { $not: { $eq: mainUser._id } } }],
+					$and: [{ _id: { $in: usr.referral.userIds } }, { _id: { $not: { $eq: user._id } } }],
 				},
 				{ _id: true }
 			)
@@ -114,16 +122,15 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 
 		// Получение данных об оплате тарифов реф.пользователей 2го уровня
 		const refferalUsersSecondLvlPaymentLogPromises = refferalUsersSecondLvl.map((usr) =>
-			paymentLog
-				.find(
-					{
-						userId: usr._id,
-						$or: [{ status: 'CONFIRMED' }, { status: 'success' }, { status: 'AUTHORIZED' }],
-						type: 'paid',
-						createdAt: { $gte: new Date('2023-08-16') },
-					},
-					{ userId: true, tariffId: true, _id: false, amount: true, createdAt: true }
-				)
+			PaymentLog.find(
+				{
+					userId: usr._id,
+					$or: [{ status: 'CONFIRMED' }, { status: 'success' }, { status: 'AUTHORIZED' }],
+					type: 'paid',
+					createdAt: { $gte: new Date('2023-08-16') },
+				},
+				{ userId: true, tariffId: true, _id: false, amount: true, createdAt: true }
+			)
 				.populate('tariffId', ['name'])
 				.populate('userId', ['firstname', 'lastname', 'avatar'])
 				.lean()
@@ -134,7 +141,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 		)
 			.reduce((acc, item) => acc.concat(item), [])
 			.map((item) => {
-				item.amount = Number((item.amount * (process.env.SECOND_STEP_REFFERAL / 100)).toFixed(2))
+				item.amount = Number((item.amount * (SECOND_STEP_REFERRAL / 100)).toFixed(2))
 				return { ...item, lvl: '2 уровень' }
 			})
 
@@ -157,11 +164,10 @@ router.get('/withdrawalOfMoney', verify.token, async (req, res) => {
 
 	try {
 		// Получение истории выводов
-		const history = await referralWithdrawalLog
-			.find(
-				{ userId: req.user._id },
-				{ _id: false, approverUserId: false, userId: false, __v: false, updatedAt: false }
-			)
+		const history = await ReferralWithdrawalLog.find(
+			{ userId: req.user._id },
+			{ _id: false, approverUserId: false, userId: false, __v: false, updatedAt: false }
+		)
 			.skip(skip)
 			.limit(limit)
 			.lean()
