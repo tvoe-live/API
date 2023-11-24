@@ -81,7 +81,7 @@ router.get('/', async (req, res) => {
 			secondUserIds.forEach((userId) => {
 				const paymentLog = paymentLogs.find((l) => userId.toString() === l.userId.toString())
 				if (!paymentLog || paymentLog.createdAt < secondLvlDateRelease) return
-				firstLvlReferrals++
+				secondLvlReferrals++
 			})
 
 			authCount = commonUserIds.length
