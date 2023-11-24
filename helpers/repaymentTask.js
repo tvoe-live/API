@@ -69,7 +69,7 @@ const repaymentTask = async () => {
 					],
 					FfdVersion: '1.05',
 					Taxation: 'usn_income',
-					Email: user.email || 'support@tvoe.team',
+					Email: user.email || 'no-relpy@tvoe.team',
 					Phone: user.phone || '+74956635979',
 				},
 			}

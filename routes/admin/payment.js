@@ -17,6 +17,16 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
+	const dateFilterParam = req.query.start && {
+		$and: [
+			{ createdAt: { $gte: new Date(req.query.start) } },
+			{ createdAt: { $lt: new Date(req.query.end ? req.query.end : new Date()) } },
+		],
+	}
+	const tariffFilterParam = req.query.tariff && {
+		tariffId: mongoose.Types.ObjectId(`${req.query.tariff}`),
+	}
+
 	const searchMatch = req.RegExpQuery && {
 		$or: [
 			...(isValidObjectId(req.searchQuery)
@@ -133,6 +143,8 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 						{
 							$match: {
 								$or: [{ status: 'success' }, { status: 'CONFIRMED' }, { status: 'AUTHORIZED' }],
+								...dateFilterParam,
+								...tariffFilterParam,
 							},
 						},
 						{
@@ -149,6 +161,8 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 						{
 							$match: {
 								$or: [{ status: 'success' }, { status: 'CONFIRMED' }, { status: 'AUTHORIZED' }],
+								...dateFilterParam,
+								...tariffFilterParam,
 							},
 						},
 						{

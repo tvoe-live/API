@@ -14,10 +14,19 @@ const isValidObjectId = require('../../helpers/isValidObjectId')
  * Админ-панель > Пользователи
  */
 
+const filterUsersOptions = {
+	active: { lastVisitAt: { $gte: new Date(new Date() - 1000 * 60 * 60 * 24 * 3) } },
+	notactive: { lastVisitAt: { $lt: new Date(new Date() - 1000 * 60 * 60 * 24 * 3) } },
+	deleted: { deleted: { $exists: true } },
+	admin: { role: 'admin' },
+}
+
 // Получение списка пользователей
 router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
+
+	const userFilterParam = req.query.status ?? filterUsersOptions[`${req.query.status}`]
 
 	const searchMatch = req.RegExpQuery && {
 		$or: [
@@ -29,12 +38,23 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 		],
 	}
 
+	const tariffFilterParam = req.query.tariff ?? { 'subscribe.tariffId': req.query.tariff }
+
+	console.log(tariffFilterParam, userFilterParam)
+
 	try {
 		const result = await User.aggregate([
 			{
 				$facet: {
 					// Всего записей
 					totalSize: [
+						{
+							$match: {
+								...searchMatch,
+								...userFilterParam,
+								...tariffFilterParam,
+							},
+						},
 						{
 							$group: {
 								_id: null,
@@ -49,6 +69,8 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 						{
 							$match: {
 								...searchMatch,
+								...userFilterParam,
+								...tariffFilterParam,
 							},
 						},
 						{

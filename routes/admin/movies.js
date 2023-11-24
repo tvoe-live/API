@@ -22,12 +22,21 @@ const validValues = {
  * Админ-панель > Фильмы и сериалы
  */
 
+const moviesFilterOptions = {
+	published: {
+		$and: [{ publishedAt: { $exists: true } }, { publishedAt: { $not: { $eq: null } } }],
+	},
+	notpublished: { $or: [{ publishedAt: { $exists: false } }, { publishedAt: null }] },
+}
+
 /*
  * Получение списка записей
  */
 router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
+
+	const movieFilterParam = moviesFilterOptions[`${req.query.status}`]
 
 	const searchMatch = req.RegExpQuery && {
 		name: req.RegExpQuery,
@@ -42,6 +51,7 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 						{
 							$match: {
 								...searchMatch,
+								...movieFilterParam,
 							},
 						},
 						{
@@ -92,6 +102,7 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 						{
 							$match: {
 								...searchMatch,
+								...movieFilterParam,
 							},
 						},
 						{ $project: { __v: false } },
