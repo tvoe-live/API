@@ -68,12 +68,9 @@ router.get('/', async (req, res) => {
 						{
 							_id: false,
 							userId: true,
-							tariffId: true,
-							amount: true,
-							status: true,
 							createdAt: true,
 						}
-				  )
+				  ).lean()
 				: []
 
 			// Пробегаем по массивам с пользователями и считаем количество пользователей, проводивших оплаты
@@ -88,7 +85,6 @@ router.get('/', async (req, res) => {
 			})
 
 			authCount = commonUserIds.length
-			console.log(commonUserIds)
 		}
 
 		return resSuccess({
@@ -118,7 +114,13 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 		const referralUsersFirstLvl = commonUserIds.length
 			? await User.find(
 					{ _id: { $in: commonUserIds } },
-					{ _id: true, firstname: true, avatar: true, referral: true }
+					{
+						_id: true,
+						avatar: true,
+						firstname: true,
+						lastname: true,
+						referral: true,
+					}
 			  ).lean()
 			: []
 
@@ -135,7 +137,12 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 		const referralUsersSecondLvl = secondUserIds.length
 			? await User.find(
 					{ _id: { $in: secondUserIds } },
-					{ _id: true, firstname: true, avatar: true }
+					{
+						_id: true,
+						avatar: true,
+						firstname: true,
+						lastname: true,
+					}
 			  ).lean()
 			: []
 
@@ -157,6 +164,8 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 						createdAt: true,
 					}
 			  )
+					.populate('tariffId', ['name'])
+					.lean()
 			: []
 
 		// История платежей
@@ -183,12 +192,13 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 							((firstLvlUser ? FIRST_STEP_REFERRAL : SECOND_STEP_REFERRAL) / 100)
 						).toFixed(2)
 					),
-					tariffName: paymentLog.tariffId, // Нужно tariffName
-					level: firstLvlUser ? '1 уровень' : '2 уровень',
+					tariffName: paymentLog.tariffId.name,
 				},
 				user: {
 					avatar: (firstLvlUser || secondLvlUser).avatar,
 					firstname: (firstLvlUser || secondLvlUser).firstname,
+					lastname: (firstLvlUser || secondLvlUser).lastname,
+					level: firstLvlUser ? 1 : 2,
 				},
 			})
 		})
