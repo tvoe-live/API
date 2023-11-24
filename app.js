@@ -5,7 +5,6 @@ const cors = require('cors')
 const yaml = require('js-yaml')
 const express = require('express')
 const mongoose = require('mongoose')
-// const requestIp = require('request-ip')
 const bodyParser = require('body-parser')
 const swaggerUi = require('swagger-ui-express')
 const verify = require('./middlewares/verify')
@@ -28,7 +27,6 @@ process.on('uncaughtException', (exception) => console.log(`ERROR:`, exception))
 
 const app = express()
 app.set('trust proxy', true)
-// app.use(requestIp.mw())
 
 app.use(
 	cors({

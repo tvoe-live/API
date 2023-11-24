@@ -9,7 +9,7 @@ const router = express.Router()
 
 // const resSuccess = require('../../helpers/resSuccess')
 // const getBoolean = require('../../helpers/getBoolean')
-// const mongoose = require('mongoose')
+const mongoose = require('mongoose')
 
 // Загрузка картинки в буффер
 const memoryStorage = multer.memoryStorage()

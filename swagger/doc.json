@@ -653,7 +653,7 @@
 					},
 					"sizeDiscount": {
 						"type": "number",
-						"description": "Размер скидки - число в рублях (если discountFormat = rubles) или процентах ( если discountFormat = percentages). Если discountFormat = free-month, тогда sizeDiscount = null"
+						"description": "Размер скидки - число в рублях (если discountFormat = rubles) или процентах ( если discountFormat = percentages). Если discountFormat = free, тогда sizeDiscount = null"
 					},
 					"value": {
 						"type": "string",
@@ -1755,7 +1755,7 @@
 															"_id": { "type": "string", "description": "Id промокода" },
 															"discountFormat": {
 																"type": "string",
-																"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+																"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный месяц)"
 															},
 															"sizeDiscount": {
 																"type": "number",
@@ -5823,7 +5823,7 @@
 													},
 													"discountFormat": {
 														"type": "string",
-														"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+														"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный месяц)"
 													},
 													"sizeDiscount": {
 														"type": "number",
@@ -5929,7 +5929,7 @@
 									},
 									"discountFormat": {
 										"type": "string",
-										"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+										"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный месяц)"
 									},
 									"sizeDiscount": {
 										"type": "number",
@@ -6010,7 +6010,7 @@
 									},
 									"discountFormat": {
 										"type": "string",
-										"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+										"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный месяц)"
 									},
 									"sizeDiscount": {
 										"type": "number",
@@ -6163,7 +6163,7 @@
 										},
 										"discountFormat": {
 											"type": "string",
-											"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+											"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный месяц)"
 										},
 										"sizeDiscount": {
 											"type": "number",
@@ -6400,7 +6400,7 @@
 													},
 													"discountFormat": {
 														"type": "string",
-														"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+														"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный период)"
 													},
 													"sizeDiscount": {
 														"type": "number",
@@ -7501,7 +7501,7 @@
 																	},
 																	"discountFormat": {
 																		"type": "number",
-																		"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+																		"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный месяц)"
 																	},
 																	"promocodeId": {
 																		"type": "number",
@@ -9832,16 +9832,16 @@
 										},
 										"tariffName": {
 											"type": "string",
-											"description": "Название тарифа, скидку на который дает промокод. Если discountFormat = 'free-month', то это поле отсутсвует",
+											"description": "Название тарифа, скидку на который дает промокод.",
 											"required": false
 										},
 										"discountFormat": {
 											"type": "number",
-											"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+											"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный период)"
 										},
 										"sizeDiscount": {
 											"type": "number",
-											"description": "Размер скидки. Если discountFormat = 'free-month', то это поле отсутсвует",
+											"description": "Размер скидки. Если discountFormat = 'free', то это поле отсутсвует",
 											"required": false
 										}
 									},

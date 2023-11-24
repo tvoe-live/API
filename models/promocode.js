@@ -21,10 +21,10 @@ const promocodeSchema = new mongoose.Schema(
 			enum: [
 				'percentages', // в процентах
 				'rubles', // в рублях
-				'free-month', // бесплатный месяц
+				'free', // бесплатный
 			],
 		},
-		sizeDiscount: Number, // Размер скидки - число в рублях (если discountFormat = rubles) или процентах ( если discountFormat = percentages). Если discountFormat = free-month, тогда sizeDiscount = null
+		sizeDiscount: Number, // Размер скидки - число в рублях (если discountFormat = rubles) или процентах ( если discountFormat = percentages). Если discountFormat = free, тогда sizeDiscount = null
 		value: String, // Комбинация символов, которую пользователь вводит в качестве значения промокода
 		startAt: Date, // Дата начала действия промокода
 		finishAt: Date, // Дата окончания действия промокода. Если в этом поле null, значит промокод бессрочный
