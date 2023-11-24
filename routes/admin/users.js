@@ -40,8 +40,6 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 
 	const tariffFilterParam = req.query.tariff ?? { 'subscribe.tariffId': req.query.tariff }
 
-	console.log(tariffFilterParam, userFilterParam)
-
 	try {
 		const result = await User.aggregate([
 			{

@@ -595,8 +595,6 @@ router.post('/notification', async (req, res) => {
 		Password: PAYMENT_TERMINAL_PASSWORD,
 	}
 
-	console.log(req.body)
-
 	delete body.Token
 
 	let {
@@ -790,7 +788,6 @@ router.post('/notification', async (req, res) => {
 		case 'PARTIAL_REVERSED': // Частичная отмена
 		case 'REVERSED': // Операция отменена
 		case 'REJECTED':
-			console.log(req.body) // Списание денежных средств закончилась ошибкой
 		case '3DS_CHECKING': // Автоматическое закрытие сессии, которая превысила срок пребывания в статусе 3DS_CHECKING (более 36 часов)
 		default:
 			break

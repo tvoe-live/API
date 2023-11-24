@@ -19,7 +19,7 @@ const movieRatingSchema = new mongoose.Schema(
 				type: Array,
 				required: true,
 				validate: {
-					validator: function (arrReasons) {
+					validator: (arrReasons) => {
 						const validValues = [
 							'violationRightsOrContentConfidentialInformation', // Отзыв нарушает чьи-то права или содержит конфиденциальную информацию
 							'swearingInsultsOrCallsIllegalActions', // Мат, оскорбления или призыв к противоправным действиям
@@ -27,13 +27,14 @@ const movieRatingSchema = new mongoose.Schema(
 							'missingRelationshipToContent', // Отзыв не имеет отношения к контенту
 						]
 						for (let i = 0; i < arrReasons.length; i++) {
-							console.log('arrReasons[i]')
 							if (!validValues.includes(arrReasons[i])) return false
 						}
 						return true
 					},
 					message: (props) =>
-						`<${props.value}> - не валидное значение! Возможные варианты: violationRightsOrContentConfidentialInformation, swearingInsultsOrCallsIllegalActions, linkOrAdvertising, missingRelationshipToContent`,
+						`<${props.value}> - не валидное значение! Возможные варианты: ${validValues
+							.map((d) => `'${d}'`)
+							.join()}`,
 				},
 			},
 		},

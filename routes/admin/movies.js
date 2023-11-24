@@ -403,7 +403,6 @@ router.delete('/rating', verify.token, verify.isManager, async (req, res) => {
 	}
 
 	if (!comment && (!reasons || !Boolean(reasons?.length))) {
-		console.log('I am here')
 		return resError({
 			res,
 			alert: true,
