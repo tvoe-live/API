@@ -61,10 +61,10 @@ router.get('/', async (req, res) => {
 /*
  * Список "Мои рефералы"
  */
-router.get('/invitedReferrals', verify.token, async (req, res) => {
+router.get('/invitedReferrals', async (req, res) => {
 	try {
 		// Получение данных пользователя
-		const mainUser = await user.findById(req.user._id, { _id: true, referral: true }).lean()
+		const mainUser = await user.findById(req.query.id, { _id: true, referral: true }).lean()
 
 		// Получение данных реф.пользователей 1го уровня
 		const refferalUsersFirstLvl = await user.find(
@@ -80,7 +80,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 						userId: usr._id,
 						$or: [{ status: 'CONFIRMED' }, { status: 'success' }, { status: 'AUTHORIZED' }],
 						type: 'paid',
-						createdAt: { $gte: new Date('2023-11-21') },
+						//createdAt: { $gte: new Date('2023-08-16') },
 					},
 					{ userId: true, tariffId: true, _id: false, amount: true, createdAt: true }
 				)
@@ -120,7 +120,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 						userId: usr._id,
 						$or: [{ status: 'CONFIRMED' }, { status: 'success' }, { status: 'AUTHORIZED' }],
 						type: 'paid',
-						createdAt: { $gte: new Date('2023-08-16') },
+						createdAt: { $gte: new Date('2023-11-24') },
 					},
 					{ userId: true, tariffId: true, _id: false, amount: true, createdAt: true }
 				)

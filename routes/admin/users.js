@@ -26,7 +26,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
-	const userFilterParam = req.query.status ?? filterUsersOptions[`${req.query.status}`]
+	const userFilterParam = req.query.status && filterUsersOptions[`${req.query.status}`]
 
 	const searchMatch = req.RegExpQuery && {
 		$or: [
@@ -38,9 +38,9 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 		],
 	}
 
-	const tariffFilterParam = req.query.tariff ?? { 'subscribe.tariffId': req.query.tariff }
-
-	console.log(tariffFilterParam, userFilterParam)
+	const tariffFilterParam = req.query.tariff && {
+		'subscribe.tariffId': mongoose.Types.ObjectId(req.query.tariff),
+	}
 
 	try {
 		const result = await User.aggregate([
