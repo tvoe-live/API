@@ -744,7 +744,7 @@ components:
           description: Является ли промокод активным в данный момент
         sizeDiscount:
           type: number
-          description: Размер скидки - число в рублях (если discountFormat = rubles) или процентах ( если discountFormat = percentages). Если discountFormat = free-month, тогда sizeDiscount = null
+          description: Размер скидки - число в рублях (если discountFormat = rubles) или процентах ( если discountFormat = percentages). Если discountFormat = free, тогда sizeDiscount = null
         value:
           type: string
           description: Комбинация символов, которую пользователь вводит в качестве значения промокода
@@ -1842,7 +1842,7 @@ paths:
                               description: Id промокода
                             discountFormat:
                               type: string
-                              description: Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)
+                              description: Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный месяц)
                             sizeDiscount:
                               type: number
                               description: Размер скидки. Если discountFormat = percentages, то sizeDiscount выражается в процентах. Если discountFormat = rubles, то sizeDiscount - в рублях
@@ -5399,7 +5399,7 @@ paths:
                           description: Название тарифа - '1 месяц', '3 месяца', '6 месяцев'
                         discountFormat:
                           type: string
-                          description: Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)
+                          description: Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный месяц)
                         sizeDiscount:
                           type: number
                           description: Размер скидки. Если discountFormat = percentages, то sizeDiscount выражается в процентах. Если discountFormat = rubles, то sizeDiscount - в рублях
@@ -5483,7 +5483,7 @@ paths:
                   description: Название тарифа - '1 месяц', '3 месяца', '6 месяцев'
                 discountFormat:
                   type: string
-                  description: Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)
+                  description: Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный месяц)
                 sizeDiscount:
                   type: number
                   description: Размер скидки. Если discountFormat = percentages, то sizeDiscount выражается в процентах. Если discountFormat = rubles, то sizeDiscount - в рублях
@@ -5549,7 +5549,7 @@ paths:
                   description: Название тарифа - '1 месяц', '3 месяца', '6 месяцев'
                 discountFormat:
                   type: string
-                  description: Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)
+                  description: Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный месяц)
                 sizeDiscount:
                   type: number
                   description: Размер скидки. Если discountFormat = percentages, то sizeDiscount выражается в процентах. Если discountFormat = rubles, то sizeDiscount - в рублях
@@ -5682,7 +5682,7 @@ paths:
                     description: Название тарифа - '1 месяц', '3 месяца', '6 месяцев'
                   discountFormat:
                     type: string
-                    description: Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)
+                    description: Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный месяц)
                   sizeDiscount:
                     type: number
                     description: Размер скидки. Если discountFormat = percentages, то sizeDiscount выражается в процентах. Если discountFormat = rubles, то sizeDiscount - в рублях
@@ -5874,7 +5874,7 @@ paths:
                           description: Название тарифа - '1 месяц', '3 месяца', '6 месяцев'
                         discountFormat:
                           type: string
-                          description: Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)
+                          description: Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный период)
                         sizeDiscount:
                           type: number
                           description: Размер скидки. Если discountFormat = percentages, то sizeDiscount выражается в процентах. Если discountFormat = rubles, то sizeDiscount - в рублях
@@ -6780,7 +6780,7 @@ paths:
                                   description: Размер скидки
                                 discountFormat:
                                   type: number
-                                  description: Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)
+                                  description: Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный месяц)
                                 promocodeId:
                                   type: number
                                   description: Id применного наиболее выгодного для пользователя промокода
@@ -8914,14 +8914,14 @@ paths:
                     description: Окончание времени действия активированного промокода
                   tariffName:
                     type: string
-                    description: Название тарифа, скидку на который дает промокод. Если discountFormat = 'free-month', то это поле отсутсвует
+                    description: Название тарифа, скидку на который дает промокод.
                     required: false
                   discountFormat:
                     type: number
-                    description: Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)
+                    description: Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный период)
                   sizeDiscount:
                     type: number
-                    description: Размер скидки. Если discountFormat = 'free-month', то это поле отсутсвует
+                    description: Размер скидки. Если discountFormat = 'free', то это поле отсутсвует
                     required: false
 
                 example:
