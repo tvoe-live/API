@@ -70,9 +70,19 @@ const token = async (req, res, next) => {
 			})
 		}
 
+		const dateNow = Date.now()
+
 		let user = await User.findOneAndUpdate(
-			{ _id: userId },
-			{ $set: { lastVisitAt: Date.now() } },
+			{
+				_id: userId,
+				'sessions.token': token,
+			},
+			{
+				$set: {
+					lastVisitAt: dateNow,
+					'sessions.$.lastVisitAt': dateNow,
+				},
+			},
 			{
 				timestamps: false,
 				returnOriginal: false,

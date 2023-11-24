@@ -62,7 +62,6 @@ router.get('/stat/views', async (_, res) => {
 		)
 		return res.status(200).send(views)
 	} catch (error) {
-		console.log(error)
 		return res.status(500).send(error)
 	}
 })
@@ -96,7 +95,6 @@ router.get('/stat/referral', async (_, res) => {
 
 		return res.status(200).send(usersCount)
 	} catch (error) {
-		console.log(error)
 		return res.status(500).send(error)
 	}
 })
@@ -126,7 +124,6 @@ router.get('/stat/film', async (_, res) => {
 
 		return res.status(200).send({ filmsCount, serialsCount, avgRating })
 	} catch (error) {
-		console.log(error)
 		return res.status(500).send(error)
 	}
 })
@@ -154,7 +151,6 @@ router.get('/stat/content', async (_, res) => {
 
 		return res.status(200).send({ publishedCount, notPublishedCount, allCount })
 	} catch (error) {
-		console.log(error)
 		return res.status(500).send(error)
 	}
 })
@@ -362,7 +358,6 @@ router.get('/stat/subscribe', async (_, res) => {
 
 		return res.status(200).send(subsribeStatData)
 	} catch (error) {
-		console.log(error)
 		return res.status(500).send(error)
 	}
 })
