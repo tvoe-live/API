@@ -87,6 +87,7 @@ router.patch('/', verify.token, async (req, res) => {
 router.patch('/phone', verify.token, async (req, res) => {
 	const { phone, imgcode } = req.body
 	const userId = req.user._id
+	const ip = req.headers['x-real-ip']
 
 	try {
 		if (req.useragent?.isBot) {
@@ -169,10 +170,10 @@ router.patch('/phone', verify.token, async (req, res) => {
 
 		//Если последние 3 заявки на подтверждения для указанного номера телефона или ip адреса клиента не были подтверждены правильным смс кодом, необходимо показать капчу
 		if (
-			(prevPhoneChecking2.length === 3 &&
+			(prevPhoneChecking2.length === 2 &&
 				prevPhoneChecking2.every((log) => !log.isConfirmed) &&
 				!imgcode) ||
-			(prevIpChecking.length === 3 && prevIpChecking.every((log) => !log.isConfirmed) && !imgcode)
+			(prevIpChecking.length === 2 && prevIpChecking.every((log) => !log.isConfirmed) && !imgcode)
 		) {
 			return resError({
 				res,

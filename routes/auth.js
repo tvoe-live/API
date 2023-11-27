@@ -331,10 +331,10 @@ router.post('/sms/login', async (req, res) => {
 
 		//Если последние 3 заявки на подтверждения для указанного номера телефона или ip адреса клиента не были подтверждены правильным смс кодом, необходимо показать капчу
 		if (
-			(prevPhoneChecking2.length === 3 &&
+			(prevPhoneChecking2.length === 2 &&
 				prevPhoneChecking2.every((log) => !log.isConfirmed) &&
 				!imgcode) ||
-			(prevIpChecking.length === 3 && prevIpChecking.every((log) => !log.isConfirmed) && !imgcode)
+			(prevIpChecking.length === 2 && prevIpChecking.every((log) => !log.isConfirmed) && !imgcode)
 		) {
 			return resError({
 				res,
