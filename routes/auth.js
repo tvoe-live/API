@@ -208,6 +208,9 @@ router.post('/sms/capcha', async (req, res) => {
 	const { phone } = req.body
 
 	const ip = req.headers['x-real-ip']
+	console.log('---')
+	console.log('phone:', phone)
+	console.log('ip:', ip)
 
 	try {
 		if (!phone) {
@@ -231,12 +234,14 @@ router.post('/sms/capcha', async (req, res) => {
 		})
 			.sort({ createdAt: -1 })
 			.limit(3)
+		console.log('prevPhoneChecking:', prevPhoneChecking)
 
 		const prevIpChecking = await PhoneChecking.find({
 			ip,
 		})
 			.sort({ createdAt: -1 })
 			.limit(3)
+		console.log('prevIpChecking:', prevIpChecking)
 
 		if (
 			(prevPhoneChecking.length === amountLoginWithoutCapcha &&
@@ -244,8 +249,14 @@ router.post('/sms/capcha', async (req, res) => {
 			(prevIpChecking.length === amountLoginWithoutCapcha &&
 				prevIpChecking.every((log) => !log.isConfirmed))
 		) {
+			console.log('попал в value: true  ')
+			console.log('---')
+
 			return resSuccess({ res, value: true })
 		}
+
+		console.log('попал в value: false  ')
+		console.log('---')
 
 		return resSuccess({ res, value: false })
 	} catch (error) {
