@@ -10,6 +10,7 @@ const resError = require('../../helpers/resError')
 const resSuccess = require('../../helpers/resSuccess')
 const { uploadImageToS3 } = require('../../helpers/uploadImage')
 const { deleteFileFromS3 } = require('../../helpers/deleteFile')
+const { amountLoginWithoutCapcha } = require('../../constants')
 
 /*
  * Профиль > Основное
@@ -167,12 +168,14 @@ router.patch('/phone', verify.token, async (req, res) => {
 			.sort({ createdAt: -1 })
 			.limit(3)
 
-		//Если последние 3 заявки на подтверждения для указанного номера телефона или ip адреса клиента не были подтверждены правильным смс кодом, необходимо показать капчу
+		//Если последние 2 заявки на подтверждения для указанного номера телефона или ip адреса клиента не были подтверждены правильным смс кодом, необходимо показать капчу
 		if (
-			(prevPhoneChecking2.length === 3 &&
+			(prevPhoneChecking2.length === amountLoginWithoutCapcha &&
 				prevPhoneChecking2.every((log) => !log.isConfirmed) &&
 				!imgcode) ||
-			(prevIpChecking.length === 3 && prevIpChecking.every((log) => !log.isConfirmed) && !imgcode)
+			(prevIpChecking.length === amountLoginWithoutCapcha &&
+				prevIpChecking.every((log) => !log.isConfirmed) &&
+				!imgcode)
 		) {
 			return resError({
 				res,
