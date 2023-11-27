@@ -161,13 +161,13 @@ router.patch('/phone', verify.token, async (req, res) => {
 			phone,
 		})
 			.sort({ createdAt: -1 })
-			.limit(3)
+			.limit(amountLoginWithoutCapcha)
 
 		const prevIpChecking = await PhoneChecking.find({
 			ip,
 		})
 			.sort({ createdAt: -1 })
-			.limit(3)
+			.limit(amountLoginWithoutCapcha)
 
 		//Если последние 2 заявки на подтверждения для указанного номера телефона или ip адреса клиента не были подтверждены правильным смс кодом, необходимо показать капчу
 		if (
