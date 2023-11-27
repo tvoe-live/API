@@ -2171,6 +2171,9 @@ paths:
                 phone:
                   type: string
                   description: Новый номер телефона. Он должен состоять из 11 цифр подряд, первая цифра 7.
+                imgcode:
+                  type: string
+                  description: Набор символов с капчи для проверки
       responses:
         '200':
           description: OK
