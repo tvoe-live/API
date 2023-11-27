@@ -338,7 +338,7 @@ router.post('/sms/login', async (req, res) => {
 		) {
 			return resError({
 				res,
-				alert: true,
+				alert: false,
 				msg: 'Требуется imgcode',
 			})
 		}
@@ -363,7 +363,6 @@ router.post('/sms/login', async (req, res) => {
 		const url = imgcode
 			? `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}&imgcode=${imgcode}&userip=${ip}&op=1`
 			: `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}`
-		ip
 
 		const response = await fetch(url)
 

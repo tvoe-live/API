@@ -85,7 +85,7 @@ router.patch('/', verify.token, async (req, res) => {
 
 // Изменение номера телефона в профиле
 router.patch('/phone', verify.token, async (req, res) => {
-	const { phone } = req.body
+	const { phone, imgcode } = req.body
 	const userId = req.user._id
 
 	try {
@@ -122,7 +122,7 @@ router.patch('/phone', verify.token, async (req, res) => {
 		}
 
 		let minuteAgo = new Date()
-		minuteAgo.setSeconds(minuteAgo.getSeconds() - 55)
+		minuteAgo.setSeconds(minuteAgo.getSeconds() - 5)
 
 		const previousPhoneCheckingMinute = await PhoneChecking.find({
 			userId,
@@ -134,7 +134,7 @@ router.patch('/phone', verify.token, async (req, res) => {
 			return resError({
 				res,
 				alert: true,
-				msg: 'Можно запросить код подтверждения только раз в 60 секунд',
+				msg: 'Можно запросить код подтверждения только раз в 10 секунд',
 			})
 		}
 
@@ -155,6 +155,32 @@ router.patch('/phone', verify.token, async (req, res) => {
 		// 	})
 		// }
 
+		const prevPhoneChecking2 = await PhoneChecking.find({
+			phone,
+		})
+			.sort({ createdAt: -1 })
+			.limit(3)
+
+		const prevIpChecking = await PhoneChecking.find({
+			ip,
+		})
+			.sort({ createdAt: -1 })
+			.limit(3)
+
+		//Если последние 3 заявки на подтверждения для указанного номера телефона или ip адреса клиента не были подтверждены правильным смс кодом, необходимо показать капчу
+		if (
+			(prevPhoneChecking2.length === 3 &&
+				prevPhoneChecking2.every((log) => !log.isConfirmed) &&
+				!imgcode) ||
+			(prevIpChecking.length === 3 && prevIpChecking.every((log) => !log.isConfirmed) && !imgcode)
+		) {
+			return resError({
+				res,
+				alert: false,
+				msg: 'Требуется imgcode',
+			})
+		}
+
 		const code = Math.floor(1000 + Math.random() * 9000) // 4 значный код для подтверждения
 		await PhoneChecking.updateMany(
 			{ phone, code: { $ne: code }, type: 'change', userId },
@@ -172,9 +198,21 @@ router.patch('/phone', verify.token, async (req, res) => {
 			userId,
 		})
 
-		const response = await fetch(
-			`https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}`
-		)
+		const url = imgcode
+			? `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}&imgcode=${imgcode}&userip=${ip}&op=1`
+			: `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}`
+
+		const response = await fetch(url)
+
+		const responseText = await response?.text()
+
+		if (responseText.startsWith('ERROR = 10')) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Символы указаны неверно',
+			})
+		}
 
 		if (response.status === 200) {
 			return resSuccess({
