@@ -14,7 +14,7 @@ const verify = require('../middlewares/verify')
 const resError = require('../helpers/resError')
 const resSuccess = require('../helpers/resSuccess')
 const { uploadImageToS3 } = require('../helpers/uploadImage')
-
+const { amountLoginWithoutCapcha } = require('../constants')
 /*
  * Авторизация / регистрация через Яндекс и разрушение сессии
  */
@@ -239,8 +239,10 @@ router.post('/sms/capcha', async (req, res) => {
 			.limit(3)
 
 		if (
-			(prevPhoneChecking.length === 3 && prevPhoneChecking.every((log) => !log.isConfirmed)) ||
-			(prevIpChecking.length === 3 && prevIpChecking.every((log) => !log.isConfirmed))
+			(prevPhoneChecking.length === amountLoginWithoutCapcha &&
+				prevPhoneChecking.every((log) => !log.isConfirmed)) ||
+			(prevIpChecking.length === amountLoginWithoutCapcha &&
+				prevIpChecking.every((log) => !log.isConfirmed))
 		) {
 			return resSuccess({ res, value: true })
 		}
@@ -329,12 +331,14 @@ router.post('/sms/login', async (req, res) => {
 			.sort({ createdAt: -1 })
 			.limit(3)
 
-		//Если последние 3 заявки на подтверждения для указанного номера телефона или ip адреса клиента не были подтверждены правильным смс кодом, необходимо показать капчу
+		//Если последние 2 заявки на подтверждения для указанного номера телефона или ip адреса клиента не были подтверждены правильным смс кодом, необходимо показать капчу
 		if (
-			(prevPhoneChecking2.length === 2 &&
+			(prevPhoneChecking2.length === amountLoginWithoutCapcha &&
 				prevPhoneChecking2.every((log) => !log.isConfirmed) &&
 				!imgcode) ||
-			(prevIpChecking.length === 2 && prevIpChecking.every((log) => !log.isConfirmed) && !imgcode)
+			(prevIpChecking.length === amountLoginWithoutCapcha &&
+				prevIpChecking.every((log) => !log.isConfirmed) &&
+				!imgcode)
 		) {
 			return resError({
 				res,
