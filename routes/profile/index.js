@@ -88,6 +88,7 @@ router.patch('/', verify.token, async (req, res) => {
 router.patch('/phone', verify.token, async (req, res) => {
 	const { phone, imgcode } = req.body
 	const userId = req.user._id
+	const ip = req.headers['x-real-ip']
 
 	try {
 		if (req.useragent?.isBot) {
