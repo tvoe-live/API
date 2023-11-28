@@ -40,8 +40,16 @@ router.get('/', verify.token, async (req, res) => {
 		}
 	)
 
-	if (user.deleted) {
+	if (user.deleted && user.deleted.finish) {
 		if (new Date().getTime() > user.deleted.finish.getTime()) user.deleted.timeIsUp = true
+	}
+
+	if (user.subscribe && user.subscribe?.tariffId) {
+		const { name: tariffName } = await Tariff.findOne(
+			{ _id: user.subscribe?.tariffId },
+			{ name: true }
+		)
+		user.subscribe = { ...user.subscribe, tariffName }
 	}
 
 	return res.status(200).json(user)
