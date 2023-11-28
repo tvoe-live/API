@@ -1,13 +1,18 @@
 const express = require('express')
 const router = express.Router()
 const multer = require('multer')
+const schedule = require('node-schedule')
+
 const User = require('../../models/user')
 const Tariff = require('../../models/tariff')
 const PhoneChecking = require('../../models/phoneChecking')
 const UserDeletionLog = require('../../models/userDeletionLog')
+const DisposableCronTask = require('../../models/disposableCronTask')
+
 const verify = require('../../middlewares/verify')
 const resError = require('../../helpers/resError')
 const resSuccess = require('../../helpers/resSuccess')
+const mailer = require('../../helpers/nodemailer')
 const { uploadImageToS3 } = require('../../helpers/uploadImage')
 const { deleteFileFromS3 } = require('../../helpers/deleteFile')
 const { amountLoginWithoutCapcha } = require('../../constants')
@@ -348,7 +353,7 @@ router.post('/change-phone/compare', verify.token, async (req, res) => {
 
 // Удаление профиля
 router.delete('/', verify.token, async (req, res) => {
-	const { _id, deleted, subscribe } = req.user
+	const { _id, deleted, subscribe, email, authPhone } = req.user
 
 	const { isRefund, reason } = req.body
 
@@ -400,6 +405,43 @@ router.delete('/', verify.token, async (req, res) => {
 				start: new Date(),
 				finish: new Date(finish),
 			},
+		}
+
+		const dayBeforeRemoving = new Date(finish)
+		dayBeforeRemoving.setDate(dayBeforeRemoving.getDate() - 1)
+
+		const message = 'Ваш аккаунт на кинохостинге https://tvoe.live/ завтра будет полностью удален'
+
+		if (authPhone) {
+			await DisposableCronTask.create({
+				name: 'sendMsgViaPhone',
+				phone: authPhone,
+				message,
+				willCompletedAt: dayBeforeRemoving,
+			})
+
+			schedule.scheduleJob(new Date(newDate), async function () {
+				const response = await fetch(
+					`https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${authPhone}&mes=${message}`
+				)
+			})
+		} else if (email) {
+			await DisposableCronTask.create({
+				name: 'sendMsgViaEmail',
+				email,
+				message,
+				willCompletedAt: dayBeforeRemoving,
+			})
+
+			const msg = {
+				to: email,
+				subject: 'Напоминание',
+				text: message,
+			}
+
+			schedule.scheduleJob(dayBeforeRemoving, async function () {
+				mailer(msg)
+			})
 		}
 
 		await User.updateOne({ _id: _id }, { $set: set })

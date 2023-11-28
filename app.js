@@ -133,4 +133,5 @@ app.listen(PORT, () => {
 	Tasks.restart('reccurentPayment', recurrentPayment)
 	Tasks.restart('repayment', repaymentTask)
 	Tasks.restart('upMovie', upMovieTask)
+	Tasks.restartDisposable()
 })

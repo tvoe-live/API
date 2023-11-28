@@ -59,7 +59,7 @@ const generateAccessToken = (userId) => {
 
 router.post('/login', async (req, res) => {
 	const authorization = req.header('Authorization') || null
-	let refererUserId = req.header('RefererUserId') || null
+	// let refererUserId = req.header('RefererUserId') || null
 
 	if (!authorization) {
 		return resError({
@@ -85,7 +85,15 @@ router.post('/login', async (req, res) => {
 				const { id } = data
 
 				// Поиск пользователя в БД
-				let user = await User.findOne({ initial_id: id })
+				let user = await User.findOne({
+					initial_id: id,
+					$or: [
+						{ deleted: null },
+						{
+							$and: [{ deleted: { $exists: true } }, { 'deleted.finish': { $gt: new Date() } }],
+						},
+					],
+				})
 
 				if (!user) {
 					resError({ res, msg: 'Регистрация через яндекс больше не доступна' })
@@ -208,6 +216,7 @@ router.post('/sms/capcha', async (req, res) => {
 	const { phone } = req.body
 
 	const ip = req.headers['x-real-ip']
+
 	console.log('---')
 	console.log('phone:', phone)
 	console.log('ip:', ip)
@@ -478,7 +487,7 @@ router.post('/sms/compare', async (req, res) => {
 		phoneCheckingLog.isConfirmed = true
 		await phoneCheckingLog.save()
 
-		// Получение данных пользователя, если он авторизован
+		// Получение данных пользователя, если он авторизован. при смене номера телефона
 		await verify.token(req)
 
 		if (req.user) {
@@ -498,7 +507,15 @@ router.post('/sms/compare', async (req, res) => {
 		}
 
 		// Поиск пользователя в БД
-		let user = await User.findOne({ authPhone: phone })
+		let user = await User.findOne({
+			authPhone: phone,
+			$or: [
+				{ deleted: null },
+				{
+					$and: [{ deleted: { $exists: true } }, { 'deleted.finish': { $gt: new Date() } }],
+				},
+			],
+		})
 
 		// Если пользователя нет в БД, создаем нового
 		if (!user) {
