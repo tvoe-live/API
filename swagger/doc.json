@@ -7579,10 +7579,6 @@
 							"schema": {
 								"type": "object",
 								"properties": {
-									"successURL": {
-										"type": "string",
-										"description": "Url адрес успешной страницы для оплаты подписки"
-									},
 									"selectedTariffId": {
 										"type": "string",
 										"description": "Id (mongoose.ObjectId) документа коллекции tariffs (выбранного тарифа)"
@@ -7606,7 +7602,8 @@
 										}
 									},
 									"example": {
-										"urlOfRedirectToPay": "https://dzen.ru/?yredirect=true&utm_referer=www.google.com&id=64a858371616a1286efe30c9"
+										"paymentId": "63bbed7523c814afb608a3f0",
+										"urlOfRedirectToPay": "https://securepayments.tinkoff.ru/m4lXrMRD"
 									}
 								}
 							}
