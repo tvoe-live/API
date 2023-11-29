@@ -3,8 +3,8 @@ const router = express.Router()
 const axios = require('axios')
 const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose')
-const requestIP = require('request-ip')
-const IP = require('ip')
+// const requestIP = require('request-ip')
+// const IP = require('ip')
 
 const User = require('../models/user')
 const AuthLog = require('../models/authLog')
@@ -14,11 +14,7 @@ const verify = require('../middlewares/verify')
 const resError = require('../helpers/resError')
 const resSuccess = require('../helpers/resSuccess')
 const { uploadImageToS3 } = require('../helpers/uploadImage')
-const refferalLinkModel = require('../models/refferalLink')
-
-const ShortUniqueId = require('short-unique-id')
-require('dotenv').config()
-
+const { amountLoginWithoutCapcha } = require('../constants')
 /*
  * Авторизация / регистрация через Яндекс и разрушение сессии
  */
@@ -211,7 +207,10 @@ router.post('/logout', verify.token, async (req, res) => {
 router.post('/sms/capcha', async (req, res) => {
 	const { phone } = req.body
 
-	const ip = req.ip
+	const ip = req.headers['x-real-ip']
+	console.log('---')
+	console.log('phone:', phone)
+	console.log('ip:', ip)
 
 	try {
 		if (!phone) {
@@ -234,20 +233,30 @@ router.post('/sms/capcha', async (req, res) => {
 			phone,
 		})
 			.sort({ createdAt: -1 })
-			.limit(3)
+			.limit(amountLoginWithoutCapcha)
+		console.log('prevPhoneChecking:', prevPhoneChecking)
 
 		const prevIpChecking = await PhoneChecking.find({
 			ip,
 		})
 			.sort({ createdAt: -1 })
-			.limit(3)
+			.limit(amountLoginWithoutCapcha)
+		console.log('prevIpChecking:', prevIpChecking)
 
 		if (
-			(prevPhoneChecking.length === 3 && prevPhoneChecking.every((log) => !log.isConfirmed)) ||
-			(prevIpChecking.length === 3 && prevIpChecking.every((log) => !log.isConfirmed))
+			(prevPhoneChecking.length === amountLoginWithoutCapcha &&
+				prevPhoneChecking.every((log) => !log.isConfirmed)) ||
+			(prevIpChecking.length === amountLoginWithoutCapcha &&
+				prevIpChecking.every((log) => !log.isConfirmed))
 		) {
+			console.log('попал в value: true  ')
+			console.log('---')
+
 			return resSuccess({ res, value: true })
 		}
+
+		console.log('попал в value: false  ')
+		console.log('---')
 
 		return resSuccess({ res, value: false })
 	} catch (error) {
@@ -262,21 +271,7 @@ router.post('/sms/capcha', async (req, res) => {
 router.post('/sms/login', async (req, res) => {
 	const { phone, imgcode } = req.body
 
-	const ip = req.ip
-	const ipAddresses = req.header('x-forwarded-for')
-	const ipAddress = requestIP.getClientIp(req)
-	const x = IP.address()
-
-	console.log('ip:', ip)
-	console.log('req.clientIp:', req.clientIp)
-	console.log('req.header(x-forwarded-for):', ipAddresses)
-	console.log('requestIP.getClientIp(req):', ipAddress)
-	console.log('IP.address();:', x)
-	console.log('req.headers[cf-connecting-ip]:', req.headers['cf-connecting-ip'])
-	console.log('req.headers[x-real-ip]:', req.headers['x-real-ip'])
-	console.log('req.connection.remoteAddress]:', req.connection?.remoteAddress)
-	console.log('req.socket.remoteAddress]:', req.socket.remoteAddress)
-	console.log('req.connection?.socket?.remoteAddress:', req.connection?.socket?.remoteAddress)
+	const ip = req.headers['x-real-ip']
 
 	try {
 		if (req.useragent?.isBot) {
@@ -339,27 +334,29 @@ router.post('/sms/login', async (req, res) => {
 			phone,
 		})
 			.sort({ createdAt: -1 })
-			.limit(3)
+			.limit(amountLoginWithoutCapcha)
 
 		const prevIpChecking = await PhoneChecking.find({
 			ip,
 		})
 			.sort({ createdAt: -1 })
-			.limit(3)
+			.limit(amountLoginWithoutCapcha)
 
-		// Если последние 3 заявки на подтверждения для указанного номера телефона или ip адреса клиента не были подтверждены правильным смс кодом, необходимо показать капчу
-		// if (
-		// 	(prevPhoneChecking2.length === 3 &&
-		// 		prevPhoneChecking2.every((log) => !log.isConfirmed) &&
-		// 		!imgcode) ||
-		// 	(prevIpChecking.length === 3 && prevIpChecking.every((log) => !log.isConfirmed) && !imgcode)
-		// ) {
-		// 	return resError({
-		// 		res,
-		// 		alert: true,
-		// 		msg: 'Требуется imgcode',
-		// 	})
-		// }
+		//Если последние 2 заявки на подтверждения для указанного номера телефона или ip адреса клиента не были подтверждены правильным смс кодом, необходимо показать капчу
+		if (
+			(prevPhoneChecking2.length === amountLoginWithoutCapcha &&
+				prevPhoneChecking2.every((log) => !log.isConfirmed) &&
+				!imgcode) ||
+			(prevIpChecking.length === amountLoginWithoutCapcha &&
+				prevIpChecking.every((log) => !log.isConfirmed) &&
+				!imgcode)
+		) {
+			return resError({
+				res,
+				alert: false,
+				msg: 'Требуется imgcode',
+			})
+		}
 
 		const code = Math.floor(1000 + Math.random() * 9000) // 4-значный код для подтверждения
 		await PhoneChecking.updateMany(
@@ -381,7 +378,6 @@ router.post('/sms/login', async (req, res) => {
 		const url = imgcode
 			? `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}&imgcode=${imgcode}&userip=${ip}&op=1`
 			: `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}`
-		ip
 
 		const response = await fetch(url)
 
@@ -405,7 +401,6 @@ router.post('/sms/login', async (req, res) => {
 			msg: 'Что-то пошло не так. Попробуйте позже',
 		})
 	} catch (error) {
-		console.log('error:', error)
 		return res.json(error)
 	}
 })

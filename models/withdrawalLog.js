@@ -24,7 +24,7 @@ const withdrawalLogSchema = new mongoose.Schema(
 				type: Array,
 				required: true,
 				validate: {
-					validator: function (arrReasons) {
+					validator: (arrReasons) => {
 						const validValues = ['NOT_ENOUGH_CONTENT', 'BAD_QUALITY_VIDEO', 'BAD_SOUND']
 						for (let i = 0; i < arrReasons.length; i++) {
 							if (!validValues.includes(arrReasons[i])) return false
@@ -32,7 +32,9 @@ const withdrawalLogSchema = new mongoose.Schema(
 						return true
 					},
 					message: (props) =>
-						`<${props.value}> - не валидное значение! Возможные варианты: NOT_ENOUGH_CONTENT, BAD_QUALITY_VIDEO, BAD_SOUND`,
+						`<${props.value}> - не валидное значение! Возможные варианты: ${validValues
+							.map((d) => `'${d}'`)
+							.join()}`,
 				},
 			},
 		},

@@ -183,7 +183,9 @@ router.patch('/settings', verify.token, async (req, res) => {
 			return resError({
 				res,
 				alert: true,
-				msg: `${notificationType} - не валидное значение. Возможные варианты: ${notificationTypes}`,
+				msg: `${notificationType} - не валидное значение. Возможные варианты: ${notificationTypes
+					.map((d) => `'${d}'`)
+					.join()}`,
 			})
 		}
 	})

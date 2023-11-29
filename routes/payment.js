@@ -497,7 +497,10 @@ router.post('/createPayment', verify.token, async (req, res) => {
 			}
 		)
 
-		return res.status(200).json({ urlOfRedirectToPay: successURL })
+		return res.status(200).json({
+			paymentId: paymentLog._id,
+			urlOfRedirectToPay: successURL,
+		})
 	}
 
 	// Создание лога о платеже
@@ -583,7 +586,10 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		},
 	})
 
-	return res.status(200).json({ urlOfRedirectToPay: initPaymentData.PaymentURL })
+	return res.status(200).json({
+		paymentId: paymentLog._id,
+		urlOfRedirectToPay: initPaymentData.PaymentURL,
+	})
 })
 
 /*
@@ -594,8 +600,6 @@ router.post('/notification', async (req, res) => {
 		...req.body,
 		Password: PAYMENT_TERMINAL_PASSWORD,
 	}
-
-	console.log(req.body)
 
 	delete body.Token
 
@@ -687,14 +691,14 @@ router.post('/notification', async (req, res) => {
 
 		const referalUser = await User.findByIdAndUpdate(refererUserId, {
 			$inc: {
-				'referral.balance': amount * (process.env.FIRST_STEP_REFFERAL / 100),
+				'referral.balance': amount * (process.env.FIRST_STEP_REFERRAL / 100),
 			},
 		})
 
 		if (referalUser.refererUserId) {
 			await User.findByIdAndUpdate(referalUser.refererUserId, {
 				$inc: {
-					'referral.balance': amount * (process.env.SECOND_STEP_REFFERAL / 100),
+					'referral.balance': amount * (process.env.SECOND_STEP_REFERRAL / 100),
 				},
 			})
 		}
@@ -790,7 +794,6 @@ router.post('/notification', async (req, res) => {
 		case 'PARTIAL_REVERSED': // Частичная отмена
 		case 'REVERSED': // Операция отменена
 		case 'REJECTED':
-			console.log(req.body) // Списание денежных средств закончилась ошибкой
 		case '3DS_CHECKING': // Автоматическое закрытие сессии, которая превысила срок пребывания в статусе 3DS_CHECKING (более 36 часов)
 		default:
 			break

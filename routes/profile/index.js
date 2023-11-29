@@ -10,6 +10,7 @@ const resError = require('../../helpers/resError')
 const resSuccess = require('../../helpers/resSuccess')
 const { uploadImageToS3 } = require('../../helpers/uploadImage')
 const { deleteFileFromS3 } = require('../../helpers/deleteFile')
+const { amountLoginWithoutCapcha } = require('../../constants')
 
 /*
  * Профиль > Основное
@@ -39,8 +40,16 @@ router.get('/', verify.token, async (req, res) => {
 		}
 	)
 
-	if (user.deleted) {
+	if (user.deleted && user.deleted.finish) {
 		if (new Date().getTime() > user.deleted.finish.getTime()) user.deleted.timeIsUp = true
+	}
+
+	if (user.subscribe && user.subscribe?.tariffId) {
+		const { name: tariffName } = await Tariff.findOne(
+			{ _id: user.subscribe?.tariffId },
+			{ name: true }
+		)
+		user.subscribe = { ...user.subscribe, tariffName }
 	}
 
 	return res.status(200).json(user)
@@ -85,8 +94,9 @@ router.patch('/', verify.token, async (req, res) => {
 
 // Изменение номера телефона в профиле
 router.patch('/phone', verify.token, async (req, res) => {
-	const { phone } = req.body
+	const { phone, imgcode } = req.body
 	const userId = req.user._id
+	const ip = req.headers['x-real-ip']
 
 	try {
 		if (req.useragent?.isBot) {
@@ -122,7 +132,7 @@ router.patch('/phone', verify.token, async (req, res) => {
 		}
 
 		let minuteAgo = new Date()
-		minuteAgo.setSeconds(minuteAgo.getSeconds() - 55)
+		minuteAgo.setSeconds(minuteAgo.getSeconds() - 5)
 
 		const previousPhoneCheckingMinute = await PhoneChecking.find({
 			userId,
@@ -134,7 +144,7 @@ router.patch('/phone', verify.token, async (req, res) => {
 			return resError({
 				res,
 				alert: true,
-				msg: 'Можно запросить код подтверждения только раз в 60 секунд',
+				msg: 'Можно запросить код подтверждения только раз в 10 секунд',
 			})
 		}
 
@@ -155,6 +165,34 @@ router.patch('/phone', verify.token, async (req, res) => {
 		// 	})
 		// }
 
+		const prevPhoneChecking2 = await PhoneChecking.find({
+			phone,
+		})
+			.sort({ createdAt: -1 })
+			.limit(amountLoginWithoutCapcha)
+
+		const prevIpChecking = await PhoneChecking.find({
+			ip,
+		})
+			.sort({ createdAt: -1 })
+			.limit(amountLoginWithoutCapcha)
+
+		//Если последние 2 заявки на подтверждения для указанного номера телефона или ip адреса клиента не были подтверждены правильным смс кодом, необходимо показать капчу
+		if (
+			(prevPhoneChecking2.length === amountLoginWithoutCapcha &&
+				prevPhoneChecking2.every((log) => !log.isConfirmed) &&
+				!imgcode) ||
+			(prevIpChecking.length === amountLoginWithoutCapcha &&
+				prevIpChecking.every((log) => !log.isConfirmed) &&
+				!imgcode)
+		) {
+			return resError({
+				res,
+				alert: false,
+				msg: 'Требуется imgcode',
+			})
+		}
+
 		const code = Math.floor(1000 + Math.random() * 9000) // 4 значный код для подтверждения
 		await PhoneChecking.updateMany(
 			{ phone, code: { $ne: code }, type: 'change', userId },
@@ -172,9 +210,21 @@ router.patch('/phone', verify.token, async (req, res) => {
 			userId,
 		})
 
-		const response = await fetch(
-			`https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}`
-		)
+		const url = imgcode
+			? `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}&imgcode=${imgcode}&userip=${ip}&op=1`
+			: `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}`
+
+		const response = await fetch(url)
+
+		const responseText = await response?.text()
+
+		if (responseText.startsWith('ERROR = 10')) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Символы указаны неверно',
+			})
+		}
 
 		if (response.status === 200) {
 			return resSuccess({

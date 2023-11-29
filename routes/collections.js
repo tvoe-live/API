@@ -355,7 +355,8 @@ router.get('/', async (req, res) => {
 	}
 })
 
-router.get('/continueWatching', verify.token, async (req, res) => {
+// router.get('/continueWatching', verify.token, async (req, res) => {
+router.get('/continueWatching', async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
 
@@ -463,6 +464,12 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 						{ $match: match },
 						{
 							$group: {
+								_id: '$movieId',
+								count: { $sum: 1 },
+							},
+						},
+						{
+							$group: {
 								_id: null,
 								count: { $sum: 1 },
 							},
@@ -481,6 +488,22 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 						{ $unwind: { path: '$movie' } },
 						{ $project: project },
 						{ $match: match },
+						{
+							$sort: {
+								'seriaInfo.season': -1,
+								'seriaInfo.episode': -1,
+							},
+						},
+						{
+							$group: {
+								_id: '$movieId',
+								videoId: { $first: '$videoId' },
+								endTime: { $first: '$endTime' },
+								updatedAt: { $first: '$updatedAt' },
+								movie: { $first: '$movie' },
+								seriaInfo: { $first: '$seriaInfo' },
+							},
+						},
 						{ $sort: { updatedAt: -1 } },
 						{ $skip: skip },
 						{ $limit: limit },

@@ -104,10 +104,9 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 	} = req.body
 
 	if (!discountFormat) return resError({ res, msg: 'Не передан discountFormat', alert: true })
-	if (discountFormat !== 'free-month' && !sizeDiscount)
+	if (discountFormat !== 'free' && !sizeDiscount)
 		return resError({ res, msg: 'Не передан sizeDiscount', alert: true })
-	if (discountFormat !== 'free-month' && !tariffName)
-		return resError({ res, msg: 'Не передан tariffName', alert: true })
+	if (!tariffName) return resError({ res, msg: 'Не передан tariffName', alert: true })
 	if (!value) return resError({ res, msg: 'Не передан value', alert: true })
 	if (value.length > 32)
 		return resError({ res, msg: 'Длина промокода не может превышать 32 символа', alert: true })
@@ -131,7 +130,8 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 	}
 
 	const existPromocode = await Promocode.findOne({ value, deleted: { $ne: true } })
-	if (existPromocode) return resError({ res, msg: 'Промокод с таким названием уже существует', alert: true })
+	if (existPromocode)
+		return resError({ res, msg: 'Промокод с таким названием уже существует', alert: true })
 
 	try {
 		await Promocode.create({

@@ -32,6 +32,7 @@ const userSchema = new mongoose.Schema(
 			default: false,
 		},
 
+		// Сессии
 		sessions: [
 			{
 				token: String,
@@ -43,6 +44,7 @@ const userSchema = new mongoose.Schema(
 				browser: String,
 				version: String,
 				platform: String,
+				lastVisitAt: Date,
 				createdAt: Date,
 			},
 		],
@@ -83,7 +85,7 @@ const userSchema = new mongoose.Schema(
 			// Типы отключенных уведомлений
 			type: Array,
 			required: true,
-			validator: function (arrTypes) {
+			validator: (arrTypes) => {
 				const validValues = [
 					'SERVICE_NEWS', // Новости сервиса - уведомления о технических работах на сайте и новинках обновленного сервиса
 					'GIFTS_AND_PROMOTIONS', // Подарки и акции - бонусы для пользователей
@@ -98,7 +100,9 @@ const userSchema = new mongoose.Schema(
 				return true
 			},
 			message: (props) =>
-				`<${props.value}> - не валидное значение! Возможные варианты: 'SERVICE_NEWS', 'GIFTS_AND_PROMOTIONS', 'PROFILE', 'CINEMA_NEWS', 'SERVICE_NOVELTIES', 'FAVOTITES_AND_BOOKMARKS_NEWS'`,
+				`<${props.value}> - не валидное значение! Возможные варианты: ${validValues
+					.map((d) => `'${d}'`)
+					.join()}`,
 		},
 	},
 	{
