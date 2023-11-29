@@ -84,6 +84,7 @@ router.get('/oftenSeek', async (req, res) => {
 				pipeline: [
 					{
 						$match: {
+							publishedAt: { $exists: true },
 							$expr: {
 								$and: [
 									{ $ne: ['$publishedAt', null] },
