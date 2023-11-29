@@ -105,7 +105,7 @@ router.get('/', async (req, res) => {
 /*
  * Список "Мои рефералы"
  */
-router.get('/invitedReferrals', verify.token, async (req, res) => {
+router.get('/invitedReferrals', async (req, res) => {
 	try {
 		// ID реф. пользователей всех уровней
 		const commonUserIds = [...req.user.referral.userIds]
@@ -154,6 +154,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 						status: { $in: ['success', 'CONFIRMED', 'AUTHORIZED'] },
 						amount: { $ne: null },
 						type: 'paid',
+						createdAt: { $gte: new Date('2023-11-24') },
 					},
 					{
 						_id: false,

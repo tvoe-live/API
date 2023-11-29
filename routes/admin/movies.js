@@ -36,7 +36,7 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
-	const movieFilterParam = moviesFilterOptions[`${req.query.status}`]
+	const movieFilterParam = req.query.status && moviesFilterOptions[`${req.query.status}`]
 
 	const searchMatch = req.RegExpQuery && {
 		name: req.RegExpQuery,
