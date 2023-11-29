@@ -497,7 +497,10 @@ router.post('/createPayment', verify.token, async (req, res) => {
 			}
 		)
 
-		return res.status(200).json({ urlOfRedirectToPay: successURL })
+		return res.status(200).json({
+			paymentId: paymentLog._id,
+			urlOfRedirectToPay: successURL,
+		})
 	}
 
 	// Создание лога о платеже
@@ -583,7 +586,10 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		},
 	})
 
-	return res.status(200).json({ urlOfRedirectToPay: initPaymentData.PaymentURL })
+	return res.status(200).json({
+		paymentId: paymentLog._id,
+		urlOfRedirectToPay: initPaymentData.PaymentURL,
+	})
 })
 
 /*
