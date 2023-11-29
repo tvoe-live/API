@@ -23,8 +23,8 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 			{ createdAt: { $lt: new Date(req.query.end ? req.query.end : new Date()) } },
 		],
 	}
-	const tariffFilterParam = req.query.tariff && {
-		tariffId: mongoose.Types.ObjectId(`${req.query.tariff}`),
+	const tariffFilterParam = req.query.tariffId && {
+		tariffId: mongoose.Types.ObjectId(`${req.query.tariffId}`),
 	}
 
 	const searchMatch = req.RegExpQuery && {
