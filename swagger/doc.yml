@@ -1134,6 +1134,9 @@ paths:
                       startAt:
                         type: Date
                         description: Дата начала подписки
+                      tariffName:
+                        type: string
+                        description: Название тарифа
                       finishAt:
                         type: Date
                         description: Дата окончания подписки
@@ -1164,6 +1167,7 @@ paths:
                     startAt: '2021-04-13T07:41:42.000Z'
                     finishAt: '2021-04-13T07:41:42.000Z'
                     tariffId: '63dbe1687f457bc81bc920cb'
+                    tariffName: '1 месяц'
                   disabledNotifications:
                     - GIFTS_AND_PROMOTIONS
                     - FAVOTITES_AND_BOOKMARKS_NEWS
