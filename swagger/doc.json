@@ -2371,6 +2371,24 @@
 						"name": "query",
 						"schema": { "type": "number" },
 						"description": "Для поиска документов (сущностей таблицы notifications) по совпадению названия"
+					},
+					{
+						"in": "query",
+						"name": "start",
+						"schema": { "type": "string" },
+						"description": "Чтобы отфильтровать те уведомления, что были созданы после выбранной даты"
+					},
+					{
+						"in": "query",
+						"name": "end",
+						"schema": { "type": "string" },
+						"description": "Чтобы отфильтровать те уведомления, что были созданы после выбранной даты"
+					},
+					{
+						"in": "query",
+						"name": "status",
+						"schema": { "type": "string" },
+						"description": "Тип уведомлений - system (Новости сервиса), discount(подарки и акции), profile профиль (напоминание об окончании подписки и индивидуальные предложения), unique (Новинки кинематографа)"
 					}
 				],
 				"responses": {
@@ -2831,6 +2849,18 @@
 						"name": "query",
 						"schema": { "type": "number" },
 						"description": "Для поиска документов (сущностей таблицы users), с которыми совпадают символы в имени и емейлу. Либо для полного совпадения по id (mongoose.ObjectId)  пользователя"
+					},
+					{
+						"in": "query",
+						"name": "tariffId",
+						"schema": { "type": "string" },
+						"description": "id тарифа, который имеет пользователь в данный момент по подписке"
+					},
+					{
+						"in": "query",
+						"name": "status",
+						"schema": { "type": "string" },
+						"description": "Принимает значения active, notactive, deleted, admin. Активный если юзер заходил за последние 30 дней хоть раз на сервис, неактивный наоборот, deleted для поиска удаленных аккаунтов, admin для поиска администраторов"
 					}
 				],
 				"responses": {
@@ -3110,7 +3140,7 @@
 				}
 			}
 		},
-		"/admin/users/movies": {
+		"/admin/movies": {
 			"get": {
 				"summary": "Админ-панель > Получение списка фильмов и сериалов",
 				"tags": ["Admin"],
@@ -3133,6 +3163,12 @@
 						"name": "limit",
 						"schema": { "type": "string" },
 						"description": "Ограничение на максимальное количество элементов в теле ответа"
+					},
+					{
+						"in": "query",
+						"name": "status",
+						"schema": { "type": "string" },
+						"description": "принимает значения published или notpublished, тоесть опубликованные или неопубликованные"
 					}
 				],
 				"responses": {
@@ -4364,6 +4400,24 @@
 						"name": "query",
 						"schema": { "type": "number" },
 						"description": "Для поиска документов (сущностей таблицы users), с которыми совпадают символы в имени и емейлу. Либо для полного совпадения по id (mongoose.ObjectId)  пользователя"
+					},
+					{
+						"in": "query",
+						"name": "start",
+						"schema": { "type": "string" },
+						"description": "Дата начала подписки. Чтобы отфильтровать те, что были куплены после выбранной даты"
+					},
+					{
+						"in": "query",
+						"name": "end",
+						"schema": { "type": "string" },
+						"description": "Дата окончания подписки. Чтобы отфильтровать те, что были куплены до выбранной даты"
+					},
+					{
+						"in": "query",
+						"name": "tariffId",
+						"schema": { "type": "tariffId" },
+						"description": "Id купленного тарифа"
 					}
 				],
 				"responses": {
@@ -5572,6 +5626,18 @@
 						"name": "query",
 						"schema": { "type": "number" },
 						"description": "Для поиска документов (сущностей коллекции movies), с которыми совпадают символы по названию фильма."
+					},
+					{
+						"in": "query",
+						"name": "start",
+						"schema": { "type": "string" },
+						"description": "Чтобы отфильтровать те записи фильмов, что были просмотрены после выбранной даты"
+					},
+					{
+						"in": "query",
+						"name": "end",
+						"schema": { "type": "string" },
+						"description": "Чтобы отфильтровать те записи фильмов, что были просмотрены до выбранной даты"
 					}
 				],
 				"responses": {

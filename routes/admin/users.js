@@ -15,8 +15,8 @@ const isValidObjectId = require('../../helpers/isValidObjectId')
  */
 
 const filterUsersOptions = {
-	active: { lastVisitAt: { $gte: new Date(new Date() - 1000 * 60 * 60 * 24 * 3) } },
-	notactive: { lastVisitAt: { $lt: new Date(new Date() - 1000 * 60 * 60 * 24 * 3) } },
+	active: { lastVisitAt: { $gte: new Date(new Date() - 1000 * 60 * 60 * 24 * 30) } }, // если юзер заходил за последние 30 дней хотя бы раз на сервис
+	notactive: { lastVisitAt: { $lt: new Date(new Date() - 1000 * 60 * 60 * 24 * 30) } }, // если юзер ни разу заходил  на сервис за последние 30 дней
 	deleted: { deleted: { $exists: true } },
 	admin: { role: 'admin' },
 }
@@ -38,8 +38,8 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 		],
 	}
 
-	const tariffFilterParam = req.query.tariff && {
-		'subscribe.tariffId': mongoose.Types.ObjectId(req.query.tariff),
+	const tariffFilterParam = req.query.tariffId && {
+		'subscribe.tariffId': mongoose.Types.ObjectId(req.query.tariffId),
 	}
 
 	try {
