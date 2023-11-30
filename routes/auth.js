@@ -223,6 +223,30 @@ router.post('/sms/capcha', async (req, res) => {
 			})
 		}
 
+		let minuteAgo = new Date()
+		minuteAgo.setSeconds(minuteAgo.getSeconds() - 90)
+
+		const previousPhoneCheckingMinute = await PhoneChecking.find({
+			phone,
+			createdAt: { $gt: minuteAgo },
+		})
+
+		if (!!previousPhoneCheckingMinute.length) {
+			return resSuccess({ res, value: false })
+		}
+
+		let DayAgo = new Date()
+		DayAgo.setDate(DayAgo.getDate() - 1)
+
+		const previousPhoneChecking = await PhoneChecking.find({
+			phone,
+			createdAt: { $gt: DayAgo },
+		})
+
+		if (previousPhoneChecking.length >= 25) {
+			return resSuccess({ res, value: false })
+		}
+
 		const prevPhoneChecking = await PhoneChecking.find({
 			phone,
 		})

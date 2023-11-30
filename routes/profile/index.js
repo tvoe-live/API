@@ -132,7 +132,7 @@ router.patch('/phone', verify.token, async (req, res) => {
 		}
 
 		let minuteAgo = new Date()
-		minuteAgo.setSeconds(minuteAgo.getSeconds() - 5)
+		minuteAgo.setSeconds(minuteAgo.getSeconds() - 90)
 
 		const previousPhoneCheckingMinute = await PhoneChecking.find({
 			userId,
@@ -144,7 +144,7 @@ router.patch('/phone', verify.token, async (req, res) => {
 			return resError({
 				res,
 				alert: true,
-				msg: 'Можно запросить код подтверждения только раз в 10 секунд',
+				msg: 'Можно запросить код подтверждения только раз в 90 секунд',
 			})
 		}
 
