@@ -510,7 +510,7 @@ router.get('/withdrawals', verify.token, verify.isAdmin, async (req, res) => {
 /**
  * Роут для изменения статустов запросов на вывод = одобрить или отклонить
  */
-router.patch('/withdrawals', verify.token, verify.isAdmin, async (req, res) => {
+router.patch('/withdrawals/:id', verify.token, verify.isAdmin, async (req, res) => {
 	const possibleStatuses = ['canceled', 'success', 'pending']
 
 	const id = mongoose.Types.ObjectId(req.params.id)
