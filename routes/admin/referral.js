@@ -4,6 +4,7 @@ const userSchema = require('../../models/user')
 
 const checkValidId = require('../../helpers/isValidObjectId')
 const { default: mongoose } = require('mongoose')
+const resSuccess = require('../../helpers/resSuccess')
 const resError = require('../../helpers/resError')
 const verify = require('../../middlewares/verify')
 
@@ -355,6 +356,7 @@ router.get('/', verify.token, verify.isAdmin, async (req, res) => {
 					avatar: true,
 					email: true,
 					phone: true,
+					authPhone: true,
 					refererUserId: true,
 					'referral.balance': true,
 					displayName: true,
@@ -388,6 +390,7 @@ router.get('/', verify.token, verify.isAdmin, async (req, res) => {
 				avatar: item.avatar,
 				balance: item.referral.balance,
 				displayName: item.displayName,
+				phone: item.authPhone ? item.authPhone : item.phone,
 				subscribe: {
 					startAt: item.subscribe.startAt,
 					finishAt: item.subscribe.finishAt,
@@ -407,67 +410,149 @@ router.get('/', verify.token, verify.isAdmin, async (req, res) => {
 /**
  * Роут для получения запросов на вывод
  */
-// router.get('/withdrawal', verify.token, verify.isAdmin, async (req, res) => {
-router.get('/withdrawal', async (req, res) => {
-	console.log('12withdrawal3')
+router.get('/withdrawals', verify.token, verify.isAdmin, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
+
+	const mainAgregation = [
+		{
+			$match: {
+				status: 'pending',
+			},
+		},
+		{
+			$lookup: {
+				from: 'users',
+				localField: 'userId',
+				foreignField: '_id',
+				pipeline: [
+					{
+						$project: {
+							email: true,
+							authPhone: true,
+							_id: true,
+						},
+					},
+					{
+						$addFields: {
+							isHaveSubscribe: {
+								$cond: {
+									if: {
+										$and: [
+											{ $ne: ['$subscribe', null] },
+											{ $gt: ['$subscribe.finishAt', new Date()] },
+										],
+									},
+									then: true,
+									else: false,
+								},
+							},
+						},
+					},
+				],
+				as: 'user',
+			},
+		},
+		{
+			$unwind: { path: '$user', preserveNullAndEmptyArrays: false },
+		},
+	]
 
 	try {
 		const result = await ReferralWithdrawalLog.aggregate([
 			{
-				$match: {
-					status: 'pending',
-				},
-			},
-			{
-				$lookup: {
-					from: 'users',
-					localField: 'userId',
-					foreignField: '_id',
-					pipeline: [
+				$facet: {
+					// Всего записей
+					totalSize: [
+						...mainAgregation,
+						{
+							$group: {
+								_id: null,
+								count: { $sum: 1 },
+							},
+						},
+						{ $project: { _id: false } },
+						{ $limit: 1 },
+					],
+					// Список
+					items: [
+						...mainAgregation,
 						{
 							$project: {
-								email: true,
-								authPhone: true,
-								_id: true,
-								referral: true,
+								amount: true,
+								card: true,
+								createdAt: true,
+								user: true,
 							},
 						},
-						{
-							$addFields: {
-								isHaveSubscribe: {
-									$cond: {
-										if: {
-											$and: [
-												{ $ne: ['$subscribe', null] },
-												{ $gt: ['$subscribe.finishAt', new Date()] },
-											],
-										},
-										then: true,
-										else: false,
-									},
-								},
-								connectionCount: {
-									$size: '$referral.userIds',
-								},
-							},
-						},
-						// {
-						// 	$project: {
-						// 		referral:false,
-						// 	},
-						// },
+						{ $sort: { createdAt: -1 } },
+						{ $skip: skip },
+						{ $limit: limit },
 					],
-					as: 'user',
+				},
+			},
+			{ $limit: 1 },
+			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
+			{
+				$project: {
+					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+					items: '$items',
 				},
 			},
 		])
-		console.log('result:', result)
 
-		return res.status(200).send(result)
+		return res.status(200).json(result[0])
 	} catch (e) {
-		console.log('e:', e)
+		resError(res, error)
+	}
+})
+
+/**
+ * Роут для изменения статустов запросов на вывод = одобрить или отклонить
+ */
+router.patch('/withdrawals', verify.token, verify.isAdmin, async (req, res) => {
+	const possibleStatuses = ['canceled', 'success', 'pending']
+
+	const id = mongoose.Types.ObjectId(req.params.id)
+	const { approverUserId } = req.user._id
+	const { status } = req.body
+
+	if (!possibleStatuses.includes(status)) {
+		return resError({
+			res,
+			msg: `Статус ${status} невозможен. Возможные значения: ${possibleStatuses}`,
+		})
+	}
+
+	if (!id) {
+		return resError({ res, msg: 'Не получен id' })
+	}
+
+	try {
+		const result = await ReferralWithdrawalLog.findOneAndUpdate(
+			{
+				_id: id,
+			},
+			{
+				$set: {
+					status,
+					approverUserId,
+				},
+				$inc: { __v: 1 },
+			}
+		)
+
+		if (!result) {
+			return resError({ res, msg: 'Не найдена запись по указанному id' })
+		}
+
+		return resSuccess({
+			res,
+			alert: true,
+			msg: 'Статус обновлен',
+		})
+	} catch (e) {
+		resError(res, error)
 	}
 })
 
@@ -477,7 +562,7 @@ router.get('/withdrawal', async (req, res) => {
 router.get('/:id', async (req, res) => {
 	//const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
-	console.log('123')
+
 	try {
 		const user = await userSchema
 			.aggregate([
