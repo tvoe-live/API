@@ -349,7 +349,7 @@ router.post('/sms/login', async (req, res) => {
 			{ $set: { isCancelled: true } }
 		)
 
-		const mes = `${code} - код подтверждения`
+		const mes = `${code} — код подтверждения`
 		console.log('sms-code:', code)
 
 		// Создание записи в журнале авторизаций через смс
