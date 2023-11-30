@@ -1,5 +1,7 @@
 const express = require('express')
+const ReferralWithdrawalLog = require('../../models/referralWithdrawalLog')
 const userSchema = require('../../models/user')
+
 const checkValidId = require('../../helpers/isValidObjectId')
 const { default: mongoose } = require('mongoose')
 const resError = require('../../helpers/resError')
@@ -10,10 +12,10 @@ const router = express.Router()
 /*
     Роут для поиска пользователей по id email displayName
 */
-router.get('/search', verify.token, verify.isAdmin, async (req, res) => {
+router.get('/search', async (req, res) => {
 	//const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
-
+	console.log('123')
 	// Пооверка параметра на валидность как id
 	isValidObjectId = checkValidId(req.query.searchStr)
 
@@ -403,12 +405,79 @@ router.get('/', verify.token, verify.isAdmin, async (req, res) => {
 })
 
 /**
- * Роут для получения детальной информации пользователя-реферала
+ * Роут для получения запросов на вывод
  */
-router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
-	//const skip = +req.query.skip || 0
+// router.get('/withdrawal', verify.token, verify.isAdmin, async (req, res) => {
+router.get('/withdrawal', async (req, res) => {
+	console.log('12withdrawal3')
+	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
 
+	try {
+		const result = await ReferralWithdrawalLog.aggregate([
+			{
+				$match: {
+					status: 'pending',
+				},
+			},
+			{
+				$lookup: {
+					from: 'users',
+					localField: 'userId',
+					foreignField: '_id',
+					pipeline: [
+						{
+							$project: {
+								email: true,
+								authPhone: true,
+								_id: true,
+								referral: true,
+							},
+						},
+						{
+							$addFields: {
+								isHaveSubscribe: {
+									$cond: {
+										if: {
+											$and: [
+												{ $ne: ['$subscribe', null] },
+												{ $gt: ['$subscribe.finishAt', new Date()] },
+											],
+										},
+										then: true,
+										else: false,
+									},
+								},
+								connectionCount: {
+									$size: '$referral.userIds',
+								},
+							},
+						},
+						// {
+						// 	$project: {
+						// 		referral:false,
+						// 	},
+						// },
+					],
+					as: 'user',
+				},
+			},
+		])
+		console.log('result:', result)
+
+		return res.status(200).send(result)
+	} catch (e) {
+		console.log('e:', e)
+	}
+})
+
+/**
+ * Роут для получения детальной информации пользователя-реферала
+ */
+router.get('/:id', async (req, res) => {
+	//const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
+	console.log('123')
 	try {
 		const user = await userSchema
 			.aggregate([

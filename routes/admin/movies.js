@@ -15,7 +15,7 @@ const validValues = {
 		'Отзыв нарушает чьи-то права или содержит конфиденциальную информацию',
 	swearingInsultsOrCallsIllegalActions: 'Мат, оскорбления или призыв к противоправным действиям',
 	linkOrAdvertising: 'Отзыв со ссылкой или скрытой рекламой',
-	missingRelationshipoContent: 'Отзыв не имеет отношения к контенту',
+	missingRelationshipToContent: 'Отзыв не имеет отношения к контенту',
 }
 
 /*
