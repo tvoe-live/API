@@ -638,7 +638,6 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 						avatar: true,
 						email: true,
 						phone: '$authPhone',
-						// 'referral.balance': true,
 						displayName: true,
 						_id: true,
 						users: true,
