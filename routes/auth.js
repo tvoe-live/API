@@ -311,7 +311,7 @@ router.post('/sms/login', async (req, res) => {
 		minuteAgo.setSeconds(minuteAgo.getSeconds() - 90)
 
 		const previousPhoneCheckingMinute = await PhoneChecking.find({
-			phone,
+			$or: [{ phone }, { ip }],
 			createdAt: { $gt: minuteAgo },
 		})
 
