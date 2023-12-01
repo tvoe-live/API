@@ -637,18 +637,20 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 						refererUserId: true,
 						avatar: true,
 						email: true,
-						phone: true,
-						'referral.balance': true,
+						phone: '$authPhone',
 						displayName: true,
 						_id: true,
 						users: true,
+						referral: true,
+						subscribe: true,
 					},
 				},
 			])
 			.limit(limit)
 
 		user[0].balance = user[0].referral.balance
-		delete user[0].referral.balance
+		user[0].cardNumber = user[0].referral.card.number
+		delete user[0].referral
 
 		const income = user[0].users
 			.reduce((acc, el) => {

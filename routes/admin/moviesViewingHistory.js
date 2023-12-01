@@ -81,6 +81,8 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 											poster: {
 												src: true,
 											},
+											alias: true,
+											publishedAt: true,
 										},
 									},
 								],

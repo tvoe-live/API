@@ -3215,6 +3215,10 @@
 													},
 													"ageLevel": { "type": "string", "description": "Возрастное ограничение" },
 													"dateReleased": { "type": "string", "description": "Дата выпуска" },
+													"amountWatching": {
+														"type": "string",
+														"description": "Количество просмотров"
+													},
 													"countries": {
 														"type": "array",
 														"description": "Cписок стран",
@@ -3388,6 +3392,7 @@
 													"dateReleased": "2022-12-15",
 													"countries": ["Норвегия"],
 													"categoryAlias": "films",
+													"amountWatching": 14,
 													"genresAliases": ["dramy", "voennye", "istoricheskie"],
 													"persons": [
 														{
@@ -3523,6 +3528,7 @@
 													"dateReleased": "2020-06-19",
 													"countries": ["Франция"],
 													"categoryAlias": "serials",
+													"amountWatching": 10,
 													"genresAliases": [],
 													"persons": [
 														{
@@ -5201,6 +5207,11 @@
 																		"description": "Путь к постеру (файлу картинке)"
 																	}
 																}
+															},
+															"alias": { "type": "string", "description": "alias фильма/сериала" },
+															"publishedAt": {
+																"type": "string",
+																"description": "Дата создания фильма"
 															}
 														}
 													},
@@ -5257,7 +5268,9 @@
 													"__v": 0,
 													"movie": {
 														"name": "Выстрел в сердце",
-														"poster": { "src": "/images/641f44d1944e8bd192d18c57.jpg" }
+														"poster": { "src": "/images/641f44d1944e8bd192d18c57.jpg" },
+														"url": "/p/shalnye-dengi",
+														"publishedAt": "2023-11-30T14:48:38.924Z"
 													},
 													"user": {
 														"_id": "63bbed7523c814afb608a3f6",
@@ -5280,7 +5293,9 @@
 													"__v": 0,
 													"movie": {
 														"name": "Битва при Нарвике: Первое поражение Гитлера",
-														"poster": { "src": "/images/640376060a569a75e1507a94.jpg" }
+														"poster": { "src": "/images/640376060a569a75e1507a94.jpg" },
+														"url": "/p/shalnye-dengi",
+														"publishedAt": "2023-11-30T14:48:38.924Z"
 													},
 													"user": {
 														"_id": "63bbed7523c814afb608a3f6",
@@ -5430,6 +5445,11 @@
 														"properties": {
 															"name": { "type": "string", "description": "Название фильма" },
 															"url": { "type": "string", "description": "Путь к фильму" },
+															"alias": { "type": "string", "description": "alias фильма/сериала" },
+															"publishedAt": {
+																"type": "string",
+																"description": "Дата создания фильма"
+															},
 															"poster": {
 																"type": "object",
 																"properties": {
@@ -5507,7 +5527,12 @@
 													"createdAt": "2023-10-12T08:23:25.645Z",
 													"updatedAt": "2023-10-12T08:23:28.915Z",
 													"review": "12",
-													"movie": { "name": "HLS", "url": "/p/giperdrayv" },
+													"movie": {
+														"name": "HLS",
+														"url": "/p/giperdrayv",
+														"publishedAt": "2023-11-30T14:48:38.924Z",
+														"alias": "halnye-dengi"
+													},
 													"user": {
 														"_id": "63c952c66396809788e004a6",
 														"email": "agdias@yandex.ru",
@@ -5529,7 +5554,9 @@
 													"movie": {
 														"name": "Название",
 														"url": "/p/filmname",
-														"poster": { "src": "/images/651c249e3d51bdf82b354936.jpg" }
+														"poster": { "src": "/images/651c249e3d51bdf82b354936.jpg" },
+														"publishedAt": "2023-11-30T14:48:38.924Z",
+														"alias": "halnye-dengi"
 													},
 													"user": {
 														"_id": "63c952c66396809788e004a6",
@@ -5704,6 +5731,11 @@
 														"type": "object",
 														"properties": {
 															"name": { "type": "string", "description": "Название фильма" },
+															"alias": { "type": "string", "description": "alias фильма/сериала" },
+															"publishedAt": {
+																"type": "string",
+																"description": "Дата создания фильма"
+															},
 															"poster": {
 																"type": "object",
 																"properties": {
@@ -5777,7 +5809,9 @@
 													"updatedAt": "2023-06-07T16:15:48.503Z",
 													"movie": {
 														"name": "Энола Холмс",
-														"poster": { "src": "/images/6402045f0a569a75e15008a0.jpg" }
+														"poster": { "src": "/images/6402045f0a569a75e15008a0.jpg" },
+														"alias": "shalnye-dengi",
+														"piblishedAt": "2023-11-30T14:48:38.924Z"
 													},
 													"user": {
 														"_id": "6480807e904d20e5d4c1b6db",
