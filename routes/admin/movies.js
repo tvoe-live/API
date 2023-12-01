@@ -106,6 +106,31 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 							},
 						},
 						{ $project: { __v: false } },
+						{
+							$lookup: {
+								from: 'moviepagelogs',
+								localField: '_id',
+								foreignField: 'movieId',
+								pipeline: [
+									{
+										$project: {
+											_id: true,
+										},
+									},
+								],
+								as: 'moviepagelog',
+							},
+						},
+						{
+							$addFields: {
+								amountWatching: { $size: '$moviepagelog' },
+							},
+						},
+						{
+							$project: {
+								moviepagelog: false,
+							},
+						},
 						{ $sort: { raisedUpAt: -1, _id: -1 } },
 						{ $skip: skip },
 						{ $limit: limit },
