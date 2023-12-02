@@ -115,6 +115,11 @@ router.get('/profile', verify.token, verify.isAdmin, async (req, res) => {
 
 		let tariffs = await Tariff.aggregate([
 			{
+				$match: {
+					hidden: { $ne: true },
+				},
+			},
+			{
 				$project: {
 					duration: false,
 				},
