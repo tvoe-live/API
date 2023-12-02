@@ -40,8 +40,8 @@ router.get('/', verify.token, async (req, res) => {
 		}
 	)
 
-	if (user.deleted && user.deleted.finish) {
-		if (new Date().getTime() > user.deleted.finish.getTime()) user.deleted.timeIsUp = true
+	if (user.deleted?.finish && new Date().getTime() > new Date(user.deleted.finish).getTime()) {
+		user.deleted.timeIsUp = true
 	}
 
 	if (user.subscribe && user.subscribe?.tariffId) {
