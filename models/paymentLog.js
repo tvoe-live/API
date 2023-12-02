@@ -36,6 +36,10 @@ const paymentLogSchema = new mongoose.Schema(
 		refundedAmount: Number, // Сумма возврата или частичного возврата
 		orderId: mongoose.Schema.Types.ObjectId, // Идентификатор заказа в системе Мерчанта
 		success: Boolean, // Выполнение платежа
+		isReccurent: {
+			type: Boolean,
+			default: false,
+		},
 		status: {
 			// Статус платежа
 			type: String,
