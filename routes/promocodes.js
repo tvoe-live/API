@@ -87,7 +87,7 @@ router.patch('/activate', verify.token, async (req, res) => {
 				msg: 'Промокод успешно активирован',
 				startAt: getTrimDate(today),
 				finishAt: getTrimDate(user.subscribe.finishAt),
-				discountFormat: 'free-month',
+				discountFormat: 'free',
 			})
 		}
 
