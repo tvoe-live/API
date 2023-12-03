@@ -167,8 +167,6 @@ const recurrentPayment = async () => {
 					userPaymentLog.terminalKey = process.env.PAYMENT_TERMINAL_KEY
 					userPaymentLog.rebillId = user.RebillId
 					userPaymentLog.refundedAmount = 0
-					userPaymentLog.amount = userTariff.price
-					userPaymentLog.sum = userTariff.price
 					userPaymentLog.message = chargePayment.Message
 					userPaymentLog.details = chargePayment.Details
 					userPaymentLog.token = chargeToken
@@ -207,6 +205,8 @@ const recurrentPayment = async () => {
 				userPaymentLog.refundedAmount = 0
 				userPaymentLog.message = chargePayment.Message
 				userPaymentLog.details = chargePayment.Details
+				userPaymentLog.amount = userTariff.price
+				userPaymentLog.sum = userTariff.price
 				userPaymentLog.token = chargeToken
 
 				await userPaymentLog.save()
