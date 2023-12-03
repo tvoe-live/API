@@ -90,7 +90,7 @@ router.get('/tariffs', async (req, res) => {
 									finishAt: {
 										$gte: new Date(),
 									},
-									discountFormat: { $ne: 'free-month' },
+									discountFormat: { $ne: 'free' },
 								},
 							},
 							{
@@ -273,7 +273,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 							finishAt: {
 								$gte: new Date(),
 							},
-							discountFormat: { $ne: 'free-month' },
+							discountFormat: { $ne: 'free' },
 						},
 					},
 					{

@@ -1,11 +1,14 @@
 const express = require('express')
+const { default: mongoose } = require('mongoose')
+
 const ReferralWithdrawalLog = require('../../models/referralWithdrawalLog')
 const userSchema = require('../../models/user')
 
-const checkValidId = require('../../helpers/isValidObjectId')
-const { default: mongoose } = require('mongoose')
-const resSuccess = require('../../helpers/resSuccess')
 const resError = require('../../helpers/resError')
+const resSuccess = require('../../helpers/resSuccess')
+const checkValidId = require('../../helpers/isValidObjectId')
+
+const getSearchQuery = require('../../middlewares/getSearchQuery')
 const verify = require('../../middlewares/verify')
 
 const router = express.Router()
@@ -275,133 +278,184 @@ router.get('/search', async (req, res) => {
 /**
  * Роут для получение пользователей-рефералов
  */
-router.get('/', verify.token, verify.isAdmin, async (req, res) => {
+router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
 
-	try {
-		const users = await userSchema.aggregate([
-			{
-				$match: {
-					_id: { $exists: true },
-					'referral.userIds': { $exists: true },
+	const searchMatch = req.RegExpQuery && {
+		$or: [
+			...(checkValidId(req.searchQuery) ? [{ _id: mongoose.Types.ObjectId(req.searchQuery) }] : []),
+			{ email: req.RegExpQuery },
+			{ firstname: req.RegExpQuery },
+		],
+	}
+
+	const mainAgregation = [
+		{
+			$match: {
+				_id: { $exists: true },
+				'referral.userIds': { $exists: true },
+				...searchMatch,
+			},
+		},
+		{
+			// Получение данных о тарифе пользователя
+			$lookup: {
+				from: 'tariffs',
+				localField: 'subscribe.tariffId',
+				foreignField: '_id',
+				as: 'subscribeName',
+			},
+		},
+		{
+			$unwind: { path: '$subscribeName', preserveNullAndEmptyArrays: false },
+		},
+		{
+			// Добавляем поле в котором указываеи кол-во приведенных пользователей
+			$addFields: {
+				connectionCount: {
+					$size: '$referral.userIds',
 				},
 			},
-			{
-				// Получение данных о тарифе пользователя
-				$lookup: {
-					from: 'tariffs',
-					localField: 'subscribe.tariffId',
-					foreignField: '_id',
-					as: 'subscribeName',
-				},
-			},
-			{
-				$unwind: { path: '$subscribeName', preserveNullAndEmptyArrays: false },
-			},
-			{
-				// Добавляем поле в котором указываеи кол-во приведенных пользователей
-				$addFields: {
-					connectionCount: {
-						$size: '$referral.userIds',
+		},
+		{
+			// Сбор данныз для подсчета дохода пользователя
+			$lookup: {
+				from: 'users',
+				let: { usersIds: '$referral.userIds' },
+				pipeline: [
+					{ $match: { $expr: { $in: ['$_id', '$$usersIds'] } } },
+					{
+						$project: {
+							_id: true,
+							subscribe: true,
+						},
 					},
-				},
+					{
+						$lookup: {
+							from: 'paymentlogs',
+							localField: '_id',
+							foreignField: 'userId',
+							pipeline: [
+								{
+									$match: {
+										type: 'paid',
+									},
+								},
+								{
+									$project: {
+										_id: false,
+										bonuseAmount: {
+											$multiply: ['$amount', +process.env.REFERRAL_PERCENT_BONUSE / 100],
+										},
+									},
+								},
+							],
+							as: 'bonusAmount',
+						},
+					},
+				],
+				as: 'rUsers',
 			},
+		},
+		{ $match: { rUsers: { $exists: true, $not: { $size: 0 } } } },
+	]
+
+	try {
+		const result = await userSchema.aggregate([
 			{
-				// Сбор данныз для подсчета дохода пользователя
-				$lookup: {
-					from: 'users',
-					let: { usersIds: '$referral.userIds' },
-					pipeline: [
-						{ $match: { $expr: { $in: ['$_id', '$$usersIds'] } } },
+				$facet: {
+					// Всего записей
+					totalSize: [
+						...mainAgregation,
+						{
+							$group: {
+								_id: null,
+								count: { $sum: 1 },
+							},
+						},
+						{ $project: { _id: false } },
+						{ $limit: 1 },
+					],
+					// Список
+					items: [
+						...mainAgregation,
+						{
+							//Указываем данные, которые необходимо вернуть
+							$project: {
+								'rUsers.bonusAmount': true,
+								'subscribeName.name': true,
+								avatar: true,
+								email: true,
+								phone: true,
+								authPhone: true,
+								firstname: true,
+								refererUserId: true,
+								'referral.balance': true,
+								displayName: true,
+								_id: true,
+								'subscribe.startAt': true,
+								'subscribe.finishAt': true,
+								connectionCount: true,
+							},
+						},
+						{
+							$addFields: {
+								income: {
+									$reduce: {
+										input: '$rUsers',
+										initialValue: 0,
+										in: {
+											$add: [
+												'$$value',
+												{
+													$sum: '$$this.bonusAmount.bonuseAmount',
+												},
+											],
+										},
+									},
+								},
+								displayPhone: {
+									$cond: {
+										if: { $ne: ['$authPhone', null] },
+										then: '$authPhone',
+										else: '$phone',
+									},
+								},
+								subscribe: {
+									startAt: '$subscribe.startAt',
+									finishAt: '$subscribe.finishAt',
+									name: '$subscribeName.name',
+								},
+								balance: '$referral.balance',
+							},
+						},
 						{
 							$project: {
-								_id: true,
-
-								subscribe: true,
+								rUsers: false,
+								subscribeName: false,
+								referral: false,
+								phone: false,
+								displayPhone: false,
 							},
 						},
-						{
-							$lookup: {
-								from: 'paymentlogs',
-								localField: '_id',
-								foreignField: 'userId',
-								pipeline: [
-									{
-										$match: {
-											type: 'paid',
-										},
-									},
-									{
-										$project: {
-											_id: false,
-											bonuseAmount: {
-												$multiply: ['$amount', +process.env.REFERRAL_PERCENT_BONUSE / 100],
-											},
-										},
-									},
-								],
-								as: 'bonusAmount',
-							},
-						},
+						{ $sort: { createdAt: -1 } },
+						{ $skip: skip },
+						{ $limit: limit },
 					],
-					as: 'rUsers',
 				},
 			},
+			{ $limit: 1 },
+			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 			{
-				//Указываем данные, которые необходимо вернуть
 				$project: {
-					'rUsers.bonusAmount': true,
-					'subscribeName.name': true,
-					avatar: true,
-					email: true,
-					phone: true,
-					authPhone: true,
-					refererUserId: true,
-					'referral.balance': true,
-					displayName: true,
-					_id: true,
-					'subscribe.startAt': true,
-					'subscribe.finishAt': true,
-					connectionCount: true,
+					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+					items: '$items',
 				},
 			},
 		])
-		// .skip(skip)
-		// .limit(limit)
 
-		// Убираем пользователей, у которых нет рефералов, но пустой массив есть
-		const relevantUsers = users.filter((item) => item.rUsers.length > 0)
-
-		// Считаем доход и преобразуем данные в удобоворимый вариант
-		const response = relevantUsers.map((item) => {
-			const income = item.rUsers
-				.reduce((acc, el) => {
-					const sum = el.bonusAmount.reduce((s, item) => (s += item.bonuseAmount), 0)
-					acc += sum
-					return acc
-				}, 0)
-				.toFixed(2)
-
-			delete item.rUsers
-			return {
-				_id: item._id,
-				email: item.email,
-				avatar: item.avatar,
-				balance: item.referral.balance,
-				displayName: item.displayName,
-				phone: item.authPhone ? item.authPhone : item.phone,
-				subscribe: {
-					startAt: item.subscribe.startAt,
-					finishAt: item.subscribe.finishAt,
-					name: item.subscribeName.name,
-				},
-				connectionCount: item.connectionCount,
-				income,
-			}
-		})
-
-		return res.status(200).send(response)
+		return res.status(200).send(result[0])
 	} catch (error) {
 		resError(res, error.message)
 	}
@@ -410,9 +464,17 @@ router.get('/', verify.token, verify.isAdmin, async (req, res) => {
 /**
  * Роут для получения запросов на вывод
  */
-router.get('/withdrawals', verify.token, verify.isAdmin, async (req, res) => {
+router.get('/withdrawals', verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
+
+	const searchMatch = req.RegExpQuery && {
+		$or: [
+			...(checkValidId(req.searchQuery) ? [{ _id: mongoose.Types.ObjectId(req.searchQuery) }] : []),
+			{ email: req.RegExpQuery },
+			{ firstname: req.RegExpQuery },
+		],
+	}
 
 	const mainAgregation = [
 		{
@@ -427,10 +489,17 @@ router.get('/withdrawals', verify.token, verify.isAdmin, async (req, res) => {
 				foreignField: '_id',
 				pipeline: [
 					{
+						$match: {
+							...searchMatch,
+						},
+					},
+					{
 						$project: {
 							email: true,
 							authPhone: true,
 							_id: true,
+							avatar: true,
+							firstname: true,
 						},
 					},
 					{
