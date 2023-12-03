@@ -15,7 +15,7 @@ const validValues = {
 		'Отзыв нарушает чьи-то права или содержит конфиденциальную информацию',
 	swearingInsultsOrCallsIllegalActions: 'Мат, оскорбления или призыв к противоправным действиям',
 	linkOrAdvertising: 'Отзыв со ссылкой или скрытой рекламой',
-	missingRelationshipoContent: 'Отзыв не имеет отношения к контенту',
+	missingRelationshipToContent: 'Отзыв не имеет отношения к контенту',
 }
 
 /*
@@ -36,7 +36,7 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
-	const movieFilterParam = moviesFilterOptions[`${req.query.status}`]
+	const movieFilterParam = req.query.status && moviesFilterOptions[`${req.query.status}`]
 
 	const searchMatch = req.RegExpQuery && {
 		name: req.RegExpQuery,
@@ -106,6 +106,31 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 							},
 						},
 						{ $project: { __v: false } },
+						{
+							$lookup: {
+								from: 'moviepagelogs',
+								localField: '_id',
+								foreignField: 'movieId',
+								pipeline: [
+									{
+										$project: {
+											_id: true,
+										},
+									},
+								],
+								as: 'moviepagelog',
+							},
+						},
+						{
+							$addFields: {
+								amountWatching: { $size: '$moviepagelog' },
+							},
+						},
+						{
+							$project: {
+								moviepagelog: false,
+							},
+						},
 						{ $sort: { raisedUpAt: -1, _id: -1 } },
 						{ $skip: skip },
 						{ $limit: limit },

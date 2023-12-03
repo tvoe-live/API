@@ -45,8 +45,16 @@ router.get('/', verify.token, async (req, res) => {
 		}
 	)
 
-	if (user.deleted) {
-		if (new Date().getTime() > user.deleted.finish.getTime()) user.deleted.timeIsUp = true
+	if (user.deleted?.finish && new Date().getTime() > new Date(user.deleted.finish).getTime()) {
+		user.deleted.timeIsUp = true
+	}
+
+	if (user.subscribe && user.subscribe?.tariffId) {
+		const { name: tariffName } = await Tariff.findOne(
+			{ _id: user.subscribe?.tariffId },
+			{ name: true }
+		)
+		user.subscribe = { ...user.subscribe, tariffName }
 	}
 
 	return res.status(200).json(user)
@@ -129,7 +137,7 @@ router.patch('/phone', verify.token, async (req, res) => {
 		}
 
 		let minuteAgo = new Date()
-		minuteAgo.setSeconds(minuteAgo.getSeconds() - 5)
+		minuteAgo.setSeconds(minuteAgo.getSeconds() - 90)
 
 		const previousPhoneCheckingMinute = await PhoneChecking.find({
 			userId,
@@ -141,7 +149,7 @@ router.patch('/phone', verify.token, async (req, res) => {
 			return resError({
 				res,
 				alert: true,
-				msg: 'Можно запросить код подтверждения только раз в 10 секунд',
+				msg: 'Можно запросить код подтверждения только раз в 90 секунд',
 			})
 		}
 

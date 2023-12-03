@@ -1134,6 +1134,9 @@ paths:
                       startAt:
                         type: Date
                         description: Дата начала подписки
+                      tariffName:
+                        type: string
+                        description: Название тарифа
                       finishAt:
                         type: Date
                         description: Дата окончания подписки
@@ -1164,6 +1167,7 @@ paths:
                     startAt: '2021-04-13T07:41:42.000Z'
                     finishAt: '2021-04-13T07:41:42.000Z'
                     tariffId: '63dbe1687f457bc81bc920cb'
+                    tariffName: '1 месяц'
                   disabledNotifications:
                     - GIFTS_AND_PROMOTIONS
                     - FAVOTITES_AND_BOOKMARKS_NEWS
@@ -2410,6 +2414,21 @@ paths:
           schema:
             type: number
           description: Для поиска документов (сущностей таблицы notifications) по совпадению названия
+        - in: query
+          name: start
+          schema:
+            type: string
+          description: Чтобы отфильтровать те уведомления, что были созданы после выбранной даты
+        - in: query
+          name: end
+          schema:
+            type: string
+          description: Чтобы отфильтровать те уведомления, что были созданы после выбранной даты
+        - in: query
+          name: status
+          schema:
+            type: string
+          description: Тип уведомлений - system (Новости сервиса), discount(подарки и акции), profile профиль (напоминание об окончании подписки и индивидуальные предложения), unique (Новинки кинематографа)
       responses:
         '200':
           description: OK
@@ -2813,6 +2832,16 @@ paths:
           schema:
             type: number
           description: Для поиска документов (сущностей таблицы users), с которыми совпадают символы в имени и емейлу. Либо для полного совпадения по id (mongoose.ObjectId)  пользователя
+        - in: query
+          name: tariffId
+          schema:
+            type: string
+          description: id тарифа, который имеет пользователь в данный момент по подписке
+        - in: query
+          name: status
+          schema:
+            type: string
+          description: Принимает значения active, notactive, deleted, admin. Активный если юзер заходил за последние 30 дней хоть раз на сервис, неактивный наоборот, deleted для поиска удаленных аккаунтов, admin для поиска администраторов
       responses:
         '200':
           description: OK
@@ -3054,7 +3083,7 @@ paths:
                   type: 'success'
                   msg: 'Профиль обновлен'
 
-  /admin/users/movies:
+  /admin/movies:
     get:
       summary: Админ-панель > Получение списка фильмов и сериалов
       tags:
@@ -3076,6 +3105,11 @@ paths:
           schema:
             type: string
           description: Ограничение на максимальное количество элементов в теле ответа
+        - in: query
+          name: status
+          schema:
+            type: string
+          description: принимает значения published или notpublished, тоесть опубликованные или неопубликованные
       responses:
         '200':
           description: OK
@@ -3124,6 +3158,9 @@ paths:
                         dateReleased:
                           type: string
                           description: Дата выпуска
+                        amountWatching:
+                          type: string
+                          description: Количество просмотров
                         countries:
                           type: array
                           description: Cписок стран
@@ -3277,6 +3314,7 @@ paths:
                         countries:
                           - Норвегия
                         categoryAlias: films
+                        amountWatching: 14
                         genresAliases:
                           - dramy
                           - voennye
@@ -3377,6 +3415,7 @@ paths:
                         countries:
                           - Франция
                         categoryAlias: serials
+                        amountWatching: 10
                         genresAliases: []
                         persons:
                           - name: Гийом Пьерре
@@ -4145,6 +4184,21 @@ paths:
           schema:
             type: number
           description: Для поиска документов (сущностей таблицы users), с которыми совпадают символы в имени и емейлу. Либо для полного совпадения по id (mongoose.ObjectId)  пользователя
+        - in: query
+          name: start
+          schema:
+            type: string
+          description: Дата начала подписки. Чтобы отфильтровать те, что были куплены после выбранной даты
+        - in: query
+          name: end
+          schema:
+            type: string
+          description: Дата окончания подписки. Чтобы отфильтровать те, что были куплены до выбранной даты
+        - in: query
+          name: tariffId
+          schema:
+            type: tariffId
+          description: Id купленного тарифа
       responses:
         '200':
           description: OK
@@ -4842,6 +4896,12 @@ paths:
                                 src:
                                   type: string
                                   description: Путь к постеру (файлу картинке)
+                            alias:
+                              type: string
+                              description: alias фильма/сериала
+                            publishedAt:
+                              type: string
+                              description: Дата создания фильма
                         user:
                           type: object
                           properties:
@@ -4886,6 +4946,8 @@ paths:
                           name: Выстрел в сердце
                           poster:
                             src: '/images/641f44d1944e8bd192d18c57.jpg'
+                          url: '/p/shalnye-dengi'
+                          publishedAt: '2023-11-30T14:48:38.924Z'
                         user:
                           _id: 63bbed7523c814afb608a3f6
                           email: evlevelx@yandex.ru
@@ -4905,6 +4967,8 @@ paths:
                           name: 'Битва при Нарвике: Первое поражение Гитлера'
                           poster:
                             src: '/images/640376060a569a75e1507a94.jpg'
+                          url: '/p/shalnye-dengi'
+                          publishedAt: '2023-11-30T14:48:38.924Z'
                         user:
                           _id: 63bbed7523c814afb608a3f6
                           email: evlevelx@yandex.ru
@@ -5033,6 +5097,12 @@ paths:
                             url:
                               type: string
                               description: Путь к фильму
+                            alias:
+                              type: string
+                              description: alias фильма/сериала
+                            publishedAt:
+                              type: string
+                              description: Дата создания фильма
                             poster:
                               type: object
                               properties:
@@ -5094,6 +5164,8 @@ paths:
                         movie:
                           name: HLS
                           url: /p/giperdrayv
+                          publishedAt: '2023-11-30T14:48:38.924Z'
+                          alias: 'halnye-dengi'
                         user:
                           _id: 63c952c66396809788e004a6
                           email: agdias@yandex.ru
@@ -5114,6 +5186,8 @@ paths:
                           url: /p/filmname
                           poster:
                             src: '/images/651c249e3d51bdf82b354936.jpg'
+                          publishedAt: '2023-11-30T14:48:38.924Z'
+                          alias: 'halnye-dengi'
                         user:
                           _id: 63c952c66396809788e004a6
                           email: agdias@yandex.ru
@@ -5186,6 +5260,16 @@ paths:
           schema:
             type: number
           description: Для поиска документов (сущностей коллекции movies), с которыми совпадают символы по названию фильма.
+        - in: query
+          name: start
+          schema:
+            type: string
+          description: Чтобы отфильтровать те записи фильмов, что были просмотрены после выбранной даты
+        - in: query
+          name: end
+          schema:
+            type: string
+          description: Чтобы отфильтровать те записи фильмов, что были просмотрены до выбранной даты
       responses:
         '200':
           description: OK
@@ -5249,6 +5333,12 @@ paths:
                             name:
                               type: string
                               description: Название фильма
+                            alias:
+                              type: string
+                              description: alias фильма/сериала
+                            publishedAt:
+                              type: string
+                              description: Дата создания фильма
                             poster:
                               type: object
                               properties:
@@ -5307,6 +5397,8 @@ paths:
                           name: Энола Холмс
                           poster:
                             src: '/images/6402045f0a569a75e15008a0.jpg'
+                          alias: 'shalnye-dengi'
+                          piblishedAt: '2023-11-30T14:48:38.924Z'
                         user:
                           _id: 6480807e904d20e5d4c1b6db
                           email: 7on999@gmail.com
@@ -6831,9 +6923,6 @@ paths:
             schema:
               type: object
               properties:
-                successURL:
-                  type: string
-                  description: Url адрес успешной страницы для оплаты подписки
                 selectedTariffId:
                   type: string
                   description: Id (mongoose.ObjectId) документа коллекции tariffs (выбранного тарифа)
@@ -6849,7 +6938,8 @@ paths:
                     type: string
                     description: URL успшеной страницы для оплаты подписки с установленными query параметрами с помощью свойства searchParams экземеляра класса URL
                 example:
-                  urlOfRedirectToPay: 'https://dzen.ru/?yredirect=true&utm_referer=www.google.com&id=64a858371616a1286efe30c9'
+                  paymentId: '63bbed7523c814afb608a3f0'
+                  urlOfRedirectToPay: 'https://securepayments.tinkoff.ru/m4lXrMRD'
 
   /payment/notification:
     post:

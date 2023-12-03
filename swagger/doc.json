@@ -975,6 +975,7 @@
 											"description": "Информация по подписке. Если подписки нет, в этом поле null",
 											"properties": {
 												"startAt": { "type": "Date", "description": "Дата начала подписки" },
+												"tariffName": { "type": "string", "description": "Название тарифа" },
 												"finishAt": { "type": "Date", "description": "Дата окончания подписки" },
 												"tariffId": {
 													"type": "string",
@@ -1007,7 +1008,8 @@
 										"subscribe": {
 											"startAt": "2021-04-13T07:41:42.000Z",
 											"finishAt": "2021-04-13T07:41:42.000Z",
-											"tariffId": "63dbe1687f457bc81bc920cb"
+											"tariffId": "63dbe1687f457bc81bc920cb",
+											"tariffName": "1 месяц"
 										},
 										"disabledNotifications": [
 											"GIFTS_AND_PROMOTIONS",
@@ -2369,6 +2371,24 @@
 						"name": "query",
 						"schema": { "type": "number" },
 						"description": "Для поиска документов (сущностей таблицы notifications) по совпадению названия"
+					},
+					{
+						"in": "query",
+						"name": "start",
+						"schema": { "type": "string" },
+						"description": "Чтобы отфильтровать те уведомления, что были созданы после выбранной даты"
+					},
+					{
+						"in": "query",
+						"name": "end",
+						"schema": { "type": "string" },
+						"description": "Чтобы отфильтровать те уведомления, что были созданы после выбранной даты"
+					},
+					{
+						"in": "query",
+						"name": "status",
+						"schema": { "type": "string" },
+						"description": "Тип уведомлений - system (Новости сервиса), discount(подарки и акции), profile профиль (напоминание об окончании подписки и индивидуальные предложения), unique (Новинки кинематографа)"
 					}
 				],
 				"responses": {
@@ -2829,6 +2849,18 @@
 						"name": "query",
 						"schema": { "type": "number" },
 						"description": "Для поиска документов (сущностей таблицы users), с которыми совпадают символы в имени и емейлу. Либо для полного совпадения по id (mongoose.ObjectId)  пользователя"
+					},
+					{
+						"in": "query",
+						"name": "tariffId",
+						"schema": { "type": "string" },
+						"description": "id тарифа, который имеет пользователь в данный момент по подписке"
+					},
+					{
+						"in": "query",
+						"name": "status",
+						"schema": { "type": "string" },
+						"description": "Принимает значения active, notactive, deleted, admin. Активный если юзер заходил за последние 30 дней хоть раз на сервис, неактивный наоборот, deleted для поиска удаленных аккаунтов, admin для поиска администраторов"
 					}
 				],
 				"responses": {
@@ -3108,7 +3140,7 @@
 				}
 			}
 		},
-		"/admin/users/movies": {
+		"/admin/movies": {
 			"get": {
 				"summary": "Админ-панель > Получение списка фильмов и сериалов",
 				"tags": ["Admin"],
@@ -3131,6 +3163,12 @@
 						"name": "limit",
 						"schema": { "type": "string" },
 						"description": "Ограничение на максимальное количество элементов в теле ответа"
+					},
+					{
+						"in": "query",
+						"name": "status",
+						"schema": { "type": "string" },
+						"description": "принимает значения published или notpublished, тоесть опубликованные или неопубликованные"
 					}
 				],
 				"responses": {
@@ -3177,6 +3215,10 @@
 													},
 													"ageLevel": { "type": "string", "description": "Возрастное ограничение" },
 													"dateReleased": { "type": "string", "description": "Дата выпуска" },
+													"amountWatching": {
+														"type": "string",
+														"description": "Количество просмотров"
+													},
 													"countries": {
 														"type": "array",
 														"description": "Cписок стран",
@@ -3350,6 +3392,7 @@
 													"dateReleased": "2022-12-15",
 													"countries": ["Норвегия"],
 													"categoryAlias": "films",
+													"amountWatching": 14,
 													"genresAliases": ["dramy", "voennye", "istoricheskie"],
 													"persons": [
 														{
@@ -3485,6 +3528,7 @@
 													"dateReleased": "2020-06-19",
 													"countries": ["Франция"],
 													"categoryAlias": "serials",
+													"amountWatching": 10,
 													"genresAliases": [],
 													"persons": [
 														{
@@ -4362,6 +4406,24 @@
 						"name": "query",
 						"schema": { "type": "number" },
 						"description": "Для поиска документов (сущностей таблицы users), с которыми совпадают символы в имени и емейлу. Либо для полного совпадения по id (mongoose.ObjectId)  пользователя"
+					},
+					{
+						"in": "query",
+						"name": "start",
+						"schema": { "type": "string" },
+						"description": "Дата начала подписки. Чтобы отфильтровать те, что были куплены после выбранной даты"
+					},
+					{
+						"in": "query",
+						"name": "end",
+						"schema": { "type": "string" },
+						"description": "Дата окончания подписки. Чтобы отфильтровать те, что были куплены до выбранной даты"
+					},
+					{
+						"in": "query",
+						"name": "tariffId",
+						"schema": { "type": "tariffId" },
+						"description": "Id купленного тарифа"
 					}
 				],
 				"responses": {
@@ -5145,6 +5207,11 @@
 																		"description": "Путь к постеру (файлу картинке)"
 																	}
 																}
+															},
+															"alias": { "type": "string", "description": "alias фильма/сериала" },
+															"publishedAt": {
+																"type": "string",
+																"description": "Дата создания фильма"
 															}
 														}
 													},
@@ -5201,7 +5268,9 @@
 													"__v": 0,
 													"movie": {
 														"name": "Выстрел в сердце",
-														"poster": { "src": "/images/641f44d1944e8bd192d18c57.jpg" }
+														"poster": { "src": "/images/641f44d1944e8bd192d18c57.jpg" },
+														"url": "/p/shalnye-dengi",
+														"publishedAt": "2023-11-30T14:48:38.924Z"
 													},
 													"user": {
 														"_id": "63bbed7523c814afb608a3f6",
@@ -5224,7 +5293,9 @@
 													"__v": 0,
 													"movie": {
 														"name": "Битва при Нарвике: Первое поражение Гитлера",
-														"poster": { "src": "/images/640376060a569a75e1507a94.jpg" }
+														"poster": { "src": "/images/640376060a569a75e1507a94.jpg" },
+														"url": "/p/shalnye-dengi",
+														"publishedAt": "2023-11-30T14:48:38.924Z"
 													},
 													"user": {
 														"_id": "63bbed7523c814afb608a3f6",
@@ -5374,6 +5445,11 @@
 														"properties": {
 															"name": { "type": "string", "description": "Название фильма" },
 															"url": { "type": "string", "description": "Путь к фильму" },
+															"alias": { "type": "string", "description": "alias фильма/сериала" },
+															"publishedAt": {
+																"type": "string",
+																"description": "Дата создания фильма"
+															},
 															"poster": {
 																"type": "object",
 																"properties": {
@@ -5451,7 +5527,12 @@
 													"createdAt": "2023-10-12T08:23:25.645Z",
 													"updatedAt": "2023-10-12T08:23:28.915Z",
 													"review": "12",
-													"movie": { "name": "HLS", "url": "/p/giperdrayv" },
+													"movie": {
+														"name": "HLS",
+														"url": "/p/giperdrayv",
+														"publishedAt": "2023-11-30T14:48:38.924Z",
+														"alias": "halnye-dengi"
+													},
 													"user": {
 														"_id": "63c952c66396809788e004a6",
 														"email": "agdias@yandex.ru",
@@ -5473,7 +5554,9 @@
 													"movie": {
 														"name": "Название",
 														"url": "/p/filmname",
-														"poster": { "src": "/images/651c249e3d51bdf82b354936.jpg" }
+														"poster": { "src": "/images/651c249e3d51bdf82b354936.jpg" },
+														"publishedAt": "2023-11-30T14:48:38.924Z",
+														"alias": "halnye-dengi"
 													},
 													"user": {
 														"_id": "63c952c66396809788e004a6",
@@ -5570,6 +5653,18 @@
 						"name": "query",
 						"schema": { "type": "number" },
 						"description": "Для поиска документов (сущностей коллекции movies), с которыми совпадают символы по названию фильма."
+					},
+					{
+						"in": "query",
+						"name": "start",
+						"schema": { "type": "string" },
+						"description": "Чтобы отфильтровать те записи фильмов, что были просмотрены после выбранной даты"
+					},
+					{
+						"in": "query",
+						"name": "end",
+						"schema": { "type": "string" },
+						"description": "Чтобы отфильтровать те записи фильмов, что были просмотрены до выбранной даты"
 					}
 				],
 				"responses": {
@@ -5636,6 +5731,11 @@
 														"type": "object",
 														"properties": {
 															"name": { "type": "string", "description": "Название фильма" },
+															"alias": { "type": "string", "description": "alias фильма/сериала" },
+															"publishedAt": {
+																"type": "string",
+																"description": "Дата создания фильма"
+															},
 															"poster": {
 																"type": "object",
 																"properties": {
@@ -5709,7 +5809,9 @@
 													"updatedAt": "2023-06-07T16:15:48.503Z",
 													"movie": {
 														"name": "Энола Холмс",
-														"poster": { "src": "/images/6402045f0a569a75e15008a0.jpg" }
+														"poster": { "src": "/images/6402045f0a569a75e15008a0.jpg" },
+														"alias": "shalnye-dengi",
+														"piblishedAt": "2023-11-30T14:48:38.924Z"
 													},
 													"user": {
 														"_id": "6480807e904d20e5d4c1b6db",
@@ -7577,10 +7679,6 @@
 							"schema": {
 								"type": "object",
 								"properties": {
-									"successURL": {
-										"type": "string",
-										"description": "Url адрес успешной страницы для оплаты подписки"
-									},
 									"selectedTariffId": {
 										"type": "string",
 										"description": "Id (mongoose.ObjectId) документа коллекции tariffs (выбранного тарифа)"
@@ -7604,7 +7702,8 @@
 										}
 									},
 									"example": {
-										"urlOfRedirectToPay": "https://dzen.ru/?yredirect=true&utm_referer=www.google.com&id=64a858371616a1286efe30c9"
+										"paymentId": "63bbed7523c814afb608a3f0",
+										"urlOfRedirectToPay": "https://securepayments.tinkoff.ru/m4lXrMRD"
 									}
 								}
 							}

@@ -15,8 +15,8 @@ const isValidObjectId = require('../../helpers/isValidObjectId')
  */
 
 const filterUsersOptions = {
-	active: { lastVisitAt: { $gte: new Date(new Date() - 1000 * 60 * 60 * 24 * 3) } },
-	notactive: { lastVisitAt: { $lt: new Date(new Date() - 1000 * 60 * 60 * 24 * 3) } },
+	active: { lastVisitAt: { $gte: new Date(new Date() - 1000 * 60 * 60 * 24 * 30) } }, // если юзер заходил за последние 30 дней хотя бы раз на сервис
+	notactive: { lastVisitAt: { $lt: new Date(new Date() - 1000 * 60 * 60 * 24 * 30) } }, // если юзер ни разу заходил  на сервис за последние 30 дней
 	deleted: { deleted: { $exists: true } },
 	admin: { role: 'admin' },
 }
@@ -26,7 +26,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
-	const userFilterParam = req.query.status ?? filterUsersOptions[`${req.query.status}`]
+	const userFilterParam = req.query.status && filterUsersOptions[`${req.query.status}`]
 
 	const searchMatch = req.RegExpQuery && {
 		$or: [
@@ -38,7 +38,9 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 		],
 	}
 
-	const tariffFilterParam = req.query.tariff ?? { 'subscribe.tariffId': req.query.tariff }
+	const tariffFilterParam = req.query.tariffId && {
+		'subscribe.tariffId': mongoose.Types.ObjectId(req.query.tariffId),
+	}
 
 	try {
 		const result = await User.aggregate([
@@ -114,6 +116,11 @@ router.get('/profile', verify.token, verify.isAdmin, async (req, res) => {
 		if (!id) return resError({ res, msg: 'Не получен ID' })
 
 		let tariffs = await Tariff.aggregate([
+			{
+				$match: {
+					hidden: { $ne: true },
+				},
+			},
 			{
 				$project: {
 					duration: false,

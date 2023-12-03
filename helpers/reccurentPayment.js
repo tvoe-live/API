@@ -1,10 +1,10 @@
-const { default: axios } = require('axios')
-const tariff = require('../models/tariff')
+const crypto = require('crypto')
 const user = require('../models/user')
+const tariff = require('../models/tariff')
+const { default: axios } = require('axios')
 const paymentLog = require('../models/paymentLog')
 const notification = require('../models/notification')
 const repaymentModel = require('../models/repayment')
-const crypto = require('crypto')
 
 const getToken = (params) => {
 	const concatStr = Object.keys(params) // Собрать массив передаваемых данных в виде пар Ключ-Значения
@@ -61,6 +61,7 @@ const recurrentPayment = async () => {
 				userId: user._id,
 				tariffId: userTariff._id,
 				isChecked: false,
+				isReccurent: true,
 			})
 
 			const terminalParams = {
@@ -134,6 +135,19 @@ const recurrentPayment = async () => {
 						type: 'PROFILE',
 						deleted: false,
 					})
+
+					userPaymentLog.isChecked = true
+					userPaymentLog.status = chargePayment.Status
+					userPaymentLog.success = chargePayment.Success
+					userPaymentLog.errorCode = chargePayment.ErrorCode
+					userPaymentLog.orderId = chargePayment.OrderId
+					userPaymentLog.terminalKey = process.env.PAYMENT_TERMINAL_KEY
+					userPaymentLog.rebillId = user.RebillId
+					userPaymentLog.refundedAmount = 0
+					userPaymentLog.message = chargePayment.Message
+					userPaymentLog.details = chargePayment.Details
+					userPaymentLog.token = chargeToken
+					await userPaymentLog.save()
 				}
 
 				if (chargePayment.ErrorCode === '116') {
@@ -144,6 +158,20 @@ const recurrentPayment = async () => {
 						type: 'PROFILE',
 						deleted: false,
 					})
+
+					userPaymentLog.isChecked = true
+					userPaymentLog.status = chargePayment.Status
+					userPaymentLog.success = chargePayment.Success
+					userPaymentLog.errorCode = chargePayment.ErrorCode
+					userPaymentLog.orderId = chargePayment.OrderId
+					userPaymentLog.terminalKey = process.env.PAYMENT_TERMINAL_KEY
+					userPaymentLog.rebillId = user.RebillId
+					userPaymentLog.refundedAmount = 0
+					userPaymentLog.message = chargePayment.Message
+					userPaymentLog.details = chargePayment.Details
+					userPaymentLog.token = chargeToken
+
+					await userPaymentLog.save()
 
 					await repaymentModel.create({
 						tariff: userTariff._id,
@@ -164,6 +192,24 @@ const recurrentPayment = async () => {
 				await user.save()
 
 				await shareWithReferrer(user._id, userTariff.price, user.refererUserId)
+
+				userPaymentLog.isChecked = true
+				userPaymentLog.status = chargePayment.Status
+				userPaymentLog.success = chargePayment.Success
+				userPaymentLog.errorCode = chargePayment.ErrorCode
+				userPaymentLog.orderId = chargePayment.OrderId
+				userPaymentLog.terminalKey = process.env.PAYMENT_TERMINAL_KEY
+				userPaymentLog.rebillId = user.RebillId
+				userPaymentLog.startAt = startAt
+				userPaymentLog.finishAt = new Date(startAt.getTime() + Number(userTariff.duration))
+				userPaymentLog.refundedAmount = 0
+				userPaymentLog.message = chargePayment.Message
+				userPaymentLog.details = chargePayment.Details
+				userPaymentLog.amount = userTariff.price
+				userPaymentLog.sum = userTariff.price
+				userPaymentLog.token = chargeToken
+
+				await userPaymentLog.save()
 
 				await notification.create({
 					receiversIds: [user._id],

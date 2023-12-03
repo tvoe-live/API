@@ -2,9 +2,6 @@ const express = require('express')
 const router = express.Router()
 const axios = require('axios')
 const jwt = require('jsonwebtoken')
-const mongoose = require('mongoose')
-// const requestIP = require('request-ip')
-// const IP = require('ip')
 
 const User = require('../models/user')
 const AuthLog = require('../models/authLog')
@@ -217,10 +214,6 @@ router.post('/sms/capcha', async (req, res) => {
 
 	const ip = req.headers['x-real-ip']
 
-	console.log('---')
-	console.log('phone:', phone)
-	console.log('ip:', ip)
-
 	try {
 		if (!phone) {
 			return resError({
@@ -238,19 +231,41 @@ router.post('/sms/capcha', async (req, res) => {
 			})
 		}
 
+		let minuteAgo = new Date()
+		minuteAgo.setSeconds(minuteAgo.getSeconds() - 90)
+
+		const previousPhoneCheckingMinute = await PhoneChecking.find({
+			phone,
+			createdAt: { $gt: minuteAgo },
+		})
+
+		if (!!previousPhoneCheckingMinute.length) {
+			return resSuccess({ res, value: false })
+		}
+
+		let DayAgo = new Date()
+		DayAgo.setDate(DayAgo.getDate() - 1)
+
+		const previousPhoneChecking = await PhoneChecking.find({
+			phone,
+			createdAt: { $gt: DayAgo },
+		})
+
+		if (previousPhoneChecking.length >= 25) {
+			return resSuccess({ res, value: false })
+		}
+
 		const prevPhoneChecking = await PhoneChecking.find({
 			phone,
 		})
 			.sort({ createdAt: -1 })
 			.limit(amountLoginWithoutCapcha)
-		console.log('prevPhoneChecking:', prevPhoneChecking)
 
 		const prevIpChecking = await PhoneChecking.find({
 			ip,
 		})
 			.sort({ createdAt: -1 })
 			.limit(amountLoginWithoutCapcha)
-		console.log('prevIpChecking:', prevIpChecking)
 
 		if (
 			(prevPhoneChecking.length === amountLoginWithoutCapcha &&
@@ -258,15 +273,8 @@ router.post('/sms/capcha', async (req, res) => {
 			(prevIpChecking.length === amountLoginWithoutCapcha &&
 				prevIpChecking.every((log) => !log.isConfirmed))
 		) {
-			console.log('попал в value: true  ')
-			console.log('---')
-
 			return resSuccess({ res, value: true })
 		}
-
-		console.log('попал в value: false  ')
-		console.log('---')
-
 		return resSuccess({ res, value: false })
 	} catch (error) {
 		return res.json(error)
@@ -308,10 +316,10 @@ router.post('/sms/login', async (req, res) => {
 		}
 
 		let minuteAgo = new Date()
-		minuteAgo.setSeconds(minuteAgo.getSeconds() - 5)
+		minuteAgo.setSeconds(minuteAgo.getSeconds() - 90)
 
 		const previousPhoneCheckingMinute = await PhoneChecking.find({
-			phone,
+			$or: [{ phone }, { ip }],
 			createdAt: { $gt: minuteAgo },
 		})
 
@@ -319,7 +327,7 @@ router.post('/sms/login', async (req, res) => {
 			return resError({
 				res,
 				alert: true,
-				msg: 'Можно запросить код подтверждения только раз в 10 секунд',
+				msg: 'Можно запросить код подтверждения только раз в 90 секунд',
 			})
 		}
 
@@ -327,17 +335,17 @@ router.post('/sms/login', async (req, res) => {
 		DayAgo.setDate(DayAgo.getDate() - 1)
 
 		const previousPhoneChecking = await PhoneChecking.find({
-			$or: [{ phone }, { ip }],
+			phone,
 			createdAt: { $gt: DayAgo },
 		})
 
-		// if (previousPhoneChecking.length >= 10) {
-		// 	return resError({
-		// 		res,
-		// 		alert: true,
-		// 		msg: 'Превышен лимит авторизаций за сутки',
-		// 	})
-		// }
+		if (previousPhoneChecking.length >= 25) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Превышен лимит авторизаций за сутки',
+			})
+		}
 
 		const prevPhoneChecking2 = await PhoneChecking.find({
 			phone,
@@ -373,6 +381,9 @@ router.post('/sms/login', async (req, res) => {
 			{ $set: { isCancelled: true } }
 		)
 
+		const mes = `${code} — код подтверждения`
+		console.log('sms-code:', code)
+
 		// Создание записи в журнале авторизаций через смс
 		await PhoneChecking.create({
 			phone,
@@ -385,8 +396,8 @@ router.post('/sms/login', async (req, res) => {
 		})
 
 		const url = imgcode
-			? `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}&imgcode=${imgcode}&userip=${ip}&op=1`
-			: `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}`
+			? `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${mes}&imgcode=${imgcode}&userip=${ip}&op=1`
+			: `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${mes}`
 
 		const response = await fetch(url)
 

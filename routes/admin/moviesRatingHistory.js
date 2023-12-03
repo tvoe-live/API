@@ -68,6 +68,8 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 											poster: {
 												src: true,
 											},
+											alias: true,
+											publishedAt: true,
 										},
 									},
 								],
@@ -208,6 +210,8 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 												src: true,
 											},
 											url: { $concat: ['/p/', '$alias'] },
+											alias: true,
+											publishedAt: true,
 										},
 									},
 								],
