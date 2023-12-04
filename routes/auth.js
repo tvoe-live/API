@@ -240,6 +240,9 @@ router.post('/sms/capcha', async (req, res) => {
 		})
 
 		if (!!previousPhoneCheckingMinute.length) {
+			console.log(
+				`Для телефона ${phone} и ip ${ip} капча не требуется, превышено  previousPhoneCheckingMinute`
+			)
 			return resSuccess({ res, value: false })
 		}
 
@@ -252,6 +255,9 @@ router.post('/sms/capcha', async (req, res) => {
 		})
 
 		if (previousPhoneChecking.length >= 25) {
+			console.log(
+				`Для телефона ${phone} и ip ${ip} капча не требуется, превышено  previousPhoneChecking`
+			)
 			return resSuccess({ res, value: false })
 		}
 
@@ -273,8 +279,10 @@ router.post('/sms/capcha', async (req, res) => {
 			(prevIpChecking.length === amountLoginWithoutCapcha &&
 				prevIpChecking.every((log) => !log.isConfirmed))
 		) {
+			console.log(`Для телефона ${phone} и ip ${ip} капча требуется `)
 			return resSuccess({ res, value: true })
 		}
+		console.log(`Для телефона ${phone} и ip ${ip} капча не требуется `)
 		return resSuccess({ res, value: false })
 	} catch (error) {
 		return res.json(error)
@@ -289,6 +297,7 @@ router.post('/sms/login', async (req, res) => {
 	const { phone, imgcode } = req.body
 
 	const ip = req.headers['x-real-ip']
+	console.log('ip:', ip)
 
 	try {
 		if (req.useragent?.isBot) {
@@ -399,6 +408,7 @@ router.post('/sms/login', async (req, res) => {
 			? `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${mes}&imgcode=${imgcode}&userip=${ip}&op=1`
 			: `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${mes}`
 
+		console.log('url:', url)
 		const response = await fetch(url)
 
 		const responseText = await response?.text()
