@@ -231,6 +231,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 								startAt: true,
 								finishAt: true,
 								updatedAt: true,
+								tariffPrice: true,
 								amount: {
 									$cond: ['$withdrawAmount', '$withdrawAmount', '$amount'],
 								},

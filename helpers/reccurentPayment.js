@@ -143,7 +143,6 @@ const recurrentPayment = async () => {
 					userPaymentLog.orderId = chargePayment.OrderId
 					userPaymentLog.terminalKey = process.env.PAYMENT_TERMINAL_KEY
 					userPaymentLog.rebillId = user.RebillId
-					userPaymentLog.refundedAmount = 0
 					userPaymentLog.message = chargePayment.Message
 					userPaymentLog.details = chargePayment.Details
 					userPaymentLog.token = chargeToken
@@ -166,7 +165,6 @@ const recurrentPayment = async () => {
 					userPaymentLog.orderId = chargePayment.OrderId
 					userPaymentLog.terminalKey = process.env.PAYMENT_TERMINAL_KEY
 					userPaymentLog.rebillId = user.RebillId
-					userPaymentLog.refundedAmount = 0
 					userPaymentLog.message = chargePayment.Message
 					userPaymentLog.details = chargePayment.Details
 					userPaymentLog.token = chargeToken
@@ -202,7 +200,6 @@ const recurrentPayment = async () => {
 				userPaymentLog.rebillId = user.RebillId
 				userPaymentLog.startAt = startAt
 				userPaymentLog.finishAt = new Date(startAt.getTime() + Number(userTariff.duration))
-				userPaymentLog.refundedAmount = 0
 				userPaymentLog.message = chargePayment.Message
 				userPaymentLog.details = chargePayment.Details
 				userPaymentLog.amount = userTariff.price
