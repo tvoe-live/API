@@ -484,7 +484,7 @@ router.post('/recover', verify.token, async (req, res) => {
 // Загрузка аватара
 router.post('/avatar', verify.token, uploadMemoryStorage.single('file'), async (req, res) => {
 	const { buffer } = req.file
-	const maxSizeMbyte = 5 // Лимит 5MB
+	const maxSizeMbyte = 15 // Лимит 15MB
 	const maxSizeByte = maxSizeMbyte * 1024 * 1024
 
 	if (!buffer) return resError({ res, msg: 'Фаил не получен' })
