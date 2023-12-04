@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema(
 		RebillId: String,
 		autoPayment: {
 			type: Boolean,
-			default: false,
+			default: true,
 		},
 
 		// Сессии
