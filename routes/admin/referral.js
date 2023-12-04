@@ -385,6 +385,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 							$project: {
 								'rUsers.bonusAmount': true,
 								'subscribeName.name': true,
+								role: true,
 								avatar: true,
 								email: true,
 								phone: true,
@@ -422,10 +423,17 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 										else: '$phone',
 									},
 								},
-								subscribe: {
-									startAt: '$subscribe.startAt',
-									finishAt: '$subscribe.finishAt',
-									name: '$subscribeName.name',
+								isHaveSubscribe: {
+									$cond: {
+										if: {
+											$and: [
+												{ $ne: ['$subscribe', null] },
+												{ $gt: ['$subscribe.finishAt', new Date()] },
+											],
+										},
+										then: true,
+										else: false,
+									},
 								},
 								balance: '$referral.balance',
 							},
@@ -437,6 +445,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 								referral: false,
 								phone: false,
 								displayPhone: false,
+								subscribe: false,
 							},
 						},
 						{ $sort: { createdAt: -1 } },
