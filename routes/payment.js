@@ -510,7 +510,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		tariffId: selectedTariff._id,
 		isChecked: false,
 		...(promocodeId && { promocodeId }), // Если применен промокод, то записать id примененного промокода
-		sum: price,
+		tariffPrice: selectedTariff.price,
 	}).save()
 
 	// В url успешной страницы передать id созданного лога
@@ -678,7 +678,7 @@ router.post('/notification', async (req, res) => {
 				errorCode,
 				terminalKey,
 				amount: status === 'REFUNDED' || status === 'PARTIAL_REFUNDED' ? paymentLog.amount : amount,
-				refundedAmount: status === 'REFUNDED' || status === 'PARTIAL_REFUNDED' ? amount : 0,
+				refundedAmount: status === 'REFUNDED' || status === 'PARTIAL_REFUNDED' ? amount : null,
 			},
 			$unset: { token: null },
 			$inc: { __v: 1 },
