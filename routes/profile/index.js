@@ -1,18 +1,27 @@
 const express = require('express')
 const router = express.Router()
 const multer = require('multer')
+const schedule = require('node-schedule')
+
 const User = require('../../models/user')
 const Tariff = require('../../models/tariff')
+const PhoneChecking = require('../../models/phoneChecking')
 const UserDeletionLog = require('../../models/userDeletionLog')
+const DisposableCronTask = require('../../models/disposableCronTask')
+
 const verify = require('../../middlewares/verify')
 const resError = require('../../helpers/resError')
 const resSuccess = require('../../helpers/resSuccess')
+const mailer = require('../../helpers/nodemailer')
 const { uploadImageToS3 } = require('../../helpers/uploadImage')
 const { deleteFileFromS3 } = require('../../helpers/deleteFile')
+const { amountLoginWithoutCapcha } = require('../../constants')
 
 /*
  * Профиль > Основное
  */
+
+const regex = /^7\d{10}$/ // проверка номера телефона: начинается с цифры 7 и состоит из 11 цифр
 
 // Загрузка картинок в буффер
 const memoryStorage = multer.memoryStorage()
@@ -31,17 +40,27 @@ router.get('/', verify.token, async (req, res) => {
 			subscribe: true,
 			allowTrialTariff: true,
 			disabledNotifications: true,
+			authPhone: true,
+			autoPayment: true,
 		}
 	)
 
-	if (user.deleted) {
-		if (new Date().getTime() > user.deleted.finish.getTime()) user.deleted.timeIsUp = true
+	if (user.deleted?.finish && new Date().getTime() > new Date(user.deleted.finish).getTime()) {
+		user.deleted.timeIsUp = true
+	}
+
+	if (user.subscribe && user.subscribe?.tariffId) {
+		const { name: tariffName } = await Tariff.findOne(
+			{ _id: user.subscribe?.tariffId },
+			{ name: true }
+		)
+		user.subscribe = { ...user.subscribe, tariffName }
 	}
 
 	return res.status(200).json(user)
 })
 
-// Изменение профиля
+// Изменение имени в профиле
 router.patch('/', verify.token, async (req, res) => {
 	let { firstname } = req.body
 
@@ -49,7 +68,7 @@ router.patch('/', verify.token, async (req, res) => {
 		return resError({
 			res,
 			alert: true,
-			msg: 'Поле firstname обязательное',
+			msg: 'Обязательно наличие поля firstname',
 		})
 	}
 
@@ -78,9 +97,271 @@ router.patch('/', verify.token, async (req, res) => {
 	})
 })
 
+// Изменение номера телефона в профиле
+router.patch('/phone', verify.token, async (req, res) => {
+	const { phone, imgcode } = req.body
+	const userId = req.user._id
+	const ip = req.headers['x-real-ip']
+
+	try {
+		if (req.useragent?.isBot) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Обнаружен бот',
+			})
+		}
+
+		if (!phone) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Не получен phone',
+			})
+		}
+
+		if (!regex.test(phone)) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Номер телефона должен начинаться с "7" и состоять из 11 цифр',
+			})
+		}
+
+		if (phone === req.user.authPhone) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'К аккаунту уже привязан этот номер телефона',
+			})
+		}
+
+		let minuteAgo = new Date()
+		minuteAgo.setSeconds(minuteAgo.getSeconds() - 90)
+
+		const previousPhoneCheckingMinute = await PhoneChecking.find({
+			userId,
+			type: 'change',
+			createdAt: { $gt: minuteAgo },
+		})
+
+		if (!!previousPhoneCheckingMinute.length) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Можно запросить код подтверждения только раз в 90 секунд',
+			})
+		}
+
+		let DayAgo = new Date()
+		DayAgo.setDate(DayAgo.getDate() - 1)
+
+		const previousPhoneChecking = await PhoneChecking.find({
+			userId,
+			createdAt: { $gt: DayAgo },
+			type: 'change',
+		})
+
+		// if (previousPhoneChecking.length >= 3) {
+		// 	return resError({
+		// 		res,
+		// 		alert: true,
+		// 		msg: 'Превышен лимит изменения номера телефона за сутки',
+		// 	})
+		// }
+
+		const prevPhoneChecking2 = await PhoneChecking.find({
+			phone,
+		})
+			.sort({ createdAt: -1 })
+			.limit(amountLoginWithoutCapcha)
+
+		const prevIpChecking = await PhoneChecking.find({
+			ip,
+		})
+			.sort({ createdAt: -1 })
+			.limit(amountLoginWithoutCapcha)
+
+		//Если последние 2 заявки на подтверждения для указанного номера телефона или ip адреса клиента не были подтверждены правильным смс кодом, необходимо показать капчу
+		if (
+			(prevPhoneChecking2.length === amountLoginWithoutCapcha &&
+				prevPhoneChecking2.every((log) => !log.isConfirmed) &&
+				!imgcode) ||
+			(prevIpChecking.length === amountLoginWithoutCapcha &&
+				prevIpChecking.every((log) => !log.isConfirmed) &&
+				!imgcode)
+		) {
+			return resError({
+				res,
+				alert: false,
+				msg: 'Требуется imgcode',
+			})
+		}
+
+		const code = Math.floor(1000 + Math.random() * 9000) // 4 значный код для подтверждения
+		await PhoneChecking.updateMany(
+			{ phone, code: { $ne: code }, type: 'change', userId },
+			{ $set: { isCancelled: true } }
+		)
+
+		// Создание записи в журнале авторизаций через смс
+		await PhoneChecking.create({
+			phone,
+			code,
+			isConfirmed: false,
+			attemptAmount: 3,
+			isCancelled: false,
+			type: 'change',
+			userId,
+		})
+
+		const url = imgcode
+			? `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}&imgcode=${imgcode}&userip=${ip}&op=1`
+			: `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}`
+
+		const response = await fetch(url)
+
+		const responseText = await response?.text()
+
+		if (responseText.startsWith('ERROR = 10')) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Символы указаны неверно',
+			})
+		}
+
+		if (response.status === 200) {
+			return resSuccess({
+				res,
+				msg: 'Сообщение с кодом отправлено по указанному номеру телефона',
+				alert: true,
+			})
+		}
+
+		return resError({
+			res,
+			alert: true,
+			msg: 'Что-то пошло не так. Попробуйте позже',
+		})
+	} catch (error) {
+		return res.json(error)
+	}
+})
+
+/*
+ *  Проверка 4 значного кода через смс для для смены номера телефона
+ */
+router.post('/change-phone/compare', verify.token, async (req, res) => {
+	const { code, phone } = req.body
+
+	if (!code) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Не получен 4 значный код',
+		})
+	}
+
+	if (!phone) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Не получен phone',
+		})
+	}
+
+	if (!regex.test(phone)) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Номер телефона должен начинаться с "7" и состоять из 11 цифр',
+		})
+	}
+
+	if (code.toString().length !== 4) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Код должен быть 4 значным',
+		})
+	}
+
+	let hourAgo = new Date()
+	hourAgo.setHours(hourAgo.getHours() - 1)
+
+	const phoneCheckingLog = await PhoneChecking.findOne({
+		phone,
+		isConfirmed: false,
+		isCancelled: false,
+		type: 'change',
+		createdAt: { $gt: hourAgo },
+		userId: req.user._id,
+	})
+
+	if (phoneCheckingLog) {
+		if (phoneCheckingLog.attemptAmount === 0) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Исчерпано количество попыток. Запросите новый код',
+			})
+		}
+
+		phoneCheckingLog.attemptAmount -= 1
+		await phoneCheckingLog.save()
+
+		if (code !== phoneCheckingLog.code) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Неверный код подтверждения',
+			})
+		}
+
+		phoneCheckingLog.isConfirmed = true
+		await phoneCheckingLog.save()
+
+		// Поиск пользователя в БД и установление ему нового номера телефона
+		await User.findOneAndUpdate(
+			{
+				_id: req.user._id,
+			},
+			{
+				$set: {
+					authPhone: phone,
+				},
+				$inc: { __v: 1 },
+			}
+		)
+
+		// Обнулить телефон у другого юзера, если он существует, с таким номером телефона
+		await User.findOneAndUpdate(
+			{
+				_id: { $ne: req.user._id },
+				authPhone: phone,
+			},
+			{
+				$set: {
+					authPhone: null,
+				},
+				$inc: { __v: 1 },
+			}
+		)
+
+		return res.status(200).json({ alert: true, msg: 'Номер телефона обновлен', success: true })
+	} else {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Для данного номера телефона нет действующего кода подтверждения. Запросите код подтверждения повторно',
+		})
+	}
+})
+
 // Удаление профиля
 router.delete('/', verify.token, async (req, res) => {
-	const { _id, deleted, subscribe } = req.user
+	const { _id, deleted, subscribe, email, authPhone } = req.user
 
 	const { isRefund, reason } = req.body
 
@@ -132,6 +413,43 @@ router.delete('/', verify.token, async (req, res) => {
 				start: new Date(),
 				finish: new Date(finish),
 			},
+		}
+
+		const dayBeforeRemoving = new Date(finish)
+		dayBeforeRemoving.setDate(dayBeforeRemoving.getDate() - 1)
+
+		const message = 'Ваш аккаунт на кинохостинге https://tvoe.live/ завтра будет полностью удален'
+
+		if (authPhone) {
+			await DisposableCronTask.create({
+				name: 'sendMsgViaPhone',
+				phone: authPhone,
+				message,
+				willCompletedAt: dayBeforeRemoving,
+			})
+
+			schedule.scheduleJob(new Date(newDate), async function () {
+				const response = await fetch(
+					`https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${authPhone}&mes=${message}`
+				)
+			})
+		} else if (email) {
+			await DisposableCronTask.create({
+				name: 'sendMsgViaEmail',
+				email,
+				message,
+				willCompletedAt: dayBeforeRemoving,
+			})
+
+			const msg = {
+				to: email,
+				subject: 'Напоминание',
+				text: message,
+			}
+
+			schedule.scheduleJob(dayBeforeRemoving, async function () {
+				mailer(msg)
+			})
 		}
 
 		await User.updateOne({ _id: _id }, { $set: set })

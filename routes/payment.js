@@ -7,7 +7,6 @@ const {
 } = process.env
 const express = require('express')
 const router = express.Router()
-
 const axios = require('axios')
 const crypto = require('crypto')
 const mongoose = require('mongoose')
@@ -18,6 +17,8 @@ const resError = require('../helpers/resError')
 const PaymentLog = require('../models/paymentLog')
 const PromocodeLog = require('../models/promocodeLog')
 const isValidObjectId = require('../helpers/isValidObjectId')
+
+require('dotenv').config()
 
 /*
  * Тарифы, создание и обработка платежей
@@ -89,7 +90,7 @@ router.get('/tariffs', async (req, res) => {
 									finishAt: {
 										$gte: new Date(),
 									},
-									discountFormat: { $ne: 'free-month' },
+									discountFormat: { $ne: 'free' },
 								},
 							},
 							{
@@ -272,7 +273,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 							finishAt: {
 								$gte: new Date(),
 							},
-							discountFormat: { $ne: 'free-month' },
+							discountFormat: { $ne: 'free' },
 						},
 					},
 					{
@@ -416,8 +417,8 @@ router.post('/createPayment', verify.token, async (req, res) => {
 	const priceAfterDiscount = benefitsFromPromocodes[0]?.bestPrice?.value
 	const promocodeId = benefitsFromPromocodes[0]?.bestPrice?.promocodeId
 
-	const successURL = new URL(`${CLIENT_URL}/payment/status`)
-	const failURL = new URL(`${CLIENT_URL}/payment/status`)
+	const successURL = new URL(`${process.env.CLIENT_URL}/payment/status`)
+	const failURL = new URL(`${process.env.CLIENT_URL}/payment/status`)
 
 	const tariffs = await Tariff.find(
 		{},
@@ -496,7 +497,10 @@ router.post('/createPayment', verify.token, async (req, res) => {
 			}
 		)
 
-		return res.status(200).json({ urlOfRedirectToPay: successURL })
+		return res.status(200).json({
+			paymentId: paymentLog._id,
+			urlOfRedirectToPay: successURL,
+		})
 	}
 
 	// Создание лога о платеже
@@ -505,23 +509,9 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		userId: req.user._id,
 		tariffId: selectedTariff._id,
 		isChecked: false,
+		...(promocodeId && { promocodeId }), // Если применен промокод, то записать id примененного промокода
+		sum: price,
 	}).save()
-
-	// findOneAndUpdate
-	if (promocodeId) {
-		await PromocodeLog.findOneAndUpdate(
-			{
-				promocodeId,
-				userId: req.user._id,
-			},
-			{
-				$set: {
-					isPurchaseCompleted: true,
-				},
-				$inc: { __v: 1 },
-			}
-		)
-	}
 
 	// В url успешной страницы передать id созданного лога
 	successURL.searchParams.set('id', paymentLog._id)
@@ -529,7 +519,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 
 	// Параметры терминала
 	const terminalParams = {
-		TerminalKey: PAYMENT_TERMINAL_KEY, // ID терминала
+		TerminalKey: process.env.PAYMENT_TERMINAL_KEY, // ID терминала
 		SuccessURL: successURL.href, // URL успешной оплаты
 		FailURL: failURL.href, // URL неуспешной оплаты
 		//SuccessAddCardURL: '', // URL успешной привязки карты
@@ -540,8 +530,8 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		Amount: price * 100, // Цена тарифа (в копейках)
 		OrderId: paymentLog._id, // ID заказа
 		Description: `Подписка на ${selectedTariff.name}`, // Описание заказа (для СБП)
-		//CustomerKey:
-		//Recurrent:
+		CustomerKey: req.user._id,
+		Recurrent: 'Y',
 		PayType: 'O', // Тип проведения платежа ("O" - одностадийная оплата)
 		Language: 'ru', // Язык платежной формы
 		Receipt: {
@@ -559,7 +549,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 				},
 			],
 			FfdVersion: '1.05', // Версия ФФД
-			Email: req.user.email || 'support@tvoe.team',
+			Email: req.user.email || 'no-relpy@tvoe.team',
 			Phone: req.user.phone || '+74956635979',
 			Taxation: 'usn_income', // Упрощенная СН (доходы)
 		},
@@ -596,7 +586,10 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		},
 	})
 
-	return res.status(200).json({ urlOfRedirectToPay: initPaymentData.PaymentURL })
+	return res.status(200).json({
+		paymentId: paymentLog._id,
+		urlOfRedirectToPay: initPaymentData.PaymentURL,
+	})
 })
 
 /*
@@ -696,20 +689,30 @@ router.post('/notification', async (req, res) => {
 	const shareWithReferrer = async ({ userId, amount, refererUserId }) => {
 		if (!userId || !amount || !refererUserId) return
 
-		const addToBalance = amount * (REFERRAL_PERCENT_BONUSE / 100)
+		const referalUser = await User.findByIdAndUpdate(refererUserId, {
+			$inc: {
+				'referral.balance': amount * (process.env.FIRST_STEP_REFERRAL / 100),
+			},
+		})
 
-		await User.updateOne(
-			{ _id: refererUserId },
-			{
+		if (referalUser.refererUserId) {
+			await User.findByIdAndUpdate(referalUser.refererUserId, {
 				$inc: {
-					'referral.balance': addToBalance,
+					'referral.balance': amount * (process.env.SECOND_STEP_REFERRAL / 100),
 				},
-			}
-		)
+			})
+		}
 	}
 
 	switch (status) {
 		case 'AUTHORIZED': // Деньги захолдированы на карте клиента. Ожидается подтверждение операции
+			if (rebillId) {
+				await User.findByIdAndUpdate(user._id, {
+					$set: {
+						RebillId: rebillId,
+					},
+				})
+			}
 		case 'CONFIRMED': // Операция подтверждена
 			// Обновить время подписки пользователю
 			await User.updateOne(
@@ -721,6 +724,7 @@ router.post('/notification', async (req, res) => {
 							finishAt,
 							tariffId: paymentLog.tariffId,
 						},
+						RebillId: rebillId || null,
 						allowTrialTariff: false,
 					},
 				}
@@ -731,6 +735,21 @@ router.post('/notification', async (req, res) => {
 				userId: user._id,
 				refererUserId: user.refererUserId,
 			})
+
+			if (paymentLog.promocodeId) {
+				await PromocodeLog.findOneAndUpdate(
+					{
+						promocodeId: paymentLog.promocodeId,
+						userId: user._id,
+					},
+					{
+						$set: {
+							isPurchaseCompleted: true,
+						},
+						$inc: { __v: 1 },
+					}
+				)
+			}
 
 			break
 		case 'REFUNDED': // Произведён возврат
@@ -774,7 +793,7 @@ router.post('/notification', async (req, res) => {
 			break
 		case 'PARTIAL_REVERSED': // Частичная отмена
 		case 'REVERSED': // Операция отменена
-		case 'REJECTED': // Списание денежных средств закончилась ошибкой
+		case 'REJECTED':
 		case '3DS_CHECKING': // Автоматическое закрытие сессии, которая превысила срок пребывания в статусе 3DS_CHECKING (более 36 часов)
 		default:
 			break

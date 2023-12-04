@@ -84,6 +84,7 @@ router.get('/oftenSeek', async (req, res) => {
 				pipeline: [
 					{
 						$match: {
+							publishedAt: { $exists: true },
 							$expr: {
 								$and: [
 									{ $ne: ['$publishedAt', null] },
@@ -113,7 +114,9 @@ router.get('/oftenSeek', async (req, res) => {
 						$project: {
 							_id: true,
 							name: true,
-							poster: true,
+							poster: {
+								src: true,
+							},
 							dateReleased: true,
 							url: { $concat: ['/p/', '$alias'] },
 						},
@@ -539,7 +542,7 @@ router.get('/', getSearchQuery, async (req, res) => {
 		query = query.slice(1, query.length - 1)
 
 	const editSpace = query?.replace(/ /gi, '\\s.*')
-	const RegExpQuery = new RegExp(editSpace?.replace(/[eё]/gi, '[её]'), 'i')
+	const RegExpQuery = new RegExp(editSpace?.replace(/[её]/gi, '[её]'), 'i')
 
 	const queryInglishKeyboard = ru.fromEn(query)
 	const editSpaceEnglish = queryInglishKeyboard?.replace(/ /gi, '\\s.*')
@@ -583,6 +586,10 @@ router.get('/', getSearchQuery, async (req, res) => {
 		return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength)
 	}
 
+	function toLowerCase(name, editSpace) {
+		return name.toLowerCase() === editSpace.toLowerCase()
+	}
+
 	const mainAgregation = [
 		{
 			$addFields: {
@@ -601,12 +608,29 @@ router.get('/', getSearchQuery, async (req, res) => {
 						lang: 'js',
 					},
 				},
+
+				exactNameMatch: {
+					$function: {
+						body: toLowerCase,
+						args: ['$name', editSpace],
+						lang: 'js',
+					},
+				},
+
+				movieNameWithoutDash: {
+					$replaceAll: {
+						input: '$name',
+						find: '-',
+						replacement: ' ',
+					},
+				},
 			},
 		},
 		{
 			$match: {
 				$or: [
 					{ name: RegExpQuery },
+					{ movieNameWithoutDash: RegExpQuery },
 					{ name: RegExpQueryInglishKeyboard },
 					{ origName: RegExpQuery },
 					{ shortDesc: RegExpQuery },
@@ -662,9 +686,13 @@ router.get('/', getSearchQuery, async (req, res) => {
 						...mainAgregation,
 						{
 							$project: {
+								_id: false,
+								exactNameMatch: true,
 								name: true,
-								dataReleased: true,
-								poster: true,
+								dateReleased: true,
+								poster: {
+									src: true,
+								},
 								url: { $concat: ['/p/', '$alias'] },
 							},
 						},
@@ -725,6 +753,7 @@ router.get('/', getSearchQuery, async (req, res) => {
 						},
 						{
 							$sort: {
+								exactNameMatch: -1,
 								nameMatch: -1,
 								nameEnglishMatch: -1,
 								nameWithMissprintMatch: -1,
@@ -736,6 +765,7 @@ router.get('/', getSearchQuery, async (req, res) => {
 						},
 						{
 							$project: {
+								exactNameMatch: false,
 								nameMatch: false,
 								nameEnglishMatch: false,
 								nameWithMissprintMatch: false,

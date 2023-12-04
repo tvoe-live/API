@@ -7,8 +7,16 @@ const mongoose = require('mongoose')
 const paymentLogSchema = new mongoose.Schema(
 	{
 		// Данные от нашего API
-		userId: mongoose.Schema.Types.ObjectId, // ID пользователя
-		tariffId: mongoose.Schema.Types.ObjectId, // ID тарифа
+		userId: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'User',
+		}, // ID пользователя
+		tariffId: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'Tariff',
+		}, // ID тарифа
+		promocodeId: mongoose.Schema.Types.ObjectId, // ID промокода, если оплата была совершена с учетом скидки от промокода. В противном случае это поле null
+		sum: Number, // Уплаченная сумма в рублях
 		type: {
 			// Тип платежного лога
 			type: String,
@@ -28,6 +36,10 @@ const paymentLogSchema = new mongoose.Schema(
 		refundedAmount: Number, // Сумма возврата или частичного возврата
 		orderId: mongoose.Schema.Types.ObjectId, // Идентификатор заказа в системе Мерчанта
 		success: Boolean, // Выполнение платежа
+		isReccurent: {
+			type: Boolean,
+			default: false,
+		},
 		status: {
 			// Статус платежа
 			type: String,

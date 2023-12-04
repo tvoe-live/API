@@ -24,13 +24,15 @@ router.patch('/activate', verify.token, async (req, res) => {
 
 	try {
 		const promocode = await Promocode.findOne({ value })
+
 		if (!promocode || promocode.deleted || promocode.startAt > new Date() || !promocode.isActive) {
 			return resError({ res, msg: 'Данный промокод не существует' })
 		}
 
 		if (
-			promocode.finishAt < new Date() ||
-			promocode.currentAmountActivation >= promocode.maxAmountActivation
+			(promocode.finishAt && promocode.finishAt < new Date()) ||
+			(promocode.currentAmountActivation &&
+				promocode.currentAmountActivation >= promocode.maxAmountActivation)
 		) {
 			return resError({ res, msg: 'Срок действия указанного промокода истек' })
 		}
@@ -56,8 +58,8 @@ router.patch('/activate', verify.token, async (req, res) => {
 		promocode.currentAmountActivation += 1
 		promocode.save()
 
-		if (promocode.discountFormat === 'free-month') {
-			const tariff = await Tariff.findOne({ name: '1 месяц' })
+		if (promocode.discountFormat === 'free') {
+			const tariff = await Tariff.findOne({ name: promocode.tariffName })
 			const user = await User.findOne({ _id: req.user._id })
 
 			if (!req.user.subscribe) {
@@ -70,25 +72,22 @@ router.patch('/activate', verify.token, async (req, res) => {
 					tariffId: tariff._id,
 				}
 			} else {
-				user.subscribe.finishAt = new Date(
-					user.subscribe.finishAt.getTime() + Number(tariff.duration)
-				)
+				user.subscribe = {
+					...user.subscribe,
+					finishAt: new Date(user.subscribe.finishAt.getTime() + Number(tariff.duration)),
+				}
 			}
-			user.save()
+			await user.save()
 
 			const today = new Date()
-			const year = today.getFullYear()
-			const month = today.getMonth()
-			const day = today.getDate()
-			const monthForward = new Date(year, month + 1, day)
 
 			return resSuccess({
 				res,
 				alert: true,
 				msg: 'Промокод успешно активирован',
 				startAt: getTrimDate(today),
-				finishAt: getTrimDate(monthForward),
-				discountFormat: 'free-month',
+				finishAt: getTrimDate(user.subscribe.finishAt),
+				discountFormat: 'free',
 			})
 		}
 

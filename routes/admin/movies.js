@@ -2,15 +2,32 @@ const express = require('express')
 const router = express.Router()
 const mongoose = require('mongoose')
 const Movie = require('../../models/movie')
+const Notification = require('../../models/notification')
+const MovieRating = require('../../models/movieRating')
 const verify = require('../../middlewares/verify')
 const resError = require('../../helpers/resError')
 const resSuccess = require('../../helpers/resSuccess')
 const getSearchQuery = require('../../middlewares/getSearchQuery')
-const schedule = require('node-schedule')
+
+// Возможные причины для удаления отзыва
+const validValues = {
+	violationRightsOrContentConfidentialInformation:
+		'Отзыв нарушает чьи-то права или содержит конфиденциальную информацию',
+	swearingInsultsOrCallsIllegalActions: 'Мат, оскорбления или призыв к противоправным действиям',
+	linkOrAdvertising: 'Отзыв со ссылкой или скрытой рекламой',
+	missingRelationshipToContent: 'Отзыв не имеет отношения к контенту',
+}
 
 /*
  * Админ-панель > Фильмы и сериалы
  */
+
+const moviesFilterOptions = {
+	published: {
+		$and: [{ publishedAt: { $exists: true } }, { publishedAt: { $not: { $eq: null } } }],
+	},
+	notpublished: { $or: [{ publishedAt: { $exists: false } }, { publishedAt: null }] },
+}
 
 /*
  * Получение списка записей
@@ -18,6 +35,8 @@ const schedule = require('node-schedule')
 router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
+
+	const movieFilterParam = req.query.status && moviesFilterOptions[`${req.query.status}`]
 
 	const searchMatch = req.RegExpQuery && {
 		name: req.RegExpQuery,
@@ -32,6 +51,7 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 						{
 							$match: {
 								...searchMatch,
+								...movieFilterParam,
 							},
 						},
 						{
@@ -82,9 +102,35 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 						{
 							$match: {
 								...searchMatch,
+								...movieFilterParam,
 							},
 						},
 						{ $project: { __v: false } },
+						{
+							$lookup: {
+								from: 'moviepagelogs',
+								localField: '_id',
+								foreignField: 'movieId',
+								pipeline: [
+									{
+										$project: {
+											_id: true,
+										},
+									},
+								],
+								as: 'moviepagelog',
+							},
+						},
+						{
+							$addFields: {
+								amountWatching: { $size: '$moviepagelog' },
+							},
+						},
+						{
+							$project: {
+								moviepagelog: false,
+							},
+						},
 						{ $sort: { raisedUpAt: -1, _id: -1 } },
 						{ $skip: skip },
 						{ $limit: limit },
@@ -181,10 +227,6 @@ router.post('/', verify.token, verify.isManager, async (req, res) => {
 						},
 					}
 				)
-
-				schedule.scheduleJob(new Date(badge.finishAt), async function () {
-					await Movie.updateOne({ _id }, { $set: { badge: {} } })
-				})
 			}
 
 			if (categoryAlias) {
@@ -367,6 +409,127 @@ router.put('/raiseUp', verify.token, verify.isManager, async (req, res) => {
 			...set,
 			alert: true,
 			msg: 'Успешное поднятие',
+		})
+	} catch (err) {
+		return resError({ res, msg: err })
+	}
+})
+
+// Удаление рейтинга и комментария администратором
+router.delete('/rating', verify.token, verify.isManager, async (req, res) => {
+	let { reviewId, comment, reasons } = req.body
+
+	if (!reviewId) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Ожидается reviewId',
+		})
+	}
+
+	if (!comment && (!reasons || !Boolean(reasons?.length))) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Ожидается comment и/или reasons',
+		})
+	}
+
+	reasons?.forEach((reason) => {
+		if (!Object.keys(validValues).includes(reason)) {
+			return resError({
+				res,
+				alert: true,
+				msg: `Причины ${reason} не существует. Возможные причины - ${Object.keys(validValues)}`,
+			})
+		}
+	})
+
+	reviewId = mongoose.Types.ObjectId(reviewId)
+
+	try {
+		const { userId, review } = await MovieRating.findOne({
+			_id: reviewId,
+		})
+
+		if (!review) {
+			return resError({ res, msg: 'Пользователь не оставлял комментарий', alert: true })
+		}
+
+		// Обнуление записи из БД
+		const { movieId } = await MovieRating.findOneAndUpdate(
+			{
+				_id: reviewId,
+			},
+			{
+				$set: {
+					isDeleted: true,
+					deletingInfo: {
+						...(!!comment && { comment }),
+						...(reasons && reasons.length ? { reasons } : { reasons: [] }),
+					},
+				},
+				$inc: { __v: 1 },
+			}
+		)
+
+		// Получить все оценки фильма
+		const movieRatingLogs = await MovieRating.aggregate([
+			{
+				$match: {
+					movieId,
+					isDeleted: { $ne: true },
+				},
+			},
+			{
+				$group: {
+					_id: null,
+					avg: { $avg: '$rating' },
+				},
+			},
+			{
+				$project: {
+					_id: false,
+					avg: true,
+				},
+			},
+		])
+
+		const newMovieRating = movieRatingLogs[0]?.avg || null
+
+		// Обновить среднюю оценку фильма
+		await Movie.updateOne({ _id: movieId }, { $set: { rating: newMovieRating } })
+
+		let textForDescr = ''
+
+		if (comment) {
+			textForDescr += `Комментарий администратора: ${comment}`
+		}
+
+		if (reasons && reasons.length >= 1) {
+			reasons.forEach((reason, index) => {
+				if (index === 0) {
+					textForDescr += ' Нарушенные правила: '
+				}
+				textForDescr += `- ${validValues[reason]}; `
+			})
+		}
+
+		// Создание индивидуального уведомления для пользователя
+		Notification.create({
+			title: `Ваш отзыв "${review}" не был опубликован из-за нарушений правил сервиса:`,
+			description: textForDescr,
+			type: 'PROFILE',
+			receiversIds: [userId],
+			willPublishedAt: new Date(),
+		})
+
+		return resSuccess({
+			res,
+			movieId,
+			newMovieRating,
+			alert: true,
+			msg: 'Успешно удалено',
 		})
 	} catch (err) {
 		return resError({ res, msg: err })

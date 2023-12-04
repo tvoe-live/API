@@ -3,7 +3,7 @@
 	"info": {
 		"title": "API https://tvoe-dev.ru/",
 		"version": "v1",
-		"description": "Изменения 25.10.2023 - 1) Роуты POST profile/notification,  DELETE profile/notification, PATCH profile/notification, GET profile/notification/count,  GET profile/notifications/countAll   переместились в POST admin/notification,  DELETE admin/notification, PATCH admin/notification, GET admin/notification/count,  GET admin/notifications/countAll соответственно. 2) В ответе ендпоинта GET search/oftenSeek удалил несколько полей, оставив id, дату релиза, url, постер, название"
+		"description": "Изменения 25.10.2023 - 1) Роуты POST profile/notification,  DELETE profile/notification, PATCH profile/notification, GET profile/notification/count,  GET profile/notifications/countAll   переместились в POST admin/notification,  DELETE admin/notification, PATCH admin/notification, GET admin/notification/count,  GET admin/notifications/countAll соответственно. 2) В ответе ендпоинта GET search/oftenSeek удалил несколько полей, оставив id, дату релиза, url, постер, название. Изменения 01.11.2023 в ендпоинте admin/promocodes/count переименовано поле promocodelogs в items"
 	},
 	"servers": [{ "url": "https://api.1390760-cu92735.tw1.ru/" }],
 	"components": {
@@ -20,6 +20,134 @@
 			}
 		},
 		"schemas": {
+			"RefferalStatResponse": {
+				"type": "object",
+				"properties": {
+					"balance": {
+						"type": "integer",
+						"format": "int64",
+						"example": 1000,
+						"description": "Текущий баланс пользователя"
+					},
+					"firstLvlReferrals": {
+						"type": "integer",
+						"format": "int64",
+						"example": 10,
+						"description": "Кол-во рефералов 1го уровня"
+					},
+					"secondLvlReferrals": {
+						"type": "integer",
+						"format": "int64",
+						"example": 10,
+						"description": "Кол-во рефералов 2го уровня"
+					},
+					"authCount": {
+						"type": "integer",
+						"format": "int64",
+						"example": 10,
+						"description": "Кол-во регистраций"
+					},
+					"link": { "type": "string", "example": "https://tvoe.live/r=<id>" },
+					"card": {
+						"type": "object",
+						"properties": {
+							"cardholder": { "type": "string", "example": "Ivan Ivanov" },
+							"number": { "type": "string", "example": "1234123412341234" }
+						}
+					}
+				}
+			},
+			"RefferalPaymentStat": {
+				"type": "array",
+				"items": {
+					"type": "object",
+					"properties": {
+						"userId": {
+							"type": "object",
+							"properties": {
+								"_id": {
+									"type": "string",
+									"description": "Id пользователя",
+									"example": "63ac7a31b2c93ed2212180d0"
+								},
+								"firstname": {
+									"type": "string",
+									"description": "Имя пользователя",
+									"example": "Евгений"
+								},
+								"lastname": {
+									"type": "string",
+									"description": "Отчество пользователя",
+									"example": "Васильевич"
+								},
+								"avatar": {
+									"type": "string",
+									"description": "Url на автар пользователя",
+									"example": "/images/64808068904s40e5d4c1b555.jpg"
+								}
+							}
+						},
+						"tariffId": {
+							"type": "object",
+							"properties": {
+								"_id": {
+									"type": "string",
+									"description": "Id пользователя",
+									"example": "63ac7a31b2c93ed2212180d0"
+								},
+								"name": { "type": "string", "description": "Название тарифа", "example": "1 месяц" }
+							}
+						},
+						"amount": {
+							"type": "integer",
+							"format": "int64",
+							"example": 10,
+							"description": "Бонус от попленения реферала"
+						},
+						"lvl": {
+							"type": "string",
+							"description": "Уровень реферала (1й уровень/2й уровень)",
+							"example": "1й уровень"
+						},
+						"createdAt": {
+							"type": "string",
+							"format": "date-time",
+							"description": "Дата оплаты тарифа"
+						}
+					}
+				}
+			},
+			"RefferalWithdrawalStatResponse": {
+				"type": "array",
+				"items": {
+					"type": "object",
+					"properties": {
+						"amount": {
+							"type": "integer",
+							"format": "int64",
+							"description": "Стоимость оплаты",
+							"example": 1500
+						},
+						"card": {
+							"type": "object",
+							"properties": {
+								"number": {
+									"type": "string",
+									"description": "Номер карты",
+									"example": "1234567890123456"
+								},
+								"cardholder": {
+									"type": "string",
+									"description": "Владелец карты (ФИО)",
+									"example": "qq wwwww eeee"
+								}
+							}
+						},
+						"status": { "type": "string", "description": "Статус оплаты", "example": "pending" },
+						"createdAt": { "type": "string", "format": "date-time", "description": "Дата списания" }
+					}
+				}
+			},
 			"AuthLog": {
 				"type": "object",
 				"properties": {
@@ -525,7 +653,7 @@
 					},
 					"sizeDiscount": {
 						"type": "number",
-						"description": "Размер скидки - число в рублях (если discountFormat = rubles) или процентах ( если discountFormat = percentages). Если discountFormat = free-month, тогда sizeDiscount = null"
+						"description": "Размер скидки - число в рублях (если discountFormat = rubles) или процентах ( если discountFormat = percentages). Если discountFormat = free, тогда sizeDiscount = null"
 					},
 					"value": {
 						"type": "string",
@@ -835,6 +963,11 @@
 									"properties": {
 										"_id": { "type": "string", "description": "Profile id" },
 										"email": { "type": "string", "description": "Email user(profile)" },
+										"phone": { "type": "string", "description": "Номер телефона от яндекса" },
+										"authPhone": {
+											"type": "string",
+											"description": "Номер телефона, подтвержденный через смс"
+										},
 										"avatar": { "type": "string", "description": "Path to img src profile user" },
 										"firstname": { "type": "string", "description": "Имя этого человека" },
 										"subscribe": {
@@ -842,6 +975,7 @@
 											"description": "Информация по подписке. Если подписки нет, в этом поле null",
 											"properties": {
 												"startAt": { "type": "Date", "description": "Дата начала подписки" },
+												"tariffName": { "type": "string", "description": "Название тарифа" },
 												"finishAt": { "type": "Date", "description": "Дата окончания подписки" },
 												"tariffId": {
 													"type": "string",
@@ -870,10 +1004,12 @@
 										"firstname": "Иван",
 										"allowTrialTariff": false,
 										"role": "admin",
+										"phone": 79107718345,
 										"subscribe": {
 											"startAt": "2021-04-13T07:41:42.000Z",
 											"finishAt": "2021-04-13T07:41:42.000Z",
-											"tariffId": "63dbe1687f457bc81bc920cb"
+											"tariffId": "63dbe1687f457bc81bc920cb",
+											"tariffName": "1 месяц"
 										},
 										"disabledNotifications": [
 											"GIFTS_AND_PROMOTIONS",
@@ -1604,12 +1740,29 @@
 														"type": "Date",
 														"description": "Дата окончания срока действия оплаты"
 													},
+													"sum": { "type": "number", "description": "Заплаченная сумма в рублях" },
 													"tariff": {
 														"type": "object",
 														"properties": {
 															"_id": { "type": "string", "description": "Id тарифа" },
 															"name": { "type": "string", "description": "Название тарифа" },
 															"price": { "type": "number", "description": "Цена тарифа" }
+														}
+													},
+													"promocode": {
+														"type": "object",
+														"description": "Описание примененного при оплате промокода. Если промокод не был применен во время оплаты, это поля нет",
+														"required": false,
+														"properties": {
+															"_id": { "type": "string", "description": "Id промокода" },
+															"discountFormat": {
+																"type": "string",
+																"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный месяц)"
+															},
+															"sizeDiscount": {
+																"type": "number",
+																"description": "Размер скидки. Если discountFormat = percentages, то sizeDiscount выражается в процентах. Если discountFormat = rubles, то sizeDiscount - в рублях"
+															}
 														}
 													}
 												}
@@ -1657,12 +1810,18 @@
 										{
 											"_id": "6480a3432fc38dca80429f30",
 											"type": "issued-by-admin",
+											"sum": 683,
 											"startAt": "2023-06-07T15:33:23.068Z",
 											"finishAt": "2023-12-04T15:33:23.068Z",
 											"tariff": {
 												"_id": "63dbe1687f457bc81bc920cb",
 												"name": "6 месяцев",
 												"price": 899
+											},
+											"promocode": {
+												"_id": "653bb72f9d1dd6ecf4493105",
+												"discountFormat": "percentages",
+												"sizeDiscount": 24
 											}
 										}
 									]
@@ -1977,6 +2136,106 @@
 				}
 			}
 		},
+		"/profile/phone/": {
+			"patch": {
+				"summary": "Профиль > Изменение номера телефона",
+				"tags": ["Profile"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"phone": {
+										"type": "string",
+										"description": "Новый номер телефона. Он должен состоять из 11 цифр подряд, первая цифра 7."
+									},
+									"imgcode": {
+										"type": "string",
+										"description": "Набор символов с капчи для проверки"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"type": { "type": "string", "description": "success" },
+										"msg": {
+											"type": "string",
+											"description": "Сообщение с кодом отправлено по указанному номеру телефона"
+										},
+										"alert": { "type": "boolean", "description": true }
+									},
+									"example": {
+										"type": "success",
+										"alert": true,
+										"msg": "Сообщение с кодом отправлено по указанному номеру телефона"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/profile/change-phone/compare/": {
+			"post": {
+				"summary": "Профиль > Изменение номера телефона",
+				"tags": ["Profile"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"phone": {
+										"type": "string",
+										"description": "Новый номер телефона. Он должен состоять из 11 цифр подряд, первая цифра 7.",
+										"example": 79107718345
+									},
+									"code": {
+										"type": "number",
+										"description": "4 значный код подтверждения. Состоит из цифр",
+										"example": 1234
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"type": { "type": "string", "description": "success" },
+										"msg": {
+											"type": "string",
+											"description": "Сообение \"Номер телефона обновлен\""
+										},
+										"alert": { "type": "boolean", "description": true }
+									},
+									"example": { "type": "success", "alert": true, "msg": "Номер телефона обновлен" }
+								}
+							}
+						}
+					}
+				}
+			}
+		},
 		"/admin/categories": {
 			"get": {
 				"summary": "Получение категорий",
@@ -2112,6 +2371,24 @@
 						"name": "query",
 						"schema": { "type": "number" },
 						"description": "Для поиска документов (сущностей таблицы notifications) по совпадению названия"
+					},
+					{
+						"in": "query",
+						"name": "start",
+						"schema": { "type": "string" },
+						"description": "Чтобы отфильтровать те уведомления, что были созданы после выбранной даты"
+					},
+					{
+						"in": "query",
+						"name": "end",
+						"schema": { "type": "string" },
+						"description": "Чтобы отфильтровать те уведомления, что были созданы после выбранной даты"
+					},
+					{
+						"in": "query",
+						"name": "status",
+						"schema": { "type": "string" },
+						"description": "Тип уведомлений - system (Новости сервиса), discount(подарки и акции), profile профиль (напоминание об окончании подписки и индивидуальные предложения), unique (Новинки кинематографа)"
 					}
 				],
 				"responses": {
@@ -2572,6 +2849,18 @@
 						"name": "query",
 						"schema": { "type": "number" },
 						"description": "Для поиска документов (сущностей таблицы users), с которыми совпадают символы в имени и емейлу. Либо для полного совпадения по id (mongoose.ObjectId)  пользователя"
+					},
+					{
+						"in": "query",
+						"name": "tariffId",
+						"schema": { "type": "string" },
+						"description": "id тарифа, который имеет пользователь в данный момент по подписке"
+					},
+					{
+						"in": "query",
+						"name": "status",
+						"schema": { "type": "string" },
+						"description": "Принимает значения active, notactive, deleted, admin. Активный если юзер заходил за последние 30 дней хоть раз на сервис, неактивный наоборот, deleted для поиска удаленных аккаунтов, admin для поиска администраторов"
 					}
 				],
 				"responses": {
@@ -2851,7 +3140,7 @@
 				}
 			}
 		},
-		"/admin/users/movies": {
+		"/admin/movies": {
 			"get": {
 				"summary": "Админ-панель > Получение списка фильмов и сериалов",
 				"tags": ["Admin"],
@@ -2874,6 +3163,12 @@
 						"name": "limit",
 						"schema": { "type": "string" },
 						"description": "Ограничение на максимальное количество элементов в теле ответа"
+					},
+					{
+						"in": "query",
+						"name": "status",
+						"schema": { "type": "string" },
+						"description": "принимает значения published или notpublished, тоесть опубликованные или неопубликованные"
 					}
 				],
 				"responses": {
@@ -2920,6 +3215,10 @@
 													},
 													"ageLevel": { "type": "string", "description": "Возрастное ограничение" },
 													"dateReleased": { "type": "string", "description": "Дата выпуска" },
+													"amountWatching": {
+														"type": "string",
+														"description": "Количество просмотров"
+													},
 													"countries": {
 														"type": "array",
 														"description": "Cписок стран",
@@ -3093,6 +3392,7 @@
 													"dateReleased": "2022-12-15",
 													"countries": ["Норвегия"],
 													"categoryAlias": "films",
+													"amountWatching": 14,
 													"genresAliases": ["dramy", "voennye", "istoricheskie"],
 													"persons": [
 														{
@@ -3228,6 +3528,7 @@
 													"dateReleased": "2020-06-19",
 													"countries": ["Франция"],
 													"categoryAlias": "serials",
+													"amountWatching": 10,
 													"genresAliases": [],
 													"persons": [
 														{
@@ -4024,6 +4325,64 @@
 				}
 			}
 		},
+		"/admin/movies/rating": {
+			"delete": {
+				"summary": "Админ-панель > Удаление отзыва и комметария",
+				"tags": ["Admin"],
+				"parameters": [{ "$ref": "#/components/parameters/AuthorizationHeader" }],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"reviewId": { "type": "string", "description": "Id отзыва", "required": true },
+									"comment": { "type": "string", "description": "Комментарий", "required": false },
+									"reasons": {
+										"type": "array",
+										"required": false,
+										"description": "Массив возможных причин. Может включать в себя 'violationRightsOrContentConfidentialInformation' - Отзыв нарушает чьи-то права или содержит конфиденциальную информацию, 'swearingInsultsOrCallsIllegalActions' - Мат, оскорбления или призыв к противоправным действиям, 'linkOrAdvertising' - Отзыв со ссылкой или скрытой рекламой, 'missingRelationshipToContent' -  Отзыв не имеет отношения к контенту",
+										"items": { "type": "string" }
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"type": { "type": "string", "description": "Надпись success" },
+										"movieId": { "type": "string", "description": "Id фильма (mongoose.ObjectId)" },
+										"newMovieRating": {
+											"type": "number",
+											"description": "Новый рейтинг фильма после удаления оценки"
+										},
+										"alert": {
+											"type": "boolean",
+											"description": "Показывать ли уведомление на сайте"
+										},
+										"msg": { "type": "string", "description": "надпись Успешно удалено" }
+									},
+									"example": {
+										"type": "success",
+										"alert": true,
+										"msg": "Успешно удалено",
+										"newMovieRating": 9,
+										"movieId": "63ac8aa1b2c93ed2212186e7"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
 		"/admin/payment": {
 			"get": {
 				"summary": "Админ-панель > История пополнений",
@@ -4047,6 +4406,24 @@
 						"name": "query",
 						"schema": { "type": "number" },
 						"description": "Для поиска документов (сущностей таблицы users), с которыми совпадают символы в имени и емейлу. Либо для полного совпадения по id (mongoose.ObjectId)  пользователя"
+					},
+					{
+						"in": "query",
+						"name": "start",
+						"schema": { "type": "string" },
+						"description": "Дата начала подписки. Чтобы отфильтровать те, что были куплены после выбранной даты"
+					},
+					{
+						"in": "query",
+						"name": "end",
+						"schema": { "type": "string" },
+						"description": "Дата окончания подписки. Чтобы отфильтровать те, что были куплены до выбранной даты"
+					},
+					{
+						"in": "query",
+						"name": "tariffId",
+						"schema": { "type": "tariffId" },
+						"description": "Id купленного тарифа"
 					}
 				],
 				"responses": {
@@ -4830,6 +5207,11 @@
 																		"description": "Путь к постеру (файлу картинке)"
 																	}
 																}
+															},
+															"alias": { "type": "string", "description": "alias фильма/сериала" },
+															"publishedAt": {
+																"type": "string",
+																"description": "Дата создания фильма"
 															}
 														}
 													},
@@ -4886,7 +5268,9 @@
 													"__v": 0,
 													"movie": {
 														"name": "Выстрел в сердце",
-														"poster": { "src": "/images/641f44d1944e8bd192d18c57.jpg" }
+														"poster": { "src": "/images/641f44d1944e8bd192d18c57.jpg" },
+														"url": "/p/shalnye-dengi",
+														"publishedAt": "2023-11-30T14:48:38.924Z"
 													},
 													"user": {
 														"_id": "63bbed7523c814afb608a3f6",
@@ -4909,7 +5293,9 @@
 													"__v": 0,
 													"movie": {
 														"name": "Битва при Нарвике: Первое поражение Гитлера",
-														"poster": { "src": "/images/640376060a569a75e1507a94.jpg" }
+														"poster": { "src": "/images/640376060a569a75e1507a94.jpg" },
+														"url": "/p/shalnye-dengi",
+														"publishedAt": "2023-11-30T14:48:38.924Z"
 													},
 													"user": {
 														"_id": "63bbed7523c814afb608a3f6",
@@ -4932,7 +5318,9 @@
 						}
 					}
 				}
-			},
+			}
+		},
+		"/admin/moviesRatingHistory/rating": {
 			"delete": {
 				"summary": "Админ панель удаление отзывов",
 				"tags": ["Admin"],
@@ -5047,10 +5435,21 @@
 														"type": "number",
 														"description": "Оценка фильма пользователем"
 													},
+													"createdAt": { "type": "string", "description": "Дата создания отзыва" },
+													"updatedAt": {
+														"type": "string",
+														"description": "Дата обновления отзыва"
+													},
 													"movie": {
 														"type": "object",
 														"properties": {
 															"name": { "type": "string", "description": "Название фильма" },
+															"url": { "type": "string", "description": "Путь к фильму" },
+															"alias": { "type": "string", "description": "alias фильма/сериала" },
+															"publishedAt": {
+																"type": "string",
+																"description": "Дата создания фильма"
+															},
 															"poster": {
 																"type": "object",
 																"properties": {
@@ -5067,6 +5466,14 @@
 														"properties": {
 															"_id": { "type": "string", "description": "Profile id" },
 															"email": { "type": "string", "description": "Email user" },
+															"isHaveSubscribe": {
+																"type": "boolean",
+																"description": "Есть ли подписка у пользователя в настоящий момент"
+															},
+															"isReferral": {
+																"type": "boolean",
+																"description": "Является ли пользователь участником рефералки ( приглашал ли он других пользователей)"
+															},
 															"phone": {
 																"type": "string",
 																"description": "Номер телефона пользователя. Это поле может отсутствовать",
@@ -5117,14 +5524,23 @@
 													"rating": 1,
 													"isPublished": true,
 													"isDeleted": false,
+													"createdAt": "2023-10-12T08:23:25.645Z",
+													"updatedAt": "2023-10-12T08:23:28.915Z",
 													"review": "12",
-													"movie": { "name": "HLS" },
+													"movie": {
+														"name": "HLS",
+														"url": "/p/giperdrayv",
+														"publishedAt": "2023-11-30T14:48:38.924Z",
+														"alias": "halnye-dengi"
+													},
 													"user": {
 														"_id": "63c952c66396809788e004a6",
 														"email": "agdias@yandex.ru",
 														"avatar": null,
 														"firstname": "Агдас",
-														"role": "admin"
+														"role": "admin",
+														"isHaveSubscribe": true,
+														"isReferral": false
 													}
 												},
 												{
@@ -5132,17 +5548,24 @@
 													"rating": 6,
 													"isPublished": false,
 													"isDeleted": false,
+													"createdAt": "2023-10-12T08:23:25.645Z",
+													"updatedAt": "2023-10-12T08:23:28.915Z",
 													"review": "1",
 													"movie": {
 														"name": "Название",
-														"poster": { "src": "/images/651c249e3d51bdf82b354936.jpg" }
+														"url": "/p/filmname",
+														"poster": { "src": "/images/651c249e3d51bdf82b354936.jpg" },
+														"publishedAt": "2023-11-30T14:48:38.924Z",
+														"alias": "halnye-dengi"
 													},
 													"user": {
 														"_id": "63c952c66396809788e004a6",
 														"email": "agdias@yandex.ru",
 														"avatar": null,
 														"firstname": "Агдас",
-														"role": "admin"
+														"role": "admin",
+														"isHaveSubscribe": false,
+														"isReferral": true
 													}
 												}
 											]
@@ -5230,6 +5653,18 @@
 						"name": "query",
 						"schema": { "type": "number" },
 						"description": "Для поиска документов (сущностей коллекции movies), с которыми совпадают символы по названию фильма."
+					},
+					{
+						"in": "query",
+						"name": "start",
+						"schema": { "type": "string" },
+						"description": "Чтобы отфильтровать те записи фильмов, что были просмотрены после выбранной даты"
+					},
+					{
+						"in": "query",
+						"name": "end",
+						"schema": { "type": "string" },
+						"description": "Чтобы отфильтровать те записи фильмов, что были просмотрены до выбранной даты"
 					}
 				],
 				"responses": {
@@ -5296,6 +5731,11 @@
 														"type": "object",
 														"properties": {
 															"name": { "type": "string", "description": "Название фильма" },
+															"alias": { "type": "string", "description": "alias фильма/сериала" },
+															"publishedAt": {
+																"type": "string",
+																"description": "Дата создания фильма"
+															},
 															"poster": {
 																"type": "object",
 																"properties": {
@@ -5369,7 +5809,9 @@
 													"updatedAt": "2023-06-07T16:15:48.503Z",
 													"movie": {
 														"name": "Энола Холмс",
-														"poster": { "src": "/images/6402045f0a569a75e15008a0.jpg" }
+														"poster": { "src": "/images/6402045f0a569a75e15008a0.jpg" },
+														"alias": "shalnye-dengi",
+														"piblishedAt": "2023-11-30T14:48:38.924Z"
 													},
 													"user": {
 														"_id": "6480807e904d20e5d4c1b6db",
@@ -5487,7 +5929,7 @@
 													},
 													"discountFormat": {
 														"type": "string",
-														"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+														"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный месяц)"
 													},
 													"sizeDiscount": {
 														"type": "number",
@@ -5574,15 +6016,18 @@
 								"properties": {
 									"maxAmountActivation": {
 										"type": "number",
-										"description": "Максимальное количество возможных активаций этого промокода пользователями вместе взятыми"
+										"description": "Максимальное количество возможных активаций этого промокода пользователями вместе взятыми. По умолчанию если это поле не передать, то промокод не имеет ограничений по количеству активаций",
+										"required": false
 									},
 									"isOnlyForNewUsers": {
 										"type": "boolean",
-										"description": "Доступен ли промокод только новым пользователм или всем. По умолчанию true - только для новых пользователей"
+										"description": "Доступен ли промокод только новым пользователм или всем. По умолчанию true - только для новых пользователей",
+										"required": false
 									},
 									"isActive": {
 										"type": "boolean",
-										"description": "Является ли промокод активным в данный момент времени. По умолчанию false"
+										"description": "Является ли промокод активным в данный момент времени. По умолчанию false",
+										"required": false
 									},
 									"tariffName": {
 										"type": "string",
@@ -5590,7 +6035,7 @@
 									},
 									"discountFormat": {
 										"type": "string",
-										"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+										"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный месяц)"
 									},
 									"sizeDiscount": {
 										"type": "number",
@@ -5603,7 +6048,8 @@
 									},
 									"finishAt": {
 										"type": "date",
-										"description": "Дата и время окончания действия промокода. В формате YYYY-MM-DD HH:mm"
+										"required": false,
+										"description": "Дата и время окончания действия промокода. В формате YYYY-MM-DD HH:mm. Если не передавать то промокод будет считаться бессрочным"
 									}
 								}
 							}
@@ -5670,7 +6116,7 @@
 									},
 									"discountFormat": {
 										"type": "string",
-										"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+										"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный месяц)"
 									},
 									"sizeDiscount": {
 										"type": "number",
@@ -5783,7 +6229,7 @@
 					},
 					{
 						"in": "query",
-						"name": "userId",
+						"name": "query",
 						"schema": { "type": "string" },
 						"description": "Id пользователя для поиска пользователей, активировавших указанный промокод"
 					}
@@ -5823,7 +6269,7 @@
 										},
 										"discountFormat": {
 											"type": "string",
-											"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+											"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный месяц)"
 										},
 										"sizeDiscount": {
 											"type": "number",
@@ -5842,8 +6288,9 @@
 											"type": "date",
 											"description": "Дата и время создания промокода"
 										},
-										"promocodeslogs": {
+										"items": {
 											"type": "array",
+											"description": "Массив promocodelogs ( записей применения промокодов )",
 											"items": {
 												"type": "object",
 												"properties": {
@@ -5871,6 +6318,14 @@
 															"lastname": {
 																"type": "string",
 																"description": "Фамилия пользователя"
+															},
+															"isReferral": {
+																"type": "boolean",
+																"description": "Является ли пользователь участником рефералки ( приглашал ли он других пользователей)"
+															},
+															"isHaveSubscribe": {
+																"type": "boolean",
+																"description": "Имеет ли пользователь активную подписку в данный момент"
 															}
 														}
 													}
@@ -5891,7 +6346,7 @@
 										"startAt": "2023-09-01T00:00:00.000Z",
 										"finishAt": "2023-10-01T00:00:00.000Z",
 										"createdAt": "2023-09-22T09:24:14.077Z",
-										"promocodeslogs": [
+										"items": [
 											{
 												"_id": "650d5db6981100537fb33f7e",
 												"createdAt": "2023-04-01T09:26:14.932Z",
@@ -5899,7 +6354,9 @@
 													"_id": "63bfe1f923c814afb6093783",
 													"email": "me@stwinnie.com",
 													"firstname": "Mikhail",
-													"lastname": "Zakharovskiy"
+													"lastname": "Zakharovskiy",
+													"isReferral": true,
+													"isHaveSubscribe": true
 												},
 												"isExpired": true
 											},
@@ -5910,12 +6367,56 @@
 													"_id": "6480807e904d20e5d4c1b6db",
 													"email": "7on999@gmail.com",
 													"lastname": "Папин",
-													"firstname": "Семённн"
+													"firstname": "Семённн",
+													"isReferral": true,
+													"isHaveSubscribe": false
 												},
 												"isExpired": false
 											}
 										],
 										"sizeLogs": 2
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/admin/promocodes/cancel": {
+			"delete": {
+				"summary": "Админ панель => Отмена действия промокода у конкретного пользователя",
+				"tags": ["Admin"],
+				"parameters": [
+					{
+						"in": "path",
+						"name": "id",
+						"schema": { "type": "string" },
+						"description": "Id записи применения промокода (promocodeLog id). Передается как params"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"type": { "type": "string", "description": "Надпись success" },
+										"alert": {
+											"type": "boolean",
+											"description": "Показывать как всплывающее уведомление в ui"
+										},
+										"msg": {
+											"type": "string",
+											"description": "Cообщение от отмены действии промокода"
+										}
+									},
+									"example": {
+										"type": "success",
+										"alert": true,
+										"msg": "Действие промокода отменено"
 									}
 								}
 							}
@@ -6005,7 +6506,7 @@
 													},
 													"discountFormat": {
 														"type": "string",
-														"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+														"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный период)"
 													},
 													"sizeDiscount": {
 														"type": "number",
@@ -6607,7 +7108,7 @@
 				"parameters": [
 					{ "$ref": "#/components/parameters/AuthorizationHeader" },
 					{
-						"in": "params",
+						"in": "path",
 						"name": "id",
 						"schema": { "type": "string" },
 						"description": "Id записи которую необходимо удалить"
@@ -6777,7 +7278,7 @@
 						"in": "query",
 						"name": "genreAlias",
 						"schema": { "type": "string" },
-						"description": "Жанр фильма или сериала"
+						"description": "Жанр фильма или сериала. Может передаваться несколько значений через знак \"|\". Например genreAlias=boeviki|trillery найдет фильмы, содержащий как минимум 1 из переданных жанров"
 					},
 					{
 						"in": "query",
@@ -7106,7 +7607,7 @@
 																	},
 																	"discountFormat": {
 																		"type": "number",
-																		"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+																		"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный месяц)"
 																	},
 																	"promocodeId": {
 																		"type": "number",
@@ -7178,10 +7679,6 @@
 							"schema": {
 								"type": "object",
 								"properties": {
-									"successURL": {
-										"type": "string",
-										"description": "Url адрес успешной страницы для оплаты подписки"
-									},
 									"selectedTariffId": {
 										"type": "string",
 										"description": "Id (mongoose.ObjectId) документа коллекции tariffs (выбранного тарифа)"
@@ -7205,7 +7702,8 @@
 										}
 									},
 									"example": {
-										"urlOfRedirectToPay": "https://dzen.ru/?yredirect=true&utm_referer=www.google.com&id=64a858371616a1286efe30c9"
+										"paymentId": "63bbed7523c814afb608a3f0",
+										"urlOfRedirectToPay": "https://securepayments.tinkoff.ru/m4lXrMRD"
 									}
 								}
 							}
@@ -7987,7 +8485,7 @@
 				}
 			}
 		},
-		"/sms/login": {
+		"auth/sms/login": {
 			"patch": {
 				"summary": "Авторизация через cмс",
 				"tags": ["Auth"],
@@ -7998,10 +8496,62 @@
 								"type": "object",
 								"properties": {
 									"phone": {
-										"type": "number",
+										"type": "string",
 										"description": "Номер телефона, начинающегося с цифры \"7\" и состоящий из 11 цифр без пробелов и разделяющих символов. Например 79107718366",
 										"required": true,
-										"example": 79107718366
+										"example": "79107718366"
+									},
+									"imgcode": {
+										"type": "string",
+										"description": "то что ввел пользователь при разгадывании капчи. Требуется не всегда",
+										"required": false,
+										"example": "12345"
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"responses": {
+				"200": {
+					"description": "OK",
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"type": { "type": "string", "description": "success" },
+									"msg": {
+										"type": "string",
+										"description": "Сообщение с кодом отправлено по указанному номеру телефона"
+									}
+								},
+								"example": {
+									"type": "success",
+									"msg": "Сообщение с кодом отправлено по указанному номеру телефона"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"auth/sms/capcha": {
+			"post": {
+				"summary": "Авторизация через cмс",
+				"tags": ["Auth"],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"phone": {
+										"type": "string",
+										"description": "Номер телефона, начинающегося с цифры \"7\" и состоящий из 11 цифр без пробелов и разделяющих символов. Например 79107718366",
+										"required": true,
+										"example": "79107718366"
 									}
 								}
 							}
@@ -8017,15 +8567,12 @@
 									"type": "object",
 									"properties": {
 										"type": { "type": "string", "description": "success" },
-										"msg": {
-											"type": "string",
-											"description": "Сообщение с кодом отправлено по указанному номеру телефона"
+										"value": {
+											"type": "boolean",
+											"description": "Требуется ли показывать капчу для пользователя ( true - показывать, false - не показывать)"
 										}
 									},
-									"example": {
-										"type": "success",
-										"msg": "Сообщение с кодом отправлено по указанному номеру телефона"
-									}
+									"example": { "type": "success", "msg": true }
 								}
 							}
 						}
@@ -8033,8 +8580,8 @@
 				}
 			}
 		},
-		"/sms/compare": {
-			"patch": {
+		"auth/sms/compare": {
+			"post": {
 				"summary": "Авторизация через cмс",
 				"tags": ["Auth"],
 				"requestBody": {
@@ -8044,7 +8591,7 @@
 								"type": "object",
 								"properties": {
 									"phone": {
-										"type": "number",
+										"type": "string",
 										"description": "Номер телефона, начинающегося с цифры \"7\" и состоящий из 11 цифр без пробелов и разделяющих символов.",
 										"required": true,
 										"example": 79107718366
@@ -9191,34 +9738,7 @@
 						"description": "OK",
 						"content": {
 							"application/json": {
-								"schema": {
-									"type": "object",
-									"properties": {
-										"link": { "type": "string", "description": "Реферальная ссылка" },
-										"referralPercentBonuse": {
-											"type": "number",
-											"description": "Бонус в процентах от реферала"
-										},
-										"balance": {
-											"type": "number",
-											"description": "Текущий баланс с подписок рефералов"
-										},
-										"card": {
-											"type": "object",
-											"description": "Данные карты для вывода баланса",
-											"properties": {
-												"number": { "type": "string", "description": "Номер карты" },
-												"balance": { "type": "string", "cardholder": "Владелец карты" }
-											}
-										}
-									},
-									"example": {
-										"link": "deercvt4btf/?r=6480807e904d20e5d4c1b6db",
-										"referralPercentBonuse": 50,
-										"balance": 5000,
-										"card": { "number": "1234123412341234", "cardholder": "Иванов СН" }
-									}
-								}
+								"schema": { "$ref": "#/components/schemas/RefferalStatResponse" }
 							}
 						}
 					}
@@ -9249,75 +9769,7 @@
 						"description": "OK",
 						"content": {
 							"application/json": {
-								"schema": {
-									"type": "object",
-									"properties": {
-										"totalSize": { "type": "number", "description": "Общее количество рефералов" },
-										"items": {
-											"type": "array",
-											"uniqueItems": true,
-											"minItems": 0,
-											"items": {
-												"type": "object",
-												"properties": {
-													"payment": {
-														"type": "object",
-														"properties": {
-															"createdAt": { "type": "string", "description": "Дата создания" },
-															"status": { "type": "string", "description": "Статус" },
-															"bonuseAmount": {
-																"type": "string",
-																"description": "Бонусное количество рублей"
-															}
-														}
-													},
-													"user": {
-														"type": "object",
-														"properties": {
-															"avatar": {
-																"type": "string",
-																"description": "Ссылка на файл картинку аватарки"
-															},
-															"firstname": { "type": "string", "description": "Имя пользователя" }
-														}
-													}
-												}
-											}
-										}
-									},
-									"example": {
-										"totalSize": 3,
-										"items": [
-											{
-												"payment": {
-													"createdAt": "2023-08-20T17:10:21.990Z",
-													"status": "CONFIRMED",
-													"bonuseAmount": 249.5
-												},
-												"user": {
-													"avatar": "/images/64808068904d20e5d4c1b555.jpg",
-													"firstname": "Евгений"
-												}
-											},
-											{
-												"payment": {
-													"createdAt": "2023-02-13T12:44:07.716Z",
-													"status": "REFUNDED",
-													"bonuseAmount": 96.515
-												},
-												"user": { "avatar": null, "firstname": "Гузаль" }
-											},
-											{
-												"payment": {
-													"createdAt": "2023-03-02T17:02:49.375Z",
-													"status": "PARTIAL_REFUNDED",
-													"bonuseAmount": 96.515
-												},
-												"user": { "avatar": null, "firstname": "Ринат" }
-											}
-										]
-									}
-								}
+								"schema": { "$ref": "#/components/schemas/RefferalPaymentResponse" }
 							}
 						}
 					}
@@ -9348,75 +9800,7 @@
 						"description": "OK",
 						"content": {
 							"application/json": {
-								"schema": {
-									"type": "object",
-									"properties": {
-										"totalSize": { "type": "number", "description": "Всего записей" },
-										"items": {
-											"type": "array",
-											"uniqueItems": true,
-											"minItems": 0,
-											"items": {
-												"type": "object",
-												"properties": {
-													"card": {
-														"type": "object",
-														"properties": {
-															"number": {
-																"type": "string",
-																"description": "Номер карты ( последние 4 символа)"
-															}
-														}
-													},
-													"amount": { "type": "object", "description": "Сумма" },
-													"createdAt": { "type": "string", "description": "Дата создания" },
-													"status": { "type": "string", "description": "Статус" }
-												}
-											}
-										}
-									},
-									"example": {
-										"totalSize": 6,
-										"items": [
-											{
-												"amount": 500,
-												"card": { "number": "**** **** **** 1234" },
-												"status": "pending",
-												"createdAt": "2023-08-07T07:49:53.803Z"
-											},
-											{
-												"amount": 322,
-												"card": { "number": "**** **** **** 1234" },
-												"status": "pending",
-												"createdAt": "2023-08-06T17:55:55.609Z"
-											},
-											{
-												"amount": 20,
-												"card": { "number": "**** **** **** 4444" },
-												"status": "pending",
-												"createdAt": "2023-08-05T20:19:56.715Z"
-											},
-											{
-												"amount": 1000,
-												"card": { "number": "**** **** **** 4444" },
-												"status": "pending",
-												"createdAt": "2023-08-05T16:33:43.967Z"
-											},
-											{
-												"amount": 2000,
-												"card": { "number": "**** **** **** 4444" },
-												"status": "pending",
-												"createdAt": "2023-07-20T03:26:17.630Z"
-											},
-											{
-												"amount": 1000,
-												"card": { "number": "**** **** **** 4444" },
-												"status": "pending",
-												"createdAt": "2023-07-20T03:25:27.935Z"
-											}
-										]
-									}
-								}
+								"schema": { "$ref": "#/components/schemas/RefferalWithdrawalStatResponse" }
 							}
 						}
 					}
@@ -9557,16 +9941,16 @@
 										},
 										"tariffName": {
 											"type": "string",
-											"description": "Название тарифа, скидку на который дает промокод. Если discountFormat = 'free-month', то это поле отсутсвует",
+											"description": "Название тарифа, скидку на который дает промокод.",
 											"required": false
 										},
 										"discountFormat": {
 											"type": "number",
-											"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free-month' ( бесплатный месяц)"
+											"description": "Формат скидки - 'percentages'(в процентах), 'rubles'(в рублях), 'free' ( бесплатный период)"
 										},
 										"sizeDiscount": {
 											"type": "number",
-											"description": "Размер скидки. Если discountFormat = 'free-month', то это поле отсутсвует",
+											"description": "Размер скидки. Если discountFormat = 'free', то это поле отсутсвует",
 											"required": false
 										}
 									},

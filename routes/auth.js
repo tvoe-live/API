@@ -2,7 +2,6 @@ const express = require('express')
 const router = express.Router()
 const axios = require('axios')
 const jwt = require('jsonwebtoken')
-const mongoose = require('mongoose')
 
 const User = require('../models/user')
 const AuthLog = require('../models/authLog')
@@ -12,11 +11,12 @@ const verify = require('../middlewares/verify')
 const resError = require('../helpers/resError')
 const resSuccess = require('../helpers/resSuccess')
 const { uploadImageToS3 } = require('../helpers/uploadImage')
-require('dotenv').config()
-
+const { amountLoginWithoutCapcha } = require('../constants')
 /*
  * Авторизация / регистрация через Яндекс и разрушение сессии
  */
+
+const regex = /^7\d{10}$/ // проверка номера телефона: начинается с цифры 7 и состоит из 11 цифр
 
 // Скачивание аватарки
 const downloadAvatar = async (res, default_avatar_id) => {
@@ -56,7 +56,7 @@ const generateAccessToken = (userId) => {
 
 router.post('/login', async (req, res) => {
 	const authorization = req.header('Authorization') || null
-	let refererUserId = req.header('RefererUserId') || null
+	// let refererUserId = req.header('RefererUserId') || null
 
 	if (!authorization) {
 		return resError({
@@ -79,67 +79,21 @@ router.post('/login', async (req, res) => {
 
 				if (!data.id) return res.status(400).json(data)
 
-				const {
-					id,
-					sex,
-					birthday,
-					last_name,
-					client_id,
-					first_name,
-					display_name,
-					default_email,
-					default_phone,
-					is_avatar_empty,
-					default_avatar_id,
-				} = data
-
-				const defaultEmail = default_email.toLowerCase()
+				const { id } = data
 
 				// Поиск пользователя в БД
-				let user = await User.findOne({ initial_id: id })
+				let user = await User.findOne({
+					initial_id: id,
+					$or: [
+						{ deleted: null },
+						{
+							$and: [{ deleted: { $exists: true } }, { 'deleted.finish': { $gt: new Date() } }],
+						},
+					],
+				})
 
-				// Если пользователя нет в БД, создаем нового
 				if (!user) {
-					// Скачать аватар с поставщика регистрации
-					const avatar = !is_avatar_empty ? await downloadAvatar(res, default_avatar_id) : null
-
-					user = await new User({
-						initial_id: id,
-						initial_sex: sex,
-						initial_birthday: birthday,
-						initial_lastname: last_name,
-						initial_email: defaultEmail,
-						initial_client_id: client_id,
-						initial_firstname: first_name,
-						initial_displayName: display_name,
-						initial_phone: default_phone?.number,
-
-						sex: sex,
-						avatar: avatar,
-						birthday: birthday,
-						lastname: last_name,
-						email: defaultEmail,
-						firstname: first_name,
-						displayName: display_name,
-						phone: default_phone?.number,
-						lastVisitAt: Date.now(),
-					}).save()
-
-					if (refererUserId) {
-						// Поиск пользователя в БД, который пригласил на регистрацию
-						const refererUser = await User.findOneAndUpdate(
-							{ _id: refererUserId },
-							{
-								$addToSet: {
-									'referral.userIds': user._id,
-								},
-							}
-						)
-						// Привязать пользователя к рефереру
-						if (refererUser) {
-							await User.updateOne({ _id: user._id }, { $set: { refererUserId } })
-						}
-					}
+					resError({ res, msg: 'Регистрация через яндекс больше не доступна' })
 				}
 
 				// Генерируем токен
@@ -252,24 +206,91 @@ router.post('/logout', verify.token, async (req, res) => {
 })
 
 /*
+ *  Проверка требуется ли капча
+ */
+
+router.post('/sms/capcha', async (req, res) => {
+	const { phone } = req.body
+
+	const ip = req.headers['x-real-ip']
+
+	try {
+		if (!phone) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Не получен phone',
+			})
+		}
+
+		if (!regex.test(phone)) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Номер телефона должен начинаться с "7" и состоять из 11 цифр',
+			})
+		}
+
+		let minuteAgo = new Date()
+		minuteAgo.setSeconds(minuteAgo.getSeconds() - 90)
+
+		const previousPhoneCheckingMinute = await PhoneChecking.find({
+			phone,
+			createdAt: { $gt: minuteAgo },
+		})
+
+		if (!!previousPhoneCheckingMinute.length) {
+			return resSuccess({ res, value: false })
+		}
+
+		let DayAgo = new Date()
+		DayAgo.setDate(DayAgo.getDate() - 1)
+
+		const previousPhoneChecking = await PhoneChecking.find({
+			phone,
+			createdAt: { $gt: DayAgo },
+		})
+
+		if (previousPhoneChecking.length >= 25) {
+			return resSuccess({ res, value: false })
+		}
+
+		const prevPhoneChecking = await PhoneChecking.find({
+			phone,
+		})
+			.sort({ createdAt: -1 })
+			.limit(amountLoginWithoutCapcha)
+
+		const prevIpChecking = await PhoneChecking.find({
+			ip,
+		})
+			.sort({ createdAt: -1 })
+			.limit(amountLoginWithoutCapcha)
+
+		if (
+			(prevPhoneChecking.length === amountLoginWithoutCapcha &&
+				prevPhoneChecking.every((log) => !log.isConfirmed)) ||
+			(prevIpChecking.length === amountLoginWithoutCapcha &&
+				prevIpChecking.every((log) => !log.isConfirmed))
+		) {
+			return resSuccess({ res, value: true })
+		}
+		return resSuccess({ res, value: false })
+	} catch (error) {
+		return res.json(error)
+	}
+})
+
+/*
  *  Отправка 4 значного кода через смс для авторизации / регистрации
  */
 
 router.post('/sms/login', async (req, res) => {
-	const { phone } = req.body
+	const { phone, imgcode } = req.body
 
-	const referer = req.header('Referer')
-	const ip = req.ip
+	const ip = req.headers['x-real-ip']
 
 	try {
-		if (referer !== process.env.REFERER && referer !== process.env.DEV_REFERER) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'С вашего адреса запрос запрещен',
-			})
-		}
-
 		if (req.useragent?.isBot) {
 			return resError({
 				res,
@@ -286,27 +307,27 @@ router.post('/sms/login', async (req, res) => {
 			})
 		}
 
-		if (typeof phone !== 'number') {
+		if (!regex.test(phone)) {
 			return resError({
 				res,
 				alert: true,
-				msg: 'Номер телефона может содержать только цифры',
+				msg: 'Номер телефона должен начинаться с "7" и состоять из 11 цифр',
 			})
 		}
 
-		if (phone.toString()?.length !== 11) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Номер телефона должен состоять из 11 цифр',
-			})
-		}
+		let minuteAgo = new Date()
+		minuteAgo.setSeconds(minuteAgo.getSeconds() - 90)
 
-		if (phone.toString()[0] !== '7') {
+		const previousPhoneCheckingMinute = await PhoneChecking.find({
+			$or: [{ phone }, { ip }],
+			createdAt: { $gt: minuteAgo },
+		})
+
+		if (!!previousPhoneCheckingMinute.length) {
 			return resError({
 				res,
 				alert: true,
-				msg: 'Номер телефона должен начинаться с цифры 7',
+				msg: 'Можно запросить код подтверждения только раз в 90 секунд',
 			})
 		}
 
@@ -314,20 +335,54 @@ router.post('/sms/login', async (req, res) => {
 		DayAgo.setDate(DayAgo.getDate() - 1)
 
 		const previousPhoneChecking = await PhoneChecking.find({
-			$or: [{ phone }, { ip }],
+			phone,
 			createdAt: { $gt: DayAgo },
 		})
 
-		if (previousPhoneChecking.length >= 10) {
+		if (previousPhoneChecking.length >= 25) {
 			return resError({
 				res,
 				alert: true,
-				msg: 'Превышено число авторизаций за сутки',
+				msg: 'Превышен лимит авторизаций за сутки',
 			})
 		}
 
-		const code = Math.floor(1000 + Math.random() * 9000) // 4 значный код для подтверждения
-		await PhoneChecking.updateMany({ phone, code: { $ne: code } }, { $set: { isCancelled: true } })
+		const prevPhoneChecking2 = await PhoneChecking.find({
+			phone,
+		})
+			.sort({ createdAt: -1 })
+			.limit(amountLoginWithoutCapcha)
+
+		const prevIpChecking = await PhoneChecking.find({
+			ip,
+		})
+			.sort({ createdAt: -1 })
+			.limit(amountLoginWithoutCapcha)
+
+		//Если последние 2 заявки на подтверждения для указанного номера телефона или ip адреса клиента не были подтверждены правильным смс кодом, необходимо показать капчу
+		if (
+			(prevPhoneChecking2.length === amountLoginWithoutCapcha &&
+				prevPhoneChecking2.every((log) => !log.isConfirmed) &&
+				!imgcode) ||
+			(prevIpChecking.length === amountLoginWithoutCapcha &&
+				prevIpChecking.every((log) => !log.isConfirmed) &&
+				!imgcode)
+		) {
+			return resError({
+				res,
+				alert: false,
+				msg: 'Требуется imgcode',
+			})
+		}
+
+		const code = Math.floor(1000 + Math.random() * 9000) // 4-значный код для подтверждения
+		await PhoneChecking.updateMany(
+			{ phone, code: { $ne: code }, type: 'authorization', isCancelled: false },
+			{ $set: { isCancelled: true } }
+		)
+
+		const mes = `${code} — код подтверждения`
+		console.log('sms-code:', code)
 
 		// Создание записи в журнале авторизаций через смс
 		await PhoneChecking.create({
@@ -337,21 +392,34 @@ router.post('/sms/login', async (req, res) => {
 			attemptAmount: 3,
 			ip,
 			isCancelled: false,
+			type: 'authorization',
 		})
 
-		const response = await fetch(
-			`https://smsc.ru/sys/send.php?login=${process.env.LOGIN}&psw=${process.env.PASSWORD}&phones=${phone}&mes=${code}`
-		)
+		const url = imgcode
+			? `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${mes}&imgcode=${imgcode}&userip=${ip}&op=1`
+			: `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${mes}`
 
-		if (response.status === 200) {
-			return resSuccess({ res, msg: 'Сообщение с кодом отправлено по указанному номеру телефона' })
-		} else {
+		const response = await fetch(url)
+
+		const responseText = await response?.text()
+
+		if (responseText.startsWith('ERROR = 10')) {
 			return resError({
 				res,
 				alert: true,
-				msg: 'Что-то пошло не так. Попробуйе позже',
+				msg: 'Символы указаны неверно',
 			})
 		}
+
+		if (response.status === 200) {
+			return resSuccess({ res, msg: 'Сообщение с кодом отправлено по указанному номеру телефона' })
+		}
+
+		return resError({
+			res,
+			alert: true,
+			msg: 'Что-то пошло не так. Попробуйте позже',
+		})
 	} catch (error) {
 		return res.json(error)
 	}
@@ -380,6 +448,14 @@ router.post('/sms/compare', async (req, res) => {
 		})
 	}
 
+	if (!regex.test(phone)) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Номер телефона должен начинаться с "7" и состоять из 11 цифр',
+		})
+	}
+
 	if (code.toString().length !== 4) {
 		return resError({
 			res,
@@ -388,14 +464,15 @@ router.post('/sms/compare', async (req, res) => {
 		})
 	}
 
-	let DayAgo = new Date()
-	DayAgo.setDate(DayAgo.getDate() - 1)
+	let hourAgo = new Date()
+	hourAgo.setHours(hourAgo.getHours() - 1)
 
 	const phoneCheckingLog = await PhoneChecking.findOne({
 		phone,
 		isConfirmed: false,
 		isCancelled: false,
-		createdAt: { $gt: DayAgo },
+		type: 'authorization',
+		createdAt: { $gt: hourAgo },
 	})
 
 	if (phoneCheckingLog) {
@@ -421,13 +498,40 @@ router.post('/sms/compare', async (req, res) => {
 		phoneCheckingLog.isConfirmed = true
 		await phoneCheckingLog.save()
 
+		// Получение данных пользователя, если он авторизован. при смене номера телефона
+		await verify.token(req)
+
+		if (req.user) {
+			await User.findOneAndUpdate(
+				{ _id: req.user._id },
+				{
+					authPhone: phone,
+				}
+			)
+
+			await User.updateMany(
+				{ authPhone: phone, _id: { $ne: req.user._id } },
+				{ $set: { authPhone: null } }
+			)
+
+			return resSuccess({ res, msg: 'Номер телефона привязан' })
+		}
+
 		// Поиск пользователя в БД
-		let user = await User.findOne({ phone })
+		let user = await User.findOne({
+			authPhone: phone,
+			$or: [
+				{ deleted: null },
+				{
+					$and: [{ deleted: { $exists: true } }, { 'deleted.finish': { $gt: new Date() } }],
+				},
+			],
+		})
 
 		// Если пользователя нет в БД, создаем нового
 		if (!user) {
 			user = await new User({
-				phone,
+				authPhone: phone,
 				lastVisitAt: Date.now(),
 			}).save()
 

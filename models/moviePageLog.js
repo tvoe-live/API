@@ -18,6 +18,7 @@ const moviePageLogSchema = new mongoose.Schema(
 		movieId: {
 			type: mongoose.Schema.Types.ObjectId,
 			index: true,
+			ref: 'Movie',
 		},
 		videoId: {
 			type: mongoose.Schema.Types.ObjectId,

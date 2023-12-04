@@ -68,6 +68,8 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 											poster: {
 												src: true,
 											},
+											alias: true,
+											publishedAt: true,
 										},
 									},
 								],
@@ -207,6 +209,9 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 											poster: {
 												src: true,
 											},
+											url: { $concat: ['/p/', '$alias'] },
+											alias: true,
+											publishedAt: true,
 										},
 									},
 								],
@@ -224,9 +229,35 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 										$addFields: {
 											phone: {
 												$cond: {
-													if: { $ifNull: ['$phone', true] },
+													if: { $ifNull: ['$authPhone', true] },
 													then: '$initial_phone',
-													else: '$phone',
+													else: '$authPhone',
+												},
+											},
+											isHaveSubscribe: {
+												$cond: {
+													if: {
+														$and: [
+															{ $ne: ['$subscribe', null] },
+															{ $gt: ['$subscribe.finishAt', new Date()] },
+														],
+													},
+													then: true,
+													else: false,
+												},
+											},
+											isReferral: {
+												$cond: {
+													if: {
+														$and: [
+															{ $ne: ['$referral', null] },
+															{ $ne: ['$referral.userIds', null] },
+															{ $eq: [{ $type: '$referral.userIds' }, 'array'] },
+															{ $gt: [{ $size: '$referral.userIds' }, 0] },
+														],
+													},
+													then: true,
+													else: false,
 												},
 											},
 										},
@@ -239,6 +270,7 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 											subscribe: true,
 											firstname: true,
 											phone: true,
+											isHaveSubscribe: true,
 										},
 									},
 								],
@@ -256,11 +288,9 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 								userId: false,
 								movieId: false,
 								__v: false,
-								createdAt: false,
-								updatedAt: false,
 							},
 						},
-						{ $sort: { _id: -1 } }, // Была сортировка updatedAt
+						{ $sort: { updatedAt: -1 } }, // Была сортировка updatedAt
 						{ $skip: skip },
 						{ $limit: limit },
 					],
@@ -297,9 +327,18 @@ router.post('/publish', verify.token, verify.isAdmin, async (req, res) => {
 	}
 
 	try {
-		const movieRating = await MovieRating.findOne({ _id })
+		const { isDeleted, isPublished } = await MovieRating.findOne({ _id })
+
+		if (isDeleted && !isPublished) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Невозможно опубликовать удаленный отзыв',
+			})
+		}
+
 		const set = {
-			isPublished: !movieRating.isPublished,
+			isPublished: !isPublished,
 		}
 
 		await MovieRating.updateOne({ _id }, { $set: set })

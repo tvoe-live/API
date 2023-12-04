@@ -9,11 +9,9 @@ const resSuccess = require('../../helpers/resSuccess')
 const multer = require('multer')
 const mongoose = require('mongoose')
 const isValidObjectId = require('../../helpers/isValidObjectId')
-// const { uploadImageToS3 } = require('../../helpers/uploadImage')
 
 // Загрузка картинки в буффер
 const memoryStorage = multer.memoryStorage()
-const uploadMemoryStorage = multer({ storage: memoryStorage })
 
 /*
  * Уведомления
@@ -25,7 +23,6 @@ const uploadMemoryStorage = multer({ storage: memoryStorage })
 router.get('/', verify.token, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
-
 	const lookupAndMatch = [
 		{
 			$match: {
@@ -39,6 +36,15 @@ router.get('/', verify.token, async (req, res) => {
 					{
 						type: {
 							$nin: req.user.disabledNotifications,
+						},
+					},
+					{
+						$expr: {
+							$and: [
+								{ $gte: [new Date(), '$willPublishedAt'] },
+								{ $ne: ['$deleted', true] },
+								{ $gte: ['$createdAt', req.user.createdAt] },
+							],
 						},
 					},
 				],
@@ -57,13 +63,6 @@ router.get('/', verify.token, async (req, res) => {
 					},
 				],
 				as: 'notificationReadLog',
-			},
-		},
-		{
-			$match: {
-				$expr: {
-					$and: [{ $gte: [new Date(), '$willPublishedAt'] }, { $ne: ['$deleted', true] }],
-				},
 			},
 		},
 	]
@@ -184,7 +183,9 @@ router.patch('/settings', verify.token, async (req, res) => {
 			return resError({
 				res,
 				alert: true,
-				msg: `${notificationType} - не валидное значение. Возможные варианты: ${notificationTypes}`,
+				msg: `${notificationType} - не валидное значение. Возможные варианты: ${notificationTypes
+					.map((d) => `'${d}'`)
+					.join()}`,
 			})
 		}
 	})

@@ -29,6 +29,8 @@ router.get('/pages', async (req, res) => {
 router.get('/', async (req, res) => {
 	const { sort, rating, genreAlias, dateReleased, categoryAlias } = req.query
 
+	const genres = genreAlias?.split('|')
+
 	let sortParams = { raisedUpAt: -1, createdAt: -1 } // Параметры сортировки
 
 	const skip = +req.query.skip || 0
@@ -55,9 +57,11 @@ router.get('/', async (req, res) => {
 		const pages = await getCatalogPages({ categoryAlias })
 		const page = pages.find(
 			(page) =>
-				(rating ? +page.rating === +rating : true) &&
-				(genreAlias ? page.genreAlias === genreAlias : true) &&
-				(dateReleased ? page.dateReleased === dateReleased : true) &&
+				(rating ? Math.floor(+page.rating) === Math.floor(+rating) : !('rating' in page)) &&
+				(genreAlias && genres?.length < 2
+					? page.genreAlias === genreAlias
+					: !('genreAlias' in page)) &&
+				(dateReleased ? page.dateReleased === dateReleased : !('dateReleased' in page)) &&
 				(categoryAlias !== 'collections' ? page.categoryAlias === categoryAlias : true)
 		)
 
@@ -70,6 +74,11 @@ router.get('/', async (req, res) => {
 			page.categoryAlias = { $in: ['films', 'serials'] }
 		}
 
+		// Поиск по нескольким жанрам ( через или)
+		if (genres?.length > 1) {
+			page.genreAlias = { $in: genres }
+		}
+
 		// Переименовать поле genreAlias в genresAliases для поиска в бд
 		if (page.genreAlias) page.genresAliases = page.genreAlias
 		delete page.genreAlias
@@ -80,7 +89,7 @@ router.get('/', async (req, res) => {
 			if (!rating) delete page.rating
 		}
 
-		if (rating) page.rating = { $gte: +rating } // Поиск по рейтингу >=
+		if (rating) page.rating = { $gte: Math.floor(+rating) } // Поиск по рейтингу >=
 
 		const lookupFromCategories = {
 			from: 'categories',

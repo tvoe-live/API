@@ -1,6 +1,7 @@
 const express = require('express')
 const mongoose = require('mongoose')
 
+const User = require('../../models/user')
 const Tariff = require('../../models/tariff')
 const Promocode = require('../../models/promocode')
 const PromocodesLog = require('../../models/promocodeLog')
@@ -92,40 +93,45 @@ router.get('/', verify.token, verify.isAdmin, async (req, res) => {
 router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 	const {
 		value,
-		startAt,
-		finishAt,
-		maxAmountActivation,
 		tariffName,
 		discountFormat,
 		sizeDiscount,
+		startAt,
+		finishAt = '3000-01-01',
+		maxAmountActivation = null,
 		isActive = false,
 		isOnlyForNewUsers = true,
 	} = req.body
 
-	if (!maxAmountActivation) return resError({ res, msg: 'Не передан maxAmountActivation' })
-	if (!discountFormat) return resError({ res, msg: 'Не передан discountFormat' })
-	if (discountFormat !== 'free-month' && !sizeDiscount)
-		return resError({ res, msg: 'Не передан sizeDiscount' })
-	if (discountFormat !== 'free-month' && !tariffName)
-		return resError({ res, msg: 'Не передан tariffName' })
-	if (!value) return resError({ res, msg: 'Не передан value' })
+	if (!discountFormat) return resError({ res, msg: 'Не передан discountFormat', alert: true })
+	if (discountFormat !== 'free' && !sizeDiscount)
+		return resError({ res, msg: 'Не передан sizeDiscount', alert: true })
+	if (!tariffName) return resError({ res, msg: 'Не передан tariffName', alert: true })
+	if (!value) return resError({ res, msg: 'Не передан value', alert: true })
+	if (value.length > 32)
+		return resError({ res, msg: 'Длина промокода не может превышать 32 символа', alert: true })
 
 	if (!startAt)
 		return resError({
 			res,
 			msg: 'Не передана дата и время начала действия промокода - параметр startAt',
-		})
-	if (!finishAt)
-		return resError({
-			res,
-			msg: 'Не передана дата и время начала действия промокода - параметр finishAt',
+			alert: true,
 		})
 
-	const existTariff = Tariff.findOne({ name: tariffName })
-	if (!existTariff) return resError({ res, msg: 'Указанного тарифа не существует' })
+	const existTariff = await Tariff.findOne({ name: tariffName })
+	if (!existTariff) return resError({ res, msg: 'Указанного тарифа не существует', alert: true })
 
-	const existPromocode = await Promocode.findOne({ value })
-	if (existPromocode) return resError({ res, msg: 'Промокод с таким названием уже существует' })
+	if (discountFormat === 'percentages' && (sizeDiscount < 1 || sizeDiscount > 99)) {
+		return resError({ res, msg: 'Не допустимый процент скидки', alert: true })
+	}
+
+	if (discountFormat === 'rubles' && (sizeDiscount < 1 || sizeDiscount > existTariff.price - 1)) {
+		return resError({ res, msg: 'Не допустимая величина скидки', alert: true })
+	}
+
+	const existPromocode = await Promocode.findOne({ value, deleted: { $ne: true } })
+	if (existPromocode)
+		return resError({ res, msg: 'Промокод с таким названием уже существует', alert: true })
 
 	try {
 		await Promocode.create({
@@ -226,18 +232,64 @@ router.delete('/', verify.token, verify.isAdmin, async (req, res) => {
 })
 
 /*
+ *  Отменить действие промокода для конкретного юзера
+ */
+router.delete('/cancel/:id', verify.token, verify.isAdmin, async (req, res) => {
+	const _id = req.params?.id
+	if (!_id) return resError({ res, msg: 'Не передан id' })
+
+	try {
+		const promocodeLog = await PromocodesLog.findOne({
+			_id,
+		})
+
+		if (!promocodeLog) {
+			return resError({
+				res,
+				msg: `Невозможно отменить действие промокода, так как promocodeLog c id = ${_id} не существует`,
+			})
+		}
+
+		if (promocodeLog.isCancelled) {
+			return resError({ res, msg: 'Промокод уже был отменен ранее' })
+		} else if (promocodeLog.isPurchaseCompleted) {
+			const user = await User.findOne({ _id: promocodeLog.userId })
+			const promocode = await Promocode.findOne({ _id: promocodeLog.promocodeId })
+
+			const tariff = await Tariff.findOne({ name: promocode.tariffName })
+
+			if (Date.now() < promocodeLog.createdAt.getTime() + Number(tariff.duration)) {
+				user.subscribe = null
+				user.save()
+			}
+		}
+
+		promocodeLog.isCancelled = true
+		promocodeLog.save()
+
+		return resSuccess({
+			res,
+			alert: true,
+			msg: 'Действие промокода отменено',
+		})
+	} catch (err) {
+		return resError({ res, msg: err })
+	}
+})
+
+/*
  *  Общие данные и аналитика об одном конкретном промокоде
  */
 router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
 
-	const { _id, userId } = req.query
+	const { _id, query } = req.query
 
 	if (!_id) return resError({ res, msg: 'Не передан _id' })
 	if (!isValidObjectId(_id)) return resError({ res, msg: 'Не валидный _id' })
 
-	if (userId && !isValidObjectId(userId)) return resError({ res, msg: 'Не валидный userId' })
+	if (query && !isValidObjectId(query)) return resError({ res, msg: 'Не валидный userId' })
 
 	try {
 		const result = await Promocode.aggregate([
@@ -272,8 +324,8 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 					pipeline: [
 						{
 							$match: {
-								...(userId && {
-									userId: mongoose.Types.ObjectId(userId),
+								...(query && {
+									userId: mongoose.Types.ObjectId(query),
 								}),
 							},
 						},
@@ -291,6 +343,38 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 											phone: true,
 											email: true,
 											lastname: true,
+											subscribe: true,
+											referral: true,
+										},
+									},
+									{
+										$addFields: {
+											isReferral: {
+												$cond: {
+													if: {
+														$and: [
+															{ $ne: ['$referral', null] },
+															{ $ne: ['$referral.userIds', null] },
+															{ $eq: [{ $type: '$referral.userIds' }, 'array'] },
+															{ $gt: [{ $size: '$referral.userIds' }, 0] },
+														],
+													},
+													then: true,
+													else: false,
+												},
+											},
+											isHaveSubscribe: {
+												$cond: {
+													if: {
+														$and: [
+															{ $ne: ['$subscribe', null] },
+															{ $gt: ['$subscribe.finishAt', new Date()] },
+														],
+													},
+													then: true,
+													else: false,
+												},
+											},
 										},
 									},
 								],
@@ -301,7 +385,7 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 						{
 							$addFields: {
 								isExpired: {
-									$lt: [{ $add: ['$createdAt', '$$tariffDuration'] }, new Date()],
+									$lt: [{ $add: ['$createdAt', '$$tariffDuration'] }, new Date()], // закончилось ли действие промокода
 								},
 							},
 						},
@@ -315,13 +399,13 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 						},
 					],
 
-					as: 'promocodeslogs',
+					as: 'items',
 				},
 			},
 			{
 				$addFields: {
 					sizeLogs: {
-						$size: '$promocodeslogs',
+						$size: '$items',
 					},
 				},
 			},
