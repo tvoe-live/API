@@ -83,6 +83,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 								createdAt: true,
 								subscribe: true,
 								lastVisitAt: true,
+								authPhone: true,
 							},
 						},
 						{ $sort: { _id: -1 } },
