@@ -16,6 +16,7 @@ const resetOldSessions = require('./helpers/resetOldSessions')
 const resetSubscribe = require('./helpers/resetSubscribeTask')
 const recurrentPayment = require('./helpers/reccurentPayment')
 const subscribeRouter = require('./routes/profile/changeAutopayment')
+const autoTransitionTariff = require('./helpers/autoTransitionTariffTask')
 
 const { PORT, STATIC_DIR, IMAGES_DIR, VIDEOS_DIR, DATABASE_URL } = process.env
 
@@ -137,4 +138,5 @@ app.listen(PORT, () => {
 	Tasks.restart('upMovie', upMovieTask)
 	Tasks.restart('resetOldSessions', resetOldSessions)
 	Tasks.restart('resetSubscribes', resetSubscribe)
+	Tasks.restart('autoTransitionTariff', autoTransitionTariff)
 })
