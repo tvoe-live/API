@@ -204,6 +204,8 @@ router.patch('/phone', verify.token, async (req, res) => {
 			{ $set: { isCancelled: true } }
 		)
 
+		const mes = `${code} — код подтверждения`
+
 		// Создание записи в журнале авторизаций через смс
 		await PhoneChecking.create({
 			phone,
@@ -216,8 +218,8 @@ router.patch('/phone', verify.token, async (req, res) => {
 		})
 
 		const url = imgcode
-			? `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}&imgcode=${imgcode}&userip=${ip}&op=1`
-			: `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}`
+			? `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${mes}&imgcode=${imgcode}&userip=${ip}&op=1`
+			: `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${mes}`
 
 		const response = await fetch(url)
 

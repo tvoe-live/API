@@ -213,10 +213,10 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 									{
 										$project: {
 											role: true,
-											email: true,
 											avatar: true,
 											subscribe: true,
 											firstname: true,
+											phone: '$authPhone',
 										},
 									},
 								],

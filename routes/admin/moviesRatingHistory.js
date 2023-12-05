@@ -91,10 +91,35 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 									{
 										$project: {
 											role: true,
-											email: true,
 											avatar: true,
-											subscribe: true,
 											firstname: true,
+											tariffId: '$subscribe.tariffId',
+											phone: '$authPhone',
+										},
+									},
+									{
+										$lookup: {
+											from: 'tariffs',
+											localField: 'tariffId',
+											foreignField: '_id',
+											pipeline: [
+												{
+													$project: {
+														name: true,
+													},
+												},
+											],
+											as: 'tariff',
+										},
+									},
+									{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
+									{
+										$project: {
+											tariffName: '$tariff.name',
+											role: true,
+											avatar: true,
+											firstname: true,
+											phone: '$authPhone',
 										},
 									},
 								],
@@ -226,26 +251,41 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 								foreignField: '_id',
 								pipeline: [
 									{
-										$addFields: {
-											phone: {
-												$cond: {
-													if: { $ifNull: ['$authPhone', true] },
-													then: '$initial_phone',
-													else: '$authPhone',
-												},
-											},
-											isHaveSubscribe: {
-												$cond: {
-													if: {
-														$and: [
-															{ $ne: ['$subscribe', null] },
-															{ $gt: ['$subscribe.finishAt', new Date()] },
-														],
+										$project: {
+											role: true,
+											avatar: true,
+											firstname: true,
+											tariffId: '$subscribe.tariffId',
+											phone: '$authPhone',
+										},
+									},
+									{
+										$lookup: {
+											from: 'tariffs',
+											localField: 'tariffId',
+											foreignField: '_id',
+											pipeline: [
+												{
+													$project: {
+														name: true,
 													},
-													then: true,
-													else: false,
 												},
-											},
+											],
+											as: 'tariff',
+										},
+									},
+									{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
+									{
+										$project: {
+											tariffName: '$tariff.name',
+											role: true,
+											avatar: true,
+											firstname: true,
+											phone: '$authPhone',
+										},
+									},
+									{
+										$addFields: {
 											isReferral: {
 												$cond: {
 													if: {
@@ -262,17 +302,17 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 											},
 										},
 									},
-									{
-										$project: {
-											role: true,
-											email: true,
-											avatar: true,
-											subscribe: true,
-											firstname: true,
-											phone: true,
-											isHaveSubscribe: true,
-										},
-									},
+									// {
+									// 	$project: {
+									// 		role: true,
+									// 		email: true,
+									// 		avatar: true,
+									// 		subscribe: true,
+									// 		firstname: true,
+									// 		phone: true,
+									// 		isHaveSubscribe: true,
+									// 	},
+									// },
 								],
 								as: 'user',
 							},
