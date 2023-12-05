@@ -7,7 +7,9 @@ const resetOldSessions = async () => {
 		})
 		for (const usr of users) {
 			usr.sessions = usr.sessions.filter(
-				(session) => session.lastVisitAt >= new Date() - 1000 * 60 * 60 * 24 * 90
+				(session) =>
+					session.lastVisitAt >=
+					new Date() - 1000 * 60 * 60 * 24 * Number(process.env.SESSUIONS_DAYS)
 			)
 			await usr.save()
 		}
