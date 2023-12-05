@@ -340,10 +340,35 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 									{
 										$project: {
 											firstname: true,
-											phone: true,
-											email: true,
 											lastname: true,
-											subscribe: true,
+											referral: true,
+											phone: '$authPhone',
+											tariffId: '$subscribe.tariffId',
+										},
+									},
+									{
+										$lookup: {
+											from: 'tariffs',
+											localField: 'tariffId',
+											foreignField: '_id',
+											pipeline: [
+												{
+													$project: {
+														name: true,
+													},
+												},
+											],
+											as: 'tariff',
+										},
+									},
+									{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
+									{
+										$project: {
+											tariffName: '$tariff.name',
+											role: true,
+											avatar: true,
+											firstname: true,
+											lastname: true,
 											referral: true,
 										},
 									},
@@ -357,18 +382,6 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 															{ $ne: ['$referral.userIds', null] },
 															{ $eq: [{ $type: '$referral.userIds' }, 'array'] },
 															{ $gt: [{ $size: '$referral.userIds' }, 0] },
-														],
-													},
-													then: true,
-													else: false,
-												},
-											},
-											isHaveSubscribe: {
-												$cond: {
-													if: {
-														$and: [
-															{ $ne: ['$subscribe', null] },
-															{ $gt: ['$subscribe.finishAt', new Date()] },
 														],
 													},
 													then: true,
