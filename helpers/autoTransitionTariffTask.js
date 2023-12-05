@@ -11,6 +11,8 @@ const autoTransitionTariff = async () => {
 			'subscribe.finishAt': { $lt: start, $gte: finish },
 		})
 
+		console.log(users)
+
 		const newTariff = await tariff.findById('63dbe11e7f457bc81bc920c9')
 
 		const startAtTariff = new Date()
