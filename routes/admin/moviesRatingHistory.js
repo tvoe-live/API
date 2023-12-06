@@ -119,7 +119,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 											role: true,
 											avatar: true,
 											firstname: true,
-											phone: '$authPhone',
+											phone: true,
 										},
 									},
 								],
@@ -281,38 +281,9 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 											role: true,
 											avatar: true,
 											firstname: true,
-											phone: '$authPhone',
+											phone: true,
 										},
 									},
-									{
-										$addFields: {
-											isReferral: {
-												$cond: {
-													if: {
-														$and: [
-															{ $ne: ['$referral', null] },
-															{ $ne: ['$referral.userIds', null] },
-															{ $eq: [{ $type: '$referral.userIds' }, 'array'] },
-															{ $gt: [{ $size: '$referral.userIds' }, 0] },
-														],
-													},
-													then: true,
-													else: false,
-												},
-											},
-										},
-									},
-									// {
-									// 	$project: {
-									// 		role: true,
-									// 		email: true,
-									// 		avatar: true,
-									// 		subscribe: true,
-									// 		firstname: true,
-									// 		phone: true,
-									// 		isHaveSubscribe: true,
-									// 	},
-									// },
 								],
 								as: 'user',
 							},

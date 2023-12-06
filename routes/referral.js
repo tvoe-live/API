@@ -120,6 +120,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 						firstname: true,
 						lastname: true,
 						referral: true,
+						createdAt: true,
 					}
 			  ).lean()
 			: []
@@ -142,6 +143,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 						avatar: true,
 						firstname: true,
 						lastname: true,
+						createdAt: true,
 					}
 			  ).lean()
 			: []
@@ -203,6 +205,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 					avatar: (firstLvlUser || secondLvlUser).avatar,
 					firstname: (firstLvlUser || secondLvlUser).firstname,
 					lastname: (firstLvlUser || secondLvlUser).lastname,
+					createdAt: (firstLvlUser || secondLvlUser).createdAt,
 					level: firstLvlUser ? 1 : 2,
 				},
 			})
@@ -219,6 +222,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 				avatar: true,
 				firstname: true,
 				lastname: true,
+				createdAt: true,
 			}
 		)
 
@@ -228,6 +232,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 			avatar: user.avatar,
 			firstname: user.firstname,
 			lastname: user.lastname,
+			createdAt: user.createdAt,
 			level: secondUserIdsString.includes(String(user.id)) ? 2 : 1,
 		}))
 

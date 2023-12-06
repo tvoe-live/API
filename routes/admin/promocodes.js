@@ -340,7 +340,6 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 									{
 										$project: {
 											firstname: true,
-											lastname: true,
 											referral: true,
 											phone: '$authPhone',
 											tariffId: '$subscribe.tariffId',
@@ -370,24 +369,7 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 											firstname: true,
 											lastname: true,
 											referral: true,
-										},
-									},
-									{
-										$addFields: {
-											isReferral: {
-												$cond: {
-													if: {
-														$and: [
-															{ $ne: ['$referral', null] },
-															{ $ne: ['$referral.userIds', null] },
-															{ $eq: [{ $type: '$referral.userIds' }, 'array'] },
-															{ $gt: [{ $size: '$referral.userIds' }, 0] },
-														],
-													},
-													then: true,
-													else: false,
-												},
-											},
+											phone: true,
 										},
 									},
 								],

@@ -394,6 +394,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 								displayName: true,
 								_id: true,
 								connectionCount: true,
+								subscribe: true,
 							},
 						},
 						{
@@ -419,7 +420,6 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 							$project: {
 								rUsers: false,
 								referral: false,
-								subscribe: false,
 							},
 						},
 						{ $sort: { createdAt: -1 } },
