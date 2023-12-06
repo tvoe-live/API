@@ -22,7 +22,7 @@ const filterUsersOptions = {
 }
 
 // Получение списка пользователей
-router.get('/', getSearchQuery, async (req, res) => {
+router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
