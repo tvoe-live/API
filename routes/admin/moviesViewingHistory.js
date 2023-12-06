@@ -127,7 +127,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 											role: true,
 											avatar: true,
 											firstname: true,
-											phone: '$authPhone',
+											phone: true,
 										},
 									},
 								],
