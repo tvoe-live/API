@@ -387,7 +387,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 								tariffName: '$subscribeName.name',
 								role: true,
 								avatar: true,
-								phome: '$authPhone',
+								phone: '$authPhone',
 								firstname: true,
 								refererUserId: true,
 								'referral.balance': true,
