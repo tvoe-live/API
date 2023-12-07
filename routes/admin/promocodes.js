@@ -579,7 +579,6 @@ router.get('/countAll', verify.token, verify.isAdmin, getSearchQuery, async (req
 				},
 			],
 			async (err, result) => {
-				console.log('result:', result)
 				const finalResult = { activatedPromocodesAmount, ...result[0] }
 				return res.status(200).json(finalResult)
 			}
