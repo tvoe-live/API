@@ -607,6 +607,23 @@ router.patch('/withdrawals/:id', verify.token, verify.isAdmin, async (req, res) 
 			return resError({ res, msg: 'Не найдена запись по указанному id' })
 		}
 
+		if (status === 'canceled') {
+			const updatedUser = await userSchema.findOneAndUpdate(
+				{
+					_id: result.userId,
+				},
+				{
+					$set: {
+						'referral.balance': result.amount,
+					},
+				}
+			)
+
+			if (!updatedUser) {
+				return resError({ res, msg: `Не найден пользователь по указанному id ${result.userId}` })
+			}
+		}
+
 		return resSuccess({
 			res,
 			alert: true,
