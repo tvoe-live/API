@@ -616,7 +616,6 @@ router.patch('/withdrawals/:id', verify.token, verify.isAdmin, async (req, res) 
 					$set: {
 						'referral.balance': result.amount,
 					},
-					$inc: { __v: 1 },
 				}
 			)
 
