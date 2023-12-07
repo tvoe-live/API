@@ -1,4 +1,6 @@
 const express = require('express')
+const mongoose = require('mongoose')
+
 const router = express.Router()
 const Movie = require('../models/movie')
 const resError = require('../helpers/resError')
@@ -6,7 +8,7 @@ const resSuccess = require('../helpers/resSuccess')
 const movieOperations = require('../helpers/movieOperations')
 const verify = require('../middlewares/verify')
 const MoviePageLog = require('../models/moviePageLog')
-
+const User = require('../models/user')
 const carousel = [
 	{
 		$lookup: {
@@ -496,6 +498,7 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 						{
 							$group: {
 								_id: '$movieId',
+								logId: { $first: '$_id' },
 								videoId: { $first: '$videoId' },
 								endTime: { $first: '$endTime' },
 								updatedAt: { $first: '$updatedAt' },
@@ -529,14 +532,18 @@ router.delete('/continueWatching/:id', verify.token, async (req, res) => {
 	const logId = req.params.id
 
 	try {
-		await MoviePageLog.updateOne(
-			{ _id: logId },
+		const result = await MoviePageLog.findOneAndUpdate(
+			{ _id: mongoose.Types.ObjectId(logId) },
 			{
 				$set: {
 					isDeletedFromContinueWathcing: true,
 				},
 			}
 		)
+
+		if (!result) {
+			return resError({ res, msg: `Не найдено записи по указанному logId ${logId}` })
+		}
 
 		return resSuccess({
 			res,
