@@ -621,7 +621,6 @@ router.patch('/withdrawals/:id', verify.token, verify.isAdmin, async (req, res) 
  * Роут для получения детальной информации пользователя-реферала
  */
 router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
-	//const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
 
 	try {
@@ -681,7 +680,7 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 									bonusAmount: true,
 									avatar: true,
 									email: true,
-									phone: true,
+									phone: '$authPhone',
 									'subscribe.startAt': true,
 									'subscribe.finishAt': true,
 									displayName: true,
