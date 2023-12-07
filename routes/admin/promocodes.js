@@ -477,13 +477,11 @@ router.get('/countAll', verify.token, verify.isAdmin, getSearchQuery, async (req
 									deleted: { $ne: true },
 									isActive: true,
 									startAt: { $lte: new Date() },
-									finishAt: {
-										$or: [
-											{ finishAt: { $gte: new Date() } },
-											{ finishAt: { $exists: false } },
-											{ finishAt: null },
-										],
-									},
+									$or: [
+										{ finishAt: { $gte: new Date() } },
+										{ finishAt: { $exists: false } },
+										{ finishAt: null },
+									],
 								},
 							},
 							{
@@ -499,9 +497,7 @@ router.get('/countAll', verify.token, verify.isAdmin, getSearchQuery, async (req
 							{
 								$match: {
 									deleted: { $ne: true },
-									finishAt: {
-										$and: [{ finishAt: { $exists: true } }, { finishAt: { $lte: new Date() } }],
-									},
+									$and: [{ finishAt: { $exists: true } }, { finishAt: { $lte: new Date() } }],
 								},
 							},
 							{
@@ -583,6 +579,7 @@ router.get('/countAll', verify.token, verify.isAdmin, getSearchQuery, async (req
 				},
 			],
 			async (err, result) => {
+				console.log('result:', result)
 				const finalResult = { activatedPromocodesAmount, ...result[0] }
 				return res.status(200).json(finalResult)
 			}
