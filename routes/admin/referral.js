@@ -384,19 +384,17 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 							//Указываем данные, которые необходимо вернуть
 							$project: {
 								'rUsers.bonusAmount': true,
-								'subscribeName.name': true,
+								tariffName: '$subscribeName.name',
+								role: true,
 								avatar: true,
-								email: true,
-								phone: true,
-								authPhone: true,
+								phone: '$authPhone',
 								firstname: true,
 								refererUserId: true,
 								'referral.balance': true,
 								displayName: true,
 								_id: true,
-								'subscribe.startAt': true,
-								'subscribe.finishAt': true,
 								connectionCount: true,
+								subscribe: true,
 							},
 						},
 						{
@@ -415,28 +413,13 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 										},
 									},
 								},
-								displayPhone: {
-									$cond: {
-										if: { $ne: ['$authPhone', null] },
-										then: '$authPhone',
-										else: '$phone',
-									},
-								},
-								subscribe: {
-									startAt: '$subscribe.startAt',
-									finishAt: '$subscribe.finishAt',
-									name: '$subscribeName.name',
-								},
 								balance: '$referral.balance',
 							},
 						},
 						{
 							$project: {
 								rUsers: false,
-								subscribeName: false,
 								referral: false,
-								phone: false,
-								displayPhone: false,
 							},
 						},
 						{ $sort: { createdAt: -1 } },
@@ -495,27 +478,36 @@ router.get('/withdrawals', verify.token, verify.isAdmin, getSearchQuery, async (
 					},
 					{
 						$project: {
-							email: true,
-							authPhone: true,
 							_id: true,
 							avatar: true,
 							firstname: true,
+							phone: '$authPhone',
+							tariffId: '$subscribe.tariffId',
 						},
 					},
 					{
-						$addFields: {
-							isHaveSubscribe: {
-								$cond: {
-									if: {
-										$and: [
-											{ $ne: ['$subscribe', null] },
-											{ $gt: ['$subscribe.finishAt', new Date()] },
-										],
+						$lookup: {
+							from: 'tariffs',
+							localField: 'tariffId',
+							foreignField: '_id',
+							pipeline: [
+								{
+									$project: {
+										name: true,
 									},
-									then: true,
-									else: false,
 								},
-							},
+							],
+							as: 'tariff',
+						},
+					},
+					{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
+					{
+						$project: {
+							tariffName: '$tariff.name',
+							role: true,
+							avatar: true,
+							firstname: true,
+							phone: true,
 						},
 					},
 				],

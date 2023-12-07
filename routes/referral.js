@@ -120,6 +120,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 						firstname: true,
 						lastname: true,
 						referral: true,
+						createdAt: true,
 					}
 			  ).lean()
 			: []
@@ -142,6 +143,7 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 						avatar: true,
 						firstname: true,
 						lastname: true,
+						createdAt: true,
 					}
 			  ).lean()
 			: []
@@ -171,10 +173,15 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 		// История платежей
 		const items = []
 
+		// Id пользователей которые принадлежжат множеству referal.userIds и совершили покупки
+		const userIdsBuyers = []
+
 		// Пробегаем по массиву с логами и формируем из него результат вместе с данными профиля
 		paymentLogs.forEach((paymentLog) => {
 			const condition = (referralUser) =>
 				referralUser._id.toString() === paymentLog.userId.toString()
+
+			userIdsBuyers.push(String(paymentLog.userId))
 
 			const firstLvlUser = referralUsersFirstLvl.find(condition)
 			const secondLvlUser = !firstLvlUser && referralUsersSecondLvl.find(condition)
@@ -198,12 +205,46 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 					avatar: (firstLvlUser || secondLvlUser).avatar,
 					firstname: (firstLvlUser || secondLvlUser).firstname,
 					lastname: (firstLvlUser || secondLvlUser).lastname,
+					createdAt: (firstLvlUser || secondLvlUser).createdAt,
 					level: firstLvlUser ? 1 : 2,
 				},
 			})
 		})
 
-		return resSuccess({ res, items, totalSize: items.length })
+		const invitedUsersWithoutPurchaseIds = commonUserIds.filter(
+			(id) => !userIdsBuyers.includes(String(id))
+		)
+
+		const invitedUsersWithoutPurchase = await User.find(
+			{ _id: { $in: invitedUsersWithoutPurchaseIds } },
+			{
+				_id: true,
+				avatar: true,
+				firstname: true,
+				lastname: true,
+				createdAt: true,
+			}
+		)
+
+		const secondUserIdsString = secondUserIds.map((id) => String(id))
+		const resultInvitedUsersWithoutPurchase = invitedUsersWithoutPurchase.map((user) => ({
+			_id: user._id,
+			avatar: user.avatar,
+			firstname: user.firstname,
+			lastname: user.lastname,
+			createdAt: user.createdAt,
+			level: secondUserIdsString.includes(String(user.id)) ? 2 : 1,
+		}))
+
+		return resSuccess({
+			res,
+			items,
+			totalSize: items.length,
+			usersWithoutPurchase: {
+				items: resultInvitedUsersWithoutPurchase,
+				totalSize: resultInvitedUsersWithoutPurchase.length,
+			},
+		})
 	} catch (err) {
 		return resError({ res, msg: err })
 	}

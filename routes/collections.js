@@ -355,8 +355,7 @@ router.get('/', async (req, res) => {
 	}
 })
 
-// router.get('/continueWatching', verify.token, async (req, res) => {
-router.get('/continueWatching', async (req, res) => {
+router.get('/continueWatching', verify.token, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
 
