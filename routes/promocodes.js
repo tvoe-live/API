@@ -96,7 +96,7 @@ router.patch('/activate', verify.token, async (req, res) => {
 			alert: true,
 			msg: 'Промокод успешно активирован',
 			startAt: getTrimDate(promocode.startAt),
-			finishAt: getTrimDate(promocode.finishAt),
+			finishAt: promocode.finishAt ? getTrimDate(promocode.finishAt) : '∞',
 			tariffName: promocode.tariffName,
 			discountFormat: promocode.discountFormat,
 			sizeDiscount: promocode.sizeDiscount,
