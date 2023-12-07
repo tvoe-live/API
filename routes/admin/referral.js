@@ -681,7 +681,7 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 									bonusAmount: true,
 									avatar: true,
 									email: true,
-									phone: true,
+									phone: '$authPhone',
 									'subscribe.startAt': true,
 									'subscribe.finishAt': true,
 									displayName: true,
