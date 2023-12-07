@@ -33,7 +33,15 @@ router.get('/', verify.token, verify.isAdmin, async (req, res) => {
 		$match: {
 			$and: [
 				{ startAt: { $lte: new Date() } },
-				{ finishAt: { $gte: new Date() } },
+				{
+					finishAt: {
+						$or: [
+							{ finishAt: { $gte: new Date() } },
+							{ finishAt: { $exists: false } },
+							{ finishAt: null },
+						],
+					},
+				},
 				{ deleted: { $ne: true } },
 			],
 		},
@@ -97,7 +105,7 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 		discountFormat,
 		sizeDiscount,
 		startAt,
-		finishAt = '3000-01-01',
+		finishAt = null,
 		maxAmountActivation = null,
 		isActive = false,
 		isOnlyForNewUsers = true,
@@ -143,7 +151,7 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 			isOnlyForNewUsers,
 			isActive,
 			startAt: new Date(startAt),
-			finishAt: new Date(finishAt),
+			finishAt: finishAt ? new Date(finishAt) : null,
 			currentAmountActivation: 0,
 		})
 
@@ -182,7 +190,7 @@ router.patch('/:id', verify.token, verify.isAdmin, async (req, res) => {
 
 		if (value) promocode.value = value
 		if (startAt) promocode.startAt = new Date(startAt)
-		if (finishAt) promocode.finishAt = new Date(finishAt)
+		if ('finishAt' in req.body) promocode.finishAt = finishAt ? new Date(finishAt) : finishAt
 		if (maxAmountActivation) promocode.maxAmountActivation = maxAmountActivation
 		if (tariffName) promocode.tariffName = tariffName
 		if (discountFormat) promocode.discountFormat = discountFormat
@@ -469,7 +477,13 @@ router.get('/countAll', verify.token, verify.isAdmin, getSearchQuery, async (req
 									deleted: { $ne: true },
 									isActive: true,
 									startAt: { $lte: new Date() },
-									finishAt: { $gte: new Date() },
+									finishAt: {
+										$or: [
+											{ finishAt: { $gte: new Date() } },
+											{ finishAt: { $exists: false } },
+											{ finishAt: null },
+										],
+									},
 								},
 							},
 							{
@@ -485,7 +499,9 @@ router.get('/countAll', verify.token, verify.isAdmin, getSearchQuery, async (req
 							{
 								$match: {
 									deleted: { $ne: true },
-									finishAt: { $lte: new Date() },
+									finishAt: {
+										$and: [{ finishAt: { $exists: true } }, { finishAt: { $lte: new Date() } }],
+									},
 								},
 							},
 							{

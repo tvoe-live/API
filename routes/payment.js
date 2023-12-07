@@ -88,7 +88,11 @@ router.get('/tariffs', async (req, res) => {
 										$lte: new Date(),
 									},
 									finishAt: {
-										$gte: new Date(),
+										$or: [
+											{ finishAt: { $gte: new Date() } },
+											{ finishAt: { $exists: false } },
+											{ finishAt: null },
+										],
 									},
 									discountFormat: { $ne: 'free' },
 								},
@@ -271,7 +275,11 @@ router.post('/createPayment', verify.token, async (req, res) => {
 								$lte: new Date(),
 							},
 							finishAt: {
-								$gte: new Date(),
+								$or: [
+									{ finishAt: { $gte: new Date() } },
+									{ finishAt: { $exists: false } },
+									{ finishAt: null },
+								],
 							},
 							discountFormat: { $ne: 'free' },
 						},
