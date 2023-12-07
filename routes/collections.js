@@ -8,7 +8,7 @@ const resSuccess = require('../helpers/resSuccess')
 const movieOperations = require('../helpers/movieOperations')
 const verify = require('../middlewares/verify')
 const MoviePageLog = require('../models/moviePageLog')
-const User = require('../models/user')
+
 const carousel = [
 	{
 		$lookup: {
