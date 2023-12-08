@@ -10,7 +10,7 @@ const autoTransitionTariff = async () => {
 
 	try {
 		const users = await user.find({
-			'subscribe.tariffId': process.env.SEVEN_DAYS_BY_ONE_RUB_TARIDD_ID,
+			'subscribe.tariffId': process.env.SEVEN_DAYS_BY_ONE_RUB_TARIFF_ID,
 			'subscribe.finishAt': { $lt: start, $gte: finish },
 		})
 
