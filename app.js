@@ -139,4 +139,5 @@ app.listen(PORT, () => {
 	Tasks.restart('resetOldSessions', resetOldSessions)
 	Tasks.restart('resetSubscribes', resetSubscribe)
 	Tasks.restart('autoTransitionTariff', autoTransitionTariff)
+	Tasks.restartDisposable()
 })
