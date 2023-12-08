@@ -430,7 +430,7 @@ router.delete('/', verify.token, async (req, res) => {
 				willCompletedAt: dayBeforeRemoving,
 			})
 
-			schedule.scheduleJob(new Date(newDate), async function () {
+			schedule.scheduleJob(new Date(dayBeforeRemoving), async function () {
 				const response = await fetch(
 					`https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${authPhone}&mes=${message}`
 				)
