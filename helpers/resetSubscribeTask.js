@@ -1,5 +1,8 @@
 const user = require('../models/user')
 
+/**
+ * крон-задача для сброса старых подписок
+ */
 const resetSubscribe = async () => {
 	const start = new Date()
 	const finish = new Date(start - 3 * 60 * 1000)

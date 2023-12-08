@@ -1,19 +1,22 @@
 const tariff = require('../models/tariff')
 const user = require('../models/user')
 
+/**
+ * Крон-задача для перехода с тарифа 7дней за 1 рубль на 1 месяц
+ */
 const autoTransitionTariff = async () => {
 	const start = new Date()
 	const finish = new Date(start - 3600000)
 
 	try {
 		const users = await user.find({
-			'subscribe.tariffId': '6569c5e3f74f1d450ec58988',
+			'subscribe.tariffId': process.env.SEVEN_DAYS_BY_ONE_RUB_TARIDD_ID,
 			'subscribe.finishAt': { $lt: start, $gte: finish },
 		})
 
 		console.log(users)
 
-		const newTariff = await tariff.findById('63dbe11e7f457bc81bc920c9')
+		const newTariff = await tariff.findOne({ price: 199 }).lean()
 
 		const startAtTariff = new Date()
 		const finishAtTariff = new Date(startAtTariff.getTime() + Number(newTariff.duration))
