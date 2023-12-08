@@ -16,7 +16,7 @@ const autoTransitionTariff = async () => {
 
 		console.log(users)
 
-		const newTariff = await tariff.findOne({ price: 199 }).lean()
+		const newTariff = await tariff.findOne({ autoSwitchingFromTrialTariff: true }).lean()
 
 		const startAtTariff = new Date()
 		const finishAtTariff = new Date(startAtTariff.getTime() + Number(newTariff.duration))
