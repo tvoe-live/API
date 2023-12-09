@@ -27,10 +27,10 @@ router.post('/', verify.token, async (req, res) => {
 		})
 	}
 
-	const { name } = await Movie.findOne({ _id: movieId }, { name: true })
-	const { firstname, lastname, phone } = await User.findOne(
+	const { name, alias } = await Movie.findOne({ _id: movieId }, { name: true, alias: true })
+	const { firstname, lastname, authPhone } = await User.findOne(
 		{ _id: userId },
-		{ firstname: true, lastname: true, phone: true }
+		{ firstname: true, lastname: true, authPhone: true }
 	)
 
 	if (!name) {
@@ -57,8 +57,27 @@ router.post('/', verify.token, async (req, res) => {
 		})
 	}
 
+	if (text?.length > 500) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Комментарий не должен превышать 500 символов',
+		})
+	}
+
 	try {
-		let textForMail = `Поступила жалоба на фильм '${name}' (videoId ='${videoId}', movieId ='${movieId}') от пользователя`
+		let textForMail = `Поступила жалоба на фильм '${name}' (videoId ='${videoId}', movieId ='${movieId}') ${process.env.CLIENT_URL}/p/${alias}`
+
+		if (reasons && reasons?.length) {
+			const reasonsText = reasons?.map((reason) => `"${reasonsDict[reason]}" `)
+			textForMail += `. \n\nПричины жалобы: ${reasonsText}`
+		}
+
+		if (text) {
+			textForMail += `. \n\nКомментарий: ${text}. \n`
+		}
+
+		textForMail += `\nПользователь(id=${userId}):`
 
 		if (firstname) {
 			textForMail += ` ${firstname}`
@@ -68,21 +87,12 @@ router.post('/', verify.token, async (req, res) => {
 			textForMail += ` ${lastname}`
 		}
 
-		if (phone) {
-			textForMail += `. Его номер телефона ${phone}. `
-		}
-
-		if (reasons && reasons.length) {
-			const reasonsText = reasons?.map((reason) => reasonsDict[reason])
-			textForMail += `. Пользователь отметил следующие причины: ${reasonsText}`
-		}
-
-		if (text) {
-			textForMail += `. Подробное описание от пользователя: ${text}. `
+		if (authPhone) {
+			textForMail += `.\nЕго номер телефона ${authPhone}. `
 		}
 
 		const message = {
-			to: process.env.SUPPORT_MAIL,
+			to: process.env.CONTENT_MAIL,
 			subject: 'Жалоба',
 			text: textForMail,
 		}
