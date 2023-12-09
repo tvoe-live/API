@@ -159,13 +159,13 @@ router.patch('/phone', verify.token, async (req, res) => {
 			type: 'change',
 		})
 
-		// if (previousPhoneChecking.length >= 3) {
-		// 	return resError({
-		// 		res,
-		// 		alert: true,
-		// 		msg: 'Превышен лимит изменения номера телефона за сутки',
-		// 	})
-		// }
+		if (previousPhoneChecking.length >= 3) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Превышен лимит изменения номера телефона за сутки',
+			})
+		}
 
 		const prevPhoneChecking2 = await PhoneChecking.find({
 			phone,
