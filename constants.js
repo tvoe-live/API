@@ -32,8 +32,7 @@ module.exports = Object.freeze({
 		},
 		{
 			name: 'autoTransitionTariff', // Автопереход с пробного тарифа на платный
-			period: '*/5 * * * * *', //5s
-			//period: "*/5 * * * * *" // Каждые 5 минут
+			period: '*/5 * * * * *', // Каждые 5 минут
 		},
 	],
 })
