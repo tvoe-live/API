@@ -403,7 +403,9 @@ router.delete('/', verify.token, async (req, res) => {
 		})
 
 		const now = new Date()
-		const finish = now.setMonth(now.getMonth() + 1)
+		// ДЛЯ ТЕСТОВ. ПОСЛЕ ТЕСТОВ ВЕРНУТЬ КАК БЫЛО
+		// const finish = now.setMonth(now.getMonth() + 1)
+		const finish = now.setMinutes(now.getMinutes() + 3)
 
 		const set = {
 			deleted: {
