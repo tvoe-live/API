@@ -137,7 +137,7 @@ router.get('/search', async (req, res) => {
 					subscribe: {
 						startAt: item.subscribe.startAt,
 						finishAt: item.subscribe.finishAt,
-						name: item.subscribeName.name,
+						name: item.subscribeName?.name,
 					},
 					connectionCount: item.connectionCount,
 					income,
@@ -726,8 +726,8 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 			])
 			.limit(limit)
 
-		user[0].balance = user[0].referral.balance
-		user[0].cardNumber = user[0].referral.card.number
+		user[0].balance = user[0].referral?.balance
+		user[0].cardNumber = user[0].referral?.card?.number
 		delete user[0].referral
 
 		const income = user[0].users
