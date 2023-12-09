@@ -1,14 +1,14 @@
 {
 	"name": "api",
 	"version": "1.0.0",
-	"description": "",
+	"author": "TVOЁ",
+	"private": true,
 	"main": "app.js",
 	"scripts": {
 		"start": "nodemon NODE_ENV=production && --max-old-space-size=8192 app.js",
 		"dev": "nodemon NODE_ENV=development && app.js",
 		"prepare": "husky install"
 	},
-	"author": "",
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.290.0",
 		"@aws-sdk/lib-storage": "^3.290.0",
@@ -30,8 +30,6 @@
 		"nodemailer": "^6.9.7",
 		"nodemon": "^2.0.15",
 		"sharp": "^0.31.2",
-		"short-unique-id": "^5.0.3",
-		"swagger-ui-express": "^4.6.3",
 		"xml": "^1.0.1"
 	},
 	"devDependencies": {

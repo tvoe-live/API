@@ -1,4 +1,5 @@
 const user = require('../models/user')
+const { USER_MAX_SESSION_DAYS } = require('../constants')
 
 /**
  * Крон-задача для сброса старых сессий
@@ -9,7 +10,7 @@ const resetOldSessions = async () => {
 			sessions: {
 				$elemMatch: {
 					lastVisitAt: {
-						$lte: new Date() - 1000 * 60 * 60 * 24 * Number(process.env.SESSIONS_DAYS),
+						$lte: new Date() - 1000 * 60 * 60 * 24 * USER_MAX_SESSION_DAYS,
 					},
 				},
 			},

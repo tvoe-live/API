@@ -1,5 +1,5 @@
 const cron = require('node-cron')
-const cronTaskModel = require('../models/cronTask')
+const { CRON_TASKS } = require('../constants')
 
 /**
  * Класс-помошник для управления кроновскими задачами
@@ -8,30 +8,9 @@ class Tasks {
 	tasks = []
 
 	static async restart(name, callback) {
-		const tasks = await cronTaskModel.find({ name })
-		tasks.forEach((item) => cron.schedule(item.period, callback))
-	}
+		const task = CRON_TASKS.find((task) => task.name === name)
 
-	/**
-	 * Метод для создания новой задачи
-	 *
-	 * @param {String} name - имя шаблона задачи
-	 * @param {String} period - указание периода/времени выполнения задачи в cron-формате
-
-	 * @returns созданную задачу (по умолчанию она не запущенная)
-	 */
-	createTask = async (name, period) => {
-		await cronTaskModel.create({
-			name,
-			period,
-		})
-
-		this.tasks.push({
-			name,
-			period,
-		})
-
-		return this.tasks[this.tasks.length - 1].name
+		cron.schedule(task.period, callback)
 	}
 
 	/**

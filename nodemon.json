@@ -1,1 +1,1 @@
-{ "ignore": ["swagger/doc.yml", "swagger/doc.json"] }
+{ "ignore": ["swagger/docs.yml", "swagger/docs.json"] }

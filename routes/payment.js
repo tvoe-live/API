@@ -1,10 +1,4 @@
-const {
-	API_URL,
-	CLIENT_URL,
-	PAYMENT_TERMINAL_KEY,
-	REFERRAL_PERCENT_BONUSE,
-	PAYMENT_TERMINAL_PASSWORD,
-} = process.env
+const { API_URL, PAYMENT_TERMINAL_PASSWORD } = process.env
 const express = require('express')
 const router = express.Router()
 const axios = require('axios')
@@ -17,8 +11,7 @@ const resError = require('../helpers/resError')
 const PaymentLog = require('../models/paymentLog')
 const PromocodeLog = require('../models/promocodeLog')
 const isValidObjectId = require('../helpers/isValidObjectId')
-
-require('dotenv').config()
+const { FIRST_STEP_REFERRAL, SECOND_STEP_REFERRAL } = require('../constants')
 
 /*
  * Тарифы, создание и обработка платежей
@@ -691,14 +684,14 @@ router.post('/notification', async (req, res) => {
 
 		const referalUser = await User.findByIdAndUpdate(refererUserId, {
 			$inc: {
-				'referral.balance': amount * (process.env.FIRST_STEP_REFERRAL / 100),
+				'referral.balance': amount * (FIRST_STEP_REFERRAL / 100),
 			},
 		})
 
 		if (referalUser.refererUserId) {
 			await User.findByIdAndUpdate(referalUser.refererUserId, {
 				$inc: {
-					'referral.balance': amount * (process.env.SECOND_STEP_REFERRAL / 100),
+					'referral.balance': amount * (SECOND_STEP_REFERRAL / 100),
 				},
 			})
 		}

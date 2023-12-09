@@ -10,7 +10,7 @@ const resError = require('../../helpers/resError')
 const resSuccess = require('../../helpers/resSuccess')
 const { uploadImageToS3 } = require('../../helpers/uploadImage')
 const { deleteFileFromS3 } = require('../../helpers/deleteFile')
-const { amountLoginWithoutCapcha } = require('../../constants')
+const { AMOUNT_LOGIN_WITHOUT_CAPTCHA } = require('../../constants')
 
 /*
  * Профиль > Основное
@@ -169,20 +169,20 @@ router.patch('/phone', verify.token, async (req, res) => {
 			phone,
 		})
 			.sort({ createdAt: -1 })
-			.limit(amountLoginWithoutCapcha)
+			.limit(AMOUNT_LOGIN_WITHOUT_CAPTCHA)
 
 		const prevIpChecking = await PhoneChecking.find({
 			ip,
 		})
 			.sort({ createdAt: -1 })
-			.limit(amountLoginWithoutCapcha)
+			.limit(AMOUNT_LOGIN_WITHOUT_CAPTCHA)
 
 		//Если последние 2 заявки на подтверждения для указанного номера телефона или ip адреса клиента не были подтверждены правильным смс кодом, необходимо показать капчу
 		if (
-			(prevPhoneChecking2.length === amountLoginWithoutCapcha &&
+			(prevPhoneChecking2.length === AMOUNT_LOGIN_WITHOUT_CAPTCHA &&
 				prevPhoneChecking2.every((log) => !log.isConfirmed) &&
 				!imgcode) ||
-			(prevIpChecking.length === amountLoginWithoutCapcha &&
+			(prevIpChecking.length === AMOUNT_LOGIN_WITHOUT_CAPTCHA &&
 				prevIpChecking.every((log) => !log.isConfirmed) &&
 				!imgcode)
 		) {

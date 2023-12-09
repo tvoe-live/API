@@ -1,14 +1,13 @@
 const express = require('express')
-const ReferralWithdrawalLog = require('../../models/referralWithdrawalLog')
+const router = express.Router()
 const userSchema = require('../../models/user')
-
-const checkValidId = require('../../helpers/isValidObjectId')
 const { default: mongoose } = require('mongoose')
-const resSuccess = require('../../helpers/resSuccess')
 const resError = require('../../helpers/resError')
 const verify = require('../../middlewares/verify')
-
-const router = express.Router()
+const resSuccess = require('../../helpers/resSuccess')
+const checkValidId = require('../../helpers/isValidObjectId')
+const { REFERRAL_PERCENT_BONUSE } = require('../../constants')
+const ReferralWithdrawalLog = require('../../models/referralWithdrawalLog')
 
 /*
     Роут для поиска пользователей по id email displayName
@@ -79,7 +78,7 @@ router.get('/search', async (req, res) => {
 											$project: {
 												_id: false,
 												bonuseAmount: {
-													$multiply: ['$amount', +process.env.REFERRAL_PERCENT_BONUSE / 100],
+													$multiply: ['$amount', +REFERRAL_PERCENT_BONUSE / 100],
 												},
 											},
 										},
@@ -204,7 +203,7 @@ router.get('/search', async (req, res) => {
 										$project: {
 											_id: false,
 											bonuseAmount: {
-												$multiply: ['$amount', +process.env.REFERRAL_PERCENT_BONUSE / 100],
+												$multiply: ['$amount', +REFERRAL_PERCENT_BONUSE / 100],
 											},
 										},
 									},
@@ -336,7 +335,7 @@ router.get('/', verify.token, verify.isAdmin, async (req, res) => {
 										$project: {
 											_id: false,
 											bonuseAmount: {
-												$multiply: ['$amount', +process.env.REFERRAL_PERCENT_BONUSE / 100],
+												$multiply: ['$amount', +REFERRAL_PERCENT_BONUSE / 100],
 											},
 										},
 									},
@@ -597,7 +596,7 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 											$project: {
 												_id: false,
 												bonuseAmount: {
-													$multiply: ['$amount', +process.env.REFERRAL_PERCENT_BONUSE / 100],
+													$multiply: ['$amount', +REFERRAL_PERCENT_BONUSE / 100],
 												},
 											},
 										},

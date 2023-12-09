@@ -1,6 +1,7 @@
 const { default: axios } = require('axios')
 const paymentLog = require('../models/paymentLog')
 const repaymentModel = require('../models/repayment')
+const { FIRST_STEP_REFERRAL, SECOND_STEP_REFERRAL } = require('../constants')
 
 const getToken = (params) => {
 	const concatStr = Object.keys(params) // Собрать массив передаваемых данных в виде пар Ключ-Значения
@@ -23,14 +24,14 @@ const shareWithReferrer = async (userId, amount, refererUserId) => {
 
 	const referalUser = await user.findByIdAndUpdate(refererUserId, {
 		$inc: {
-			'referral.balance': amount * (process.env.FIRST_STEP_REFERRAL / 100),
+			'referral.balance': amount * (FIRST_STEP_REFERRAL / 100),
 		},
 	})
 
 	if (referalUser.refererUserId) {
 		await user.findByIdAndUpdate(referalUser.refererUserId, {
 			$inc: {
-				'referral.balance': amount * (process.env.SECOND_STEP_REFERRAL / 100),
+				'referral.balance': amount * (SECOND_STEP_REFERRAL / 100),
 			},
 		})
 	}

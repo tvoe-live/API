@@ -6,10 +6,8 @@ const yaml = require('js-yaml')
 const express = require('express')
 const mongoose = require('mongoose')
 const bodyParser = require('body-parser')
-const swaggerUi = require('swagger-ui-express')
 const verify = require('./middlewares/verify')
 const { Tasks } = require('./helpers/createTask')
-const upMovieTask = require('./helpers/upMovieTask')
 const expressUseragent = require('express-useragent')
 const repaymentTask = require('./helpers/repaymentTask')
 const resetOldSessions = require('./helpers/resetOldSessions')
@@ -17,8 +15,9 @@ const resetSubscribe = require('./helpers/resetSubscribeTask')
 const recurrentPayment = require('./helpers/reccurentPayment')
 const subscribeRouter = require('./routes/profile/changeAutopayment')
 const autoTransitionTariff = require('./helpers/autoTransitionTariffTask')
+const resetMovieBadgeMovieTask = require('./helpers/resetMovieBadgeMovieTask')
 
-const { PORT, STATIC_DIR, IMAGES_DIR, VIDEOS_DIR, DATABASE_URL } = process.env
+const { PORT, DATABASE_URL } = process.env
 
 mongoose.set('strictQuery', false)
 mongoose.connect(DATABASE_URL)
@@ -44,17 +43,6 @@ app.use(
 		extended: true,
 	})
 )
-
-if (process.env.NODE_ENV !== 'production') {
-	app.use('/images', express.static(STATIC_DIR + IMAGES_DIR))
-	app.use('/videos', express.static(STATIC_DIR + VIDEOS_DIR))
-
-	// Создание директории статических файлов
-	if (!fs.existsSync(STATIC_DIR + IMAGES_DIR))
-		fs.mkdirSync(STATIC_DIR + IMAGES_DIR, { recursive: true })
-	if (!fs.existsSync(STATIC_DIR + VIDEOS_DIR))
-		fs.mkdirSync(STATIC_DIR + VIDEOS_DIR, { recursive: true })
-}
 
 const auth = require('./routes/auth')
 const admin = require('./routes/admin')
@@ -121,23 +109,22 @@ app.use('/admin/moviesRatingHistory', adminMoviesRatingHistory) // Админ-п
 app.use('/admin/moviesViewingHistory', adminMoviesViewingHistory) // Админ-панель > История просмотров
 
 // Работа со сваггером
-const data = fs.readFileSync('swagger/doc.yml', 'utf8')
+const data = fs.readFileSync('swagger/docs.yml', 'utf8')
 const yamlData = yaml.load(data)
 const jsonData = JSON.stringify(yamlData)
-fs.writeFileSync('./swagger/doc.json', jsonData, 'utf8')
-const swaggerJson = require('./swagger/doc.json')
-app.use('/admin/docs', verify.token, verify.isAdmin, swaggerUi.serve, swaggerUi.setup(swaggerJson))
+fs.writeFileSync('./swagger/docs.json', jsonData, 'utf8')
+const swagger = express.static(path.join(__dirname, 'swagger'))
 
-app.use(verify.token, verify.isAdmin, express.static(path.join(__dirname, 'swagger')))
-app.use('*', notFound)
+app.use(verify.token, verify.isAdmin, swagger) // Техническая документация /docs.json
+app.use('*', notFound) // 404 - Обработка несуществующих страниц
 
 app.listen(PORT, () => {
 	console.log(`Server Started at ${PORT}`)
-	Tasks.restart('reccurentPayment', recurrentPayment)
+
 	Tasks.restart('repayment', repaymentTask)
-	Tasks.restart('upMovie', upMovieTask)
-	Tasks.restart('resetOldSessions', resetOldSessions)
 	Tasks.restart('resetSubscribes', resetSubscribe)
+	Tasks.restart('reccurentPayment', recurrentPayment)
+	Tasks.restart('resetOldSessions', resetOldSessions)
 	Tasks.restart('autoTransitionTariff', autoTransitionTariff)
-	Tasks.restartDisposable()
+	Tasks.restart('resetMovieBadgeMovieTask', resetMovieBadgeMovieTask)
 })

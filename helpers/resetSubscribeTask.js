@@ -1,7 +1,7 @@
 const user = require('../models/user')
 
 /**
- * крон-задача для сброса старых подписок
+ * Cron-задача для сброса старых подписок
  */
 const resetSubscribe = async () => {
 	const start = new Date()
@@ -15,9 +15,9 @@ const resetSubscribe = async () => {
 			{ subscribe: true }
 		)
 
-		for (const usr of users) {
-			usr.subscribe = null
-			await usr.save()
+		for (const user of users) {
+			user.subscribe = null
+			await user.save()
 		}
 	} catch (error) {
 		console.log(error)
