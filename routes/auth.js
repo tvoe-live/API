@@ -490,25 +490,6 @@ router.post('/sms/compare', async (req, res) => {
 		phoneCheckingLog.isConfirmed = true
 		await phoneCheckingLog.save()
 
-		// Получение данных пользователя, если он авторизован
-		await verify.token(req)
-
-		if (req.user) {
-			await User.findOneAndUpdate(
-				{ _id: req.user._id },
-				{
-					authPhone: phone,
-				}
-			)
-
-			await User.updateMany(
-				{ authPhone: phone, _id: { $ne: req.user._id } },
-				{ $set: { authPhone: null } }
-			)
-
-			return resSuccess({ res, msg: 'Номер телефона привязан' })
-		}
-
 		// Поиск пользователя в БД
 		let user = await User.findOne({ authPhone: phone })
 
