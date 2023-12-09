@@ -313,6 +313,7 @@ router.post('/sms/login', async (req, res) => {
 		const previousPhoneCheckingMinute = await PhoneChecking.find({
 			$or: [{ phone }, { ip }],
 			createdAt: { $gt: minuteAgo },
+			type: 'authorization',
 		})
 
 		if (!!previousPhoneCheckingMinute.length) {
@@ -329,6 +330,7 @@ router.post('/sms/login', async (req, res) => {
 		const previousPhoneChecking = await PhoneChecking.find({
 			phone,
 			createdAt: { $gt: DayAgo },
+			type: 'authorization',
 		})
 
 		if (previousPhoneChecking.length >= 25) {
