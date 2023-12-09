@@ -1,5 +1,3 @@
-const { CLIENT_URL, FIRST_STEP_REFERRAL, SECOND_STEP_REFERRAL } = process.env
-
 const express = require('express')
 const router = express.Router()
 
@@ -8,9 +6,11 @@ const PaymentLog = require('../models/paymentLog')
 const ReferralWithdrawalLog = require('../models/referralWithdrawalLog')
 
 const verify = require('../middlewares/verify')
-
 const resError = require('../helpers/resError')
 const resSuccess = require('../helpers/resSuccess')
+
+const { CLIENT_URL } = process.env
+const { FIRST_STEP_REFERRAL, SECOND_STEP_REFERRAL } = require('../constants')
 
 /*
  * Реферальная программа
@@ -120,7 +120,6 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 						firstname: true,
 						lastname: true,
 						referral: true,
-						createdAt: true,
 					}
 			  ).lean()
 			: []
@@ -143,7 +142,6 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 						avatar: true,
 						firstname: true,
 						lastname: true,
-						createdAt: true,
 					}
 			  ).lean()
 			: []
@@ -173,15 +171,10 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 		// История платежей
 		const items = []
 
-		// Id пользователей которые принадлежжат множеству referal.userIds и совершили покупки
-		const userIdsBuyers = []
-
 		// Пробегаем по массиву с логами и формируем из него результат вместе с данными профиля
 		paymentLogs.forEach((paymentLog) => {
 			const condition = (referralUser) =>
 				referralUser._id.toString() === paymentLog.userId.toString()
-
-			userIdsBuyers.push(String(paymentLog.userId))
 
 			const firstLvlUser = referralUsersFirstLvl.find(condition)
 			const secondLvlUser = !firstLvlUser && referralUsersSecondLvl.find(condition)
@@ -205,46 +198,12 @@ router.get('/invitedReferrals', verify.token, async (req, res) => {
 					avatar: (firstLvlUser || secondLvlUser).avatar,
 					firstname: (firstLvlUser || secondLvlUser).firstname,
 					lastname: (firstLvlUser || secondLvlUser).lastname,
-					createdAt: (firstLvlUser || secondLvlUser).createdAt,
 					level: firstLvlUser ? 1 : 2,
 				},
 			})
 		})
 
-		const invitedUsersWithoutPurchaseIds = commonUserIds.filter(
-			(id) => !userIdsBuyers.includes(String(id))
-		)
-
-		const invitedUsersWithoutPurchase = await User.find(
-			{ _id: { $in: invitedUsersWithoutPurchaseIds } },
-			{
-				_id: true,
-				avatar: true,
-				firstname: true,
-				lastname: true,
-				createdAt: true,
-			}
-		)
-
-		const secondUserIdsString = secondUserIds.map((id) => String(id))
-		const resultInvitedUsersWithoutPurchase = invitedUsersWithoutPurchase.map((user) => ({
-			_id: user._id,
-			avatar: user.avatar,
-			firstname: user.firstname,
-			lastname: user.lastname,
-			createdAt: user.createdAt,
-			level: secondUserIdsString.includes(String(user.id)) ? 2 : 1,
-		}))
-
-		return resSuccess({
-			res,
-			items,
-			totalSize: items.length,
-			usersWithoutPurchase: {
-				items: resultInvitedUsersWithoutPurchase,
-				totalSize: resultInvitedUsersWithoutPurchase.length,
-			},
-		})
+		return resSuccess({ res, items, totalSize: items.length })
 	} catch (err) {
 		return resError({ res, msg: err })
 	}

@@ -107,7 +107,7 @@ router.get('/', verify.token, async (req, res) => {
 								finishAt: true,
 								notificationType: true,
 								promocodeId: true,
-								tariffPrice: true,
+								sum: true,
 								tariff: {
 									_id: true,
 									name: true,

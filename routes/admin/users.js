@@ -83,37 +83,6 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 								createdAt: true,
 								subscribe: true,
 								lastVisitAt: true,
-								phone: '$authPhone',
-							},
-						},
-						{
-							$lookup: {
-								from: 'tariffs',
-								localField: 'subscribe.tariffId',
-								foreignField: '_id',
-								pipeline: [
-									{
-										$project: {
-											name: true,
-										},
-									},
-								],
-								as: 'tariff',
-							},
-						},
-						{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
-						{
-							$project: {
-								role: true,
-								email: true,
-								avatar: true,
-								firstname: true,
-								updatedAt: true,
-								createdAt: true,
-								subscribe: true,
-								lastVisitAt: true,
-								phone: true,
-								tariffName: '$tariff.name',
 							},
 						},
 						{ $sort: { _id: -1 } },
@@ -149,6 +118,7 @@ router.get('/profile', verify.token, verify.isAdmin, async (req, res) => {
 		let tariffs = await Tariff.aggregate([
 			{
 				$match: {
+					price: { $nin: [0, 1] },
 					hidden: { $ne: true },
 				},
 			},

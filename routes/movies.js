@@ -338,11 +338,9 @@ router.get('/movie', async (req, res) => {
 
 				const data = result[0].item[0]
 
-				if (data) {
-					data.reviews = {
-						items: data?.reviews,
-						totalSize: result[0].totalSizeReview,
-					}
+				data.reviews = {
+					items: data?.reviews,
+					totalSize: result[0].totalSizeReview,
 				}
 
 				switch (data.categoryAlias) {

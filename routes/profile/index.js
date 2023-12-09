@@ -1,22 +1,18 @@
 const express = require('express')
 const router = express.Router()
 const multer = require('multer')
-const schedule = require('node-schedule')
-
 const User = require('../../models/user')
 const Tariff = require('../../models/tariff')
 const Notification = require('../../models/notification')
 const PhoneChecking = require('../../models/phoneChecking')
 const UserDeletionLog = require('../../models/userDeletionLog')
-// const DisposableCronTask = require('../../models/disposableCronTask')
 
 const verify = require('../../middlewares/verify')
 const resError = require('../../helpers/resError')
 const resSuccess = require('../../helpers/resSuccess')
-const mailer = require('../../helpers/nodemailer')
 const { uploadImageToS3 } = require('../../helpers/uploadImage')
 const { deleteFileFromS3 } = require('../../helpers/deleteFile')
-const { amountLoginWithoutCapcha } = require('../../constants')
+const { AMOUNT_LOGIN_WITHOUT_CAPTCHA } = require('../../constants')
 
 /*
  * Профиль > Основное
@@ -175,20 +171,20 @@ router.patch('/phone', verify.token, async (req, res) => {
 			phone,
 		})
 			.sort({ createdAt: -1 })
-			.limit(amountLoginWithoutCapcha)
+			.limit(AMOUNT_LOGIN_WITHOUT_CAPTCHA)
 
 		const prevIpChecking = await PhoneChecking.find({
 			ip,
 		})
 			.sort({ createdAt: -1 })
-			.limit(amountLoginWithoutCapcha)
+			.limit(AMOUNT_LOGIN_WITHOUT_CAPTCHA)
 
 		//Если последние 2 заявки на подтверждения для указанного номера телефона или ip адреса клиента не были подтверждены правильным смс кодом, необходимо показать капчу
 		if (
-			(prevPhoneChecking2.length === amountLoginWithoutCapcha &&
+			(prevPhoneChecking2.length === AMOUNT_LOGIN_WITHOUT_CAPTCHA &&
 				prevPhoneChecking2.every((log) => !log.isConfirmed) &&
 				!imgcode) ||
-			(prevIpChecking.length === amountLoginWithoutCapcha &&
+			(prevIpChecking.length === AMOUNT_LOGIN_WITHOUT_CAPTCHA &&
 				prevIpChecking.every((log) => !log.isConfirmed) &&
 				!imgcode)
 		) {
@@ -205,8 +201,6 @@ router.patch('/phone', verify.token, async (req, res) => {
 			{ $set: { isCancelled: true } }
 		)
 
-		const mes = `${code} — код подтверждения`
-
 		// Создание записи в журнале авторизаций через смс
 		await PhoneChecking.create({
 			phone,
@@ -219,8 +213,8 @@ router.patch('/phone', verify.token, async (req, res) => {
 		})
 
 		const url = imgcode
-			? `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${mes}&imgcode=${imgcode}&userip=${ip}&op=1`
-			: `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${mes}`
+			? `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}&imgcode=${imgcode}&userip=${ip}&op=1`
+			: `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}`
 
 		const response = await fetch(url)
 
@@ -364,7 +358,7 @@ router.post('/change-phone/compare', verify.token, async (req, res) => {
 
 // Удаление профиля
 router.delete('/', verify.token, async (req, res) => {
-	const { _id, deleted, subscribe, email, authPhone } = req.user
+	const { _id, deleted, subscribe } = req.user
 
 	const { isRefund, reason } = req.body
 
@@ -498,7 +492,7 @@ router.post('/recover', verify.token, async (req, res) => {
 // Загрузка аватара
 router.post('/avatar', verify.token, uploadMemoryStorage.single('file'), async (req, res) => {
 	const { buffer } = req.file
-	const maxSizeMbyte = 15 // Лимит 15MB
+	const maxSizeMbyte = 5 // Лимит 5MB
 	const maxSizeByte = maxSizeMbyte * 1024 * 1024
 
 	if (!buffer) return resError({ res, msg: 'Фаил не получен' })

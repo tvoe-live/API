@@ -99,35 +99,10 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 									{
 										$project: {
 											role: true,
+											email: true,
 											avatar: true,
+											subscribe: true,
 											firstname: true,
-											tariffId: '$subscribe.tariffId',
-											phone: '$authPhone',
-										},
-									},
-									{
-										$lookup: {
-											from: 'tariffs',
-											localField: 'tariffId',
-											foreignField: '_id',
-											pipeline: [
-												{
-													$project: {
-														name: true,
-													},
-												},
-											],
-											as: 'tariff',
-										},
-									},
-									{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
-									{
-										$project: {
-											tariffName: '$tariff.name',
-											role: true,
-											avatar: true,
-											firstname: true,
-											phone: true,
 										},
 									},
 								],
@@ -140,6 +115,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 								__v: false,
 								userId: false,
 								movieId: false,
+								createdAt: false,
 							},
 						},
 						{ $sort: { _id: -1 } }, // Была сортировка updatedAt

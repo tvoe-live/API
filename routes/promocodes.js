@@ -31,7 +31,7 @@ router.patch('/activate', verify.token, async (req, res) => {
 
 		if (
 			(promocode.finishAt && promocode.finishAt < new Date()) ||
-			(promocode.maxAmountActivation &&
+			(promocode.currentAmountActivation &&
 				promocode.currentAmountActivation >= promocode.maxAmountActivation)
 		) {
 			return resError({ res, msg: 'Срок действия указанного промокода истек' })
@@ -87,7 +87,7 @@ router.patch('/activate', verify.token, async (req, res) => {
 				msg: 'Промокод успешно активирован',
 				startAt: getTrimDate(today),
 				finishAt: getTrimDate(user.subscribe.finishAt),
-				discountFormat: 'free',
+				discountFormat: 'free-month',
 			})
 		}
 
@@ -96,7 +96,7 @@ router.patch('/activate', verify.token, async (req, res) => {
 			alert: true,
 			msg: 'Промокод успешно активирован',
 			startAt: getTrimDate(promocode.startAt),
-			finishAt: promocode.finishAt ? getTrimDate(promocode.finishAt) : '∞',
+			finishAt: getTrimDate(promocode.finishAt),
 			tariffName: promocode.tariffName,
 			discountFormat: promocode.discountFormat,
 			sizeDiscount: promocode.sizeDiscount,

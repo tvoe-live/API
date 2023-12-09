@@ -1,10 +1,4 @@
-const {
-	API_URL,
-	CLIENT_URL,
-	PAYMENT_TERMINAL_KEY,
-	REFERRAL_PERCENT_BONUSE,
-	PAYMENT_TERMINAL_PASSWORD,
-} = process.env
+const { API_URL, PAYMENT_TERMINAL_PASSWORD } = process.env
 const express = require('express')
 const router = express.Router()
 const axios = require('axios')
@@ -17,8 +11,7 @@ const resError = require('../helpers/resError')
 const PaymentLog = require('../models/paymentLog')
 const PromocodeLog = require('../models/promocodeLog')
 const isValidObjectId = require('../helpers/isValidObjectId')
-
-require('dotenv').config()
+const { FIRST_STEP_REFERRAL, SECOND_STEP_REFERRAL } = require('../constants')
 
 /*
  * Тарифы, создание и обработка платежей
@@ -87,12 +80,10 @@ router.get('/tariffs', async (req, res) => {
 									startAt: {
 										$lte: new Date(),
 									},
-									$or: [
-										{ finishAt: { $gte: new Date() } },
-										{ finishAt: { $exists: false } },
-										{ finishAt: null },
-									],
-									discountFormat: { $ne: 'free' },
+									finishAt: {
+										$gte: new Date(),
+									},
+									discountFormat: { $ne: 'free-month' },
 								},
 							},
 							{
@@ -272,12 +263,10 @@ router.post('/createPayment', verify.token, async (req, res) => {
 							startAt: {
 								$lte: new Date(),
 							},
-							$or: [
-								{ finishAt: { $gte: new Date() } },
-								{ finishAt: { $exists: false } },
-								{ finishAt: null },
-							],
-							discountFormat: { $ne: 'free' },
+							finishAt: {
+								$gte: new Date(),
+							},
+							discountFormat: { $ne: 'free-month' },
 						},
 					},
 					{
@@ -514,7 +503,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		tariffId: selectedTariff._id,
 		isChecked: false,
 		...(promocodeId && { promocodeId }), // Если применен промокод, то записать id примененного промокода
-		tariffPrice: selectedTariff.price,
+		sum: price,
 	}).save()
 
 	// В url успешной страницы передать id созданного лога
@@ -682,7 +671,7 @@ router.post('/notification', async (req, res) => {
 				errorCode,
 				terminalKey,
 				amount: status === 'REFUNDED' || status === 'PARTIAL_REFUNDED' ? paymentLog.amount : amount,
-				refundedAmount: status === 'REFUNDED' || status === 'PARTIAL_REFUNDED' ? amount : null,
+				refundedAmount: status === 'REFUNDED' || status === 'PARTIAL_REFUNDED' ? amount : 0,
 			},
 			$unset: { token: null },
 			$inc: { __v: 1 },
@@ -695,14 +684,14 @@ router.post('/notification', async (req, res) => {
 
 		const referalUser = await User.findByIdAndUpdate(refererUserId, {
 			$inc: {
-				'referral.balance': amount * (process.env.FIRST_STEP_REFERRAL / 100),
+				'referral.balance': amount * (FIRST_STEP_REFERRAL / 100),
 			},
 		})
 
 		if (referalUser.refererUserId) {
 			await User.findByIdAndUpdate(referalUser.refererUserId, {
 				$inc: {
-					'referral.balance': amount * (process.env.SECOND_STEP_REFERRAL / 100),
+					'referral.balance': amount * (SECOND_STEP_REFERRAL / 100),
 				},
 			})
 		}
