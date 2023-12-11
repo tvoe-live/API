@@ -23,7 +23,8 @@ const router = express.Router()
 /*
  * Список всех промокодов
  */
-router.get('/', verify.token, verify.isAdmin, async (req, res) => {
+// router.get('/', verify.token, verify.isAdmin, async (req, res) => {
+router.get('/', async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
 
@@ -33,8 +34,14 @@ router.get('/', verify.token, verify.isAdmin, async (req, res) => {
 		$match: {
 			$and: [
 				{ startAt: { $lte: new Date() } },
-				{ finishAt: { $gte: new Date() } },
 				{ deleted: { $ne: true } },
+				{
+					$or: [
+						{ finishAt: { $gte: new Date() } },
+						{ finishAt: { $exists: false } },
+						{ finishAt: null },
+					],
+				},
 			],
 		},
 	}
@@ -97,7 +104,7 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 		discountFormat,
 		sizeDiscount,
 		startAt,
-		finishAt = '3000-01-01',
+		finishAt = null,
 		maxAmountActivation = null,
 		isActive = false,
 		isOnlyForNewUsers = true,
@@ -143,7 +150,7 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 			isOnlyForNewUsers,
 			isActive,
 			startAt: new Date(startAt),
-			finishAt: new Date(finishAt),
+			finishAt: finishAt ? new Date(finishAt) : null,
 			currentAmountActivation: 0,
 		})
 
@@ -182,7 +189,7 @@ router.patch('/:id', verify.token, verify.isAdmin, async (req, res) => {
 
 		if (value) promocode.value = value
 		if (startAt) promocode.startAt = new Date(startAt)
-		if (finishAt) promocode.finishAt = new Date(finishAt)
+		if ('finishAt' in req.body) promocode.finishAt = finishAt ? new Date(finishAt) : finishAt
 		if (maxAmountActivation) promocode.maxAmountActivation = maxAmountActivation
 		if (tariffName) promocode.tariffName = tariffName
 		if (discountFormat) promocode.discountFormat = discountFormat
@@ -340,41 +347,36 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 									{
 										$project: {
 											firstname: true,
-											phone: true,
-											email: true,
-											lastname: true,
-											subscribe: true,
 											referral: true,
+											phone: '$authPhone',
+											tariffId: '$subscribe.tariffId',
 										},
 									},
 									{
-										$addFields: {
-											isReferral: {
-												$cond: {
-													if: {
-														$and: [
-															{ $ne: ['$referral', null] },
-															{ $ne: ['$referral.userIds', null] },
-															{ $eq: [{ $type: '$referral.userIds' }, 'array'] },
-															{ $gt: [{ $size: '$referral.userIds' }, 0] },
-														],
+										$lookup: {
+											from: 'tariffs',
+											localField: 'tariffId',
+											foreignField: '_id',
+											pipeline: [
+												{
+													$project: {
+														name: true,
 													},
-													then: true,
-													else: false,
 												},
-											},
-											isHaveSubscribe: {
-												$cond: {
-													if: {
-														$and: [
-															{ $ne: ['$subscribe', null] },
-															{ $gt: ['$subscribe.finishAt', new Date()] },
-														],
-													},
-													then: true,
-													else: false,
-												},
-											},
+											],
+											as: 'tariff',
+										},
+									},
+									{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
+									{
+										$project: {
+											tariffName: '$tariff.name',
+											role: true,
+											avatar: true,
+											firstname: true,
+											lastname: true,
+											referral: true,
+											phone: true,
 										},
 									},
 								],
@@ -474,7 +476,11 @@ router.get('/countAll', verify.token, verify.isAdmin, getSearchQuery, async (req
 									deleted: { $ne: true },
 									isActive: true,
 									startAt: { $lte: new Date() },
-									finishAt: { $gte: new Date() },
+									$or: [
+										{ finishAt: { $gte: new Date() } },
+										{ finishAt: { $exists: false } },
+										{ finishAt: null },
+									],
 								},
 							},
 							{
@@ -490,7 +496,7 @@ router.get('/countAll', verify.token, verify.isAdmin, getSearchQuery, async (req
 							{
 								$match: {
 									deleted: { $ne: true },
-									finishAt: { $lte: new Date() },
+									$and: [{ finishAt: { $exists: true } }, { finishAt: { $lte: new Date() } }],
 								},
 							},
 							{

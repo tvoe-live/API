@@ -449,9 +449,17 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 /**
  * Роут для получения запросов на вывод
  */
-router.get('/withdrawals', verify.token, verify.isAdmin, async (req, res) => {
+router.get('/withdrawals', verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
+
+	const searchMatch = req.RegExpQuery && {
+		$or: [
+			...(checkValidId(req.searchQuery) ? [{ _id: mongoose.Types.ObjectId(req.searchQuery) }] : []),
+			{ email: req.RegExpQuery },
+			{ firstname: req.RegExpQuery },
+		],
+	}
 
 	const mainAgregation = [
 		{
@@ -466,26 +474,44 @@ router.get('/withdrawals', verify.token, verify.isAdmin, async (req, res) => {
 				foreignField: '_id',
 				pipeline: [
 					{
-						$project: {
-							email: true,
-							authPhone: true,
-							_id: true,
+						$match: {
+							...searchMatch,
 						},
 					},
 					{
-						$addFields: {
-							isHaveSubscribe: {
-								$cond: {
-									if: {
-										$and: [
-											{ $ne: ['$subscribe', null] },
-											{ $gt: ['$subscribe.finishAt', new Date()] },
-										],
+						$project: {
+							_id: true,
+							avatar: true,
+							firstname: true,
+							phone: '$authPhone',
+							tariffId: '$subscribe.tariffId',
+							role: true,
+						},
+					},
+					{
+						$lookup: {
+							from: 'tariffs',
+							localField: 'tariffId',
+							foreignField: '_id',
+							pipeline: [
+								{
+									$project: {
+										name: true,
 									},
-									then: true,
-									else: false,
 								},
-							},
+							],
+							as: 'tariff',
+						},
+					},
+					{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
+					{
+						$project: {
+							tariffName: '$tariff.name',
+							role: true,
+							avatar: true,
+							firstname: true,
+							phone: true,
+							role: true,
 						},
 					},
 				],
@@ -541,7 +567,7 @@ router.get('/withdrawals', verify.token, verify.isAdmin, async (req, res) => {
 		])
 
 		return res.status(200).json(result[0])
-	} catch (e) {
+	} catch (error) {
 		resError(res, error)
 	}
 })
@@ -636,7 +662,7 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 											$project: {
 												_id: false,
 												bonuseAmount: {
-													$multiply: ['$amount', +REFERRAL_PERCENT_BONUSE / 100],
+													$multiply: ['$amount', +process.env.REFERRAL_PERCENT_BONUSE / 100],
 												},
 											},
 										},
@@ -659,11 +685,12 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 									bonusAmount: true,
 									avatar: true,
 									email: true,
-									phone: true,
+									phone: '$authPhone',
 									'subscribe.startAt': true,
 									'subscribe.finishAt': true,
 									displayName: true,
 									'tariff.name': true,
+									firstname: true,
 								},
 							},
 						],
@@ -671,11 +698,21 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 					},
 				},
 				{
+					$lookup: {
+						from: 'tariffs',
+						localField: 'subscribe.tariffId',
+						foreignField: '_id',
+						as: 'tariff',
+					},
+				},
+				{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: false } },
+				{
 					$project: {
-						'tariff.name': true,
+						tariffName: '$tariff.name',
 						refererUserId: true,
 						avatar: true,
 						email: true,
+						firstname: true,
 						phone: '$authPhone',
 						displayName: true,
 						_id: true,
@@ -689,6 +726,7 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 
 		user[0].balance = user[0].referral?.balance
 		user[0].cardNumber = user[0].referral?.card?.number
+
 		delete user[0].referral
 
 		const income = user[0].users
@@ -705,10 +743,11 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 			avatar: usr.avatar,
 			displayName: usr.displayName,
 			phone: usr.phone,
+			firstname: usr.firstname,
 			subscribe: {
 				startAt: usr.subscribe.startAt,
 				finishAt: usr.subscribe.finishAt,
-				name: usr.tariff.name,
+				tariffName: usr.tariff.name,
 			},
 		}))
 

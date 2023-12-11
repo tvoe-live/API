@@ -82,7 +82,15 @@ router.post('/login', async (req, res) => {
 				const { id } = data
 
 				// Поиск пользователя в БД
-				let user = await User.findOne({ initial_id: id })
+				let user = await User.findOne({
+					initial_id: id,
+					$or: [
+						{ deleted: null },
+						{
+							$and: [{ deleted: { $exists: true } }, { 'deleted.finish': { $gt: new Date() } }],
+						},
+					],
+				})
 
 				if (!user) {
 					resError({ res, msg: 'Регистрация через яндекс больше не доступна' })
@@ -493,7 +501,15 @@ router.post('/sms/compare', async (req, res) => {
 		await phoneCheckingLog.save()
 
 		// Поиск пользователя в БД
-		let user = await User.findOne({ authPhone: phone })
+		let user = await User.findOne({
+			authPhone: phone,
+			$or: [
+				{ deleted: null },
+				{
+					$and: [{ deleted: { $exists: true } }, { 'deleted.finish': { $gt: new Date() } }],
+				},
+			],
+		})
 
 		// Если пользователя нет в БД, создаем нового
 		if (!user) {
