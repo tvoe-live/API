@@ -35,6 +35,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 				: []),
 			{ email: req.RegExpQuery },
 			{ firstname: req.RegExpQuery },
+			{ authPhone: req.RegExpQuery },
 		],
 	}
 
@@ -83,6 +84,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 								createdAt: true,
 								subscribe: true,
 								lastVisitAt: true,
+								phone: '$authPhone',
 							},
 						},
 						{ $sort: { _id: -1 } },
