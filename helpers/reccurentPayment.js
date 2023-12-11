@@ -82,7 +82,7 @@ const recurrentPayment = async () => {
 							Amount: userTariff.price * 100, // Стоимость товара в копейках. Произведение Quantity и Price
 							PaymentMethod: 'lfull_prepayment', // Признак способа расчёта (предоплата 100%)
 							PaymentObject: 'commodity', // Признак предмета расчёта (товар)
-							Tax: 'vat20', // Ставка НДС (ставка 20%)
+							Tax: 'none', // Ставка без НДС
 						},
 					],
 					FfdVersion: '1.05',
