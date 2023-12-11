@@ -11,6 +11,7 @@ const resetSubscribe = async () => {
 		const users = await user.find(
 			{
 				'subscribe.finishAt': { $lt: start, $gte: finish },
+				autoPayment: false,
 			},
 			{ subscribe: true }
 		)
