@@ -79,7 +79,7 @@ router.get('/search', async (req, res) => {
 											$project: {
 												_id: false,
 												bonuseAmount: {
-													$multiply: ['$amount', +REFERRAL_PERCENT_BONUSE / 100],
+													$multiply: ['$amount', REFERRAL_PERCENT_BONUSE / 100],
 												},
 											},
 										},
@@ -204,7 +204,7 @@ router.get('/search', async (req, res) => {
 										$project: {
 											_id: false,
 											bonuseAmount: {
-												$multiply: ['$amount', +REFERRAL_PERCENT_BONUSE / 100],
+												$multiply: ['$amount', REFERRAL_PERCENT_BONUSE / 100],
 											},
 										},
 									},
@@ -341,7 +341,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 									$project: {
 										_id: false,
 										bonuseAmount: {
-											$multiply: ['$amount', +process.env.REFERRAL_PERCENT_BONUSE / 100],
+											$multiply: ['$amount', REFERRAL_PERCENT_BONUSE / 100],
 										},
 									},
 								},
@@ -662,7 +662,7 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 											$project: {
 												_id: false,
 												bonuseAmount: {
-													$multiply: ['$amount', +process.env.REFERRAL_PERCENT_BONUSE / 100],
+													$multiply: ['$amount', REFERRAL_PERCENT_BONUSE / 100],
 												},
 											},
 										},
