@@ -496,6 +496,7 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 						{
 							$group: {
 								_id: '$movieId',
+								logId: { $first: '$_id' },
 								videoId: { $first: '$videoId' },
 								endTime: { $first: '$endTime' },
 								updatedAt: { $first: '$updatedAt' },
