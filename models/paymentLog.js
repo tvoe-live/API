@@ -16,7 +16,7 @@ const paymentLogSchema = new mongoose.Schema(
 			ref: 'Tariff',
 		}, // ID тарифа
 		promocodeId: mongoose.Schema.Types.ObjectId, // ID промокода, если оплата была совершена с учетом скидки от промокода. В противном случае это поле null
-		sum: Number, // Уплаченная сумма в рублях
+		tariffPrice: Number, // Цена за тариф без скидок
 		type: {
 			// Тип платежного лога
 			type: String,
