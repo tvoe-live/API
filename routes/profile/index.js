@@ -30,15 +30,12 @@ router.get('/', verify.token, async (req, res) => {
 		{ _id: req.user._id },
 		{
 			role: true,
-			email: true,
 			avatar: true,
 			deleted: true,
+			authPhone: true,
 			firstname: true,
 			subscribe: true,
 			allowTrialTariff: true,
-			disabledNotifications: true,
-			authPhone: true,
-			autoPayment: true,
 		}
 	)
 
