@@ -21,7 +21,7 @@ const movieRatingSchema = new mongoose.Schema(
 				validate: {
 					validator: (arrReasons) => {
 						const validValues = [
-							'violationRightsOrContentConfidentialInformation', // Отзыв нарушает чьи-то права или содержит конфиденциальную информацию
+							'other', // Другое
 							'swearingInsultsOrCallsIllegalActions', // Мат, оскорбления или призыв к противоправным действиям
 							'linkOrAdvertising', // Отзыв со ссылкой или скрытой рекламой
 							'missingRelationshipToContent', // Отзыв не имеет отношения к контенту
