@@ -289,8 +289,11 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 		{
 			$match: {
 				_id: { $exists: true },
-				'referral.userIds': { $exists: true },
 				...searchMatch,
+				'referral.userIds': {
+					$exists: true,
+					$not: { $size: 0 },
+				},
 			},
 		},
 		{
@@ -303,7 +306,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 			},
 		},
 		{
-			$unwind: { path: '$subscribeName', preserveNullAndEmptyArrays: false },
+			$unwind: { path: '$subscribeName', preserveNullAndEmptyArrays: true },
 		},
 		{
 			// Добавляем поле в котором указываеи кол-во приведенных пользователей
@@ -353,8 +356,8 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 				as: 'rUsers',
 			},
 		},
-		{ $match: { rUsers: { $exists: true, $not: { $size: 0 } } } },
 	]
+
 	try {
 		const result = await userSchema.aggregate([
 			{
