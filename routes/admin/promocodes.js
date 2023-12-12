@@ -23,8 +23,7 @@ const router = express.Router()
 /*
  * Список всех промокодов
  */
-// router.get('/', verify.token, verify.isAdmin, async (req, res) => {
-router.get('/', async (req, res) => {
+router.get('/', verify.token, verify.isAdmin, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
 
