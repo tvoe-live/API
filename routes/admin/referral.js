@@ -709,7 +709,7 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 						as: 'tariff',
 					},
 				},
-				{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: false } },
+				{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
 				{
 					$project: {
 						tariffName: '$tariff.name',
@@ -749,9 +749,9 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 			phone: usr.phone,
 			firstname: usr.firstname,
 			subscribe: {
-				startAt: usr.subscribe.startAt,
-				finishAt: usr.subscribe.finishAt,
-				tariffName: usr.tariff.name,
+				startAt: usr.subscribe?.startAt,
+				finishAt: usr.subscribe?.finishAt,
+				tariffName: usr.tariff?.name,
 			},
 		}))
 
