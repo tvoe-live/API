@@ -283,6 +283,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 			...(checkValidId(req.searchQuery) ? [{ _id: mongoose.Types.ObjectId(req.searchQuery) }] : []),
 			{ email: req.RegExpQuery },
 			{ firstname: req.RegExpQuery },
+			{ authPhone: req.RegExpQuery },
 		],
 	}
 	const mainAgregation = [
