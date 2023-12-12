@@ -443,10 +443,8 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 				},
 			},
 		])
-		console.log('result:', result)
 		return res.status(200).send(result[0])
 	} catch (error) {
-		console.log('error:', error)
 		resError(res, error.message)
 	}
 })
