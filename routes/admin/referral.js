@@ -682,7 +682,7 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 									as: 'tariff',
 								},
 							},
-							{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: false } },
+							{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
 							{
 								$project: {
 									_id: true,
