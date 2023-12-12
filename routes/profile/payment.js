@@ -1,10 +1,12 @@
 const express = require('express')
 const router = express.Router()
 const mongoose = require('mongoose')
+const User = require('../../models/user')
 const Tariff = require('../../models/tariff')
 const verify = require('../../middlewares/verify')
 const resError = require('../../helpers/resError')
 const PaymentLog = require('../../models/paymentLog')
+const resSuccess = require('../../helpers/resSuccess')
 
 /*
  * Профиль > Подписка
@@ -27,12 +29,12 @@ router.get('/', verify.token, async (req, res) => {
 		$or: [
 			{
 				type: {
-					$in: ['issued-by-admin', 'trial'],
+					$in: ['issued-by-admin', 'trial', 'paid'],
 				},
 			},
 			{
 				status: {
-					$in: ['success', 'CONFIRMED', 'AUTHORIZED', 'PARTIAL_REFUNDED', 'REFUNDED', 'REJECTED'],
+					$in: ['success', 'CONFIRMED', 'AUTHORIZED', 'PARTIAL_REFUNDED', 'REFUNDED'],
 				},
 			},
 		],
@@ -41,11 +43,21 @@ router.get('/', verify.token, async (req, res) => {
 	try {
 		let tariffs = await Tariff.aggregate([
 			{
+				$match: {
+					hidden: { $in: [false, null] },
+				},
+			},
+			{
 				$project: {
 					duration: false,
 				},
 			},
-			{ $limit: 4 },
+			{
+				$sort: {
+					sort: 1,
+				},
+			},
+			{ $limit: 6 },
 		])
 
 		const result = await PaymentLog.aggregate([
@@ -65,7 +77,7 @@ router.get('/', verify.token, async (req, res) => {
 								tariffs: true,
 							},
 						},
-						{ $limit: 4 },
+						{ $limit: 6 },
 					],
 					// Всего записей
 					totalSize: [
@@ -103,10 +115,13 @@ router.get('/', verify.token, async (req, res) => {
 						{
 							$project: {
 								type: true,
+								status: true,
 								startAt: true,
 								finishAt: true,
-								notificationType: true,
+								tariffPrice: true,
 								promocodeId: true,
+								refundedAmount: true,
+								notificationType: true,
 								tariffPrice: true,
 								tariff: {
 									_id: true,
@@ -115,28 +130,6 @@ router.get('/', verify.token, async (req, res) => {
 								amount: {
 									$cond: ['$withdrawAmount', '$withdrawAmount', '$amount'],
 								},
-							},
-						},
-						{
-							$lookup: {
-								from: 'promocodes',
-								localField: 'promocodeId',
-								foreignField: '_id',
-								pipeline: [
-									{
-										$project: {
-											discountFormat: true,
-											sizeDiscount: true,
-										},
-									},
-								],
-								as: 'promocode',
-							},
-						},
-						{ $unwind: { path: '$promocode', preserveNullAndEmptyArrays: true } },
-						{
-							$project: {
-								promocodeId: false,
 							},
 						},
 						{ $sort: { _id: -1 } },
@@ -155,10 +148,57 @@ router.get('/', verify.token, async (req, res) => {
 			},
 		])
 
+		// Данные о текущей подписки
+		const currentSubscribe = {
+			tariffId: null,
+			tariffPrice: null,
+			...req.user.subscribe,
+		}
+
+		currentSubscribe.tariffPrice = tariffs.find(
+			(tariff) => tariff._id.toString() === req.user.subscribe.tariffId.toString()
+		)?.price
+
+		// Если тариф за 1р, то показать цену следующего списания за 1 месяц
+		if (currentSubscribe.tariffPrice === 1) {
+			monthTariff = tariffs.find((tariff) => tariff.autoEnableAfterTrialTariff)
+
+			currentSubscribe.tariffId = monthTariff._id
+			currentSubscribe.tariffPrice = monthTariff.price
+		}
+
 		return res.status(200).json({
-			currentSubscribe: req.user.subscribe,
+			currentSubscribe,
 			tariffs,
 			...result[0],
+		})
+	} catch (err) {
+		return resError({ res, msg: err })
+	}
+})
+
+router.patch('/change-autopayment', verify.token, async (req, res) => {
+	try {
+		const findedUser = await User.findById(req.user._id)
+
+		findedUser.autoPayment = !findedUser.autoPayment
+
+		await findedUser.save()
+
+		if (findedUser.autoPayment === true) {
+			return resSuccess({
+				res,
+				alert: true,
+				msg: 'Автопродление подписки включено',
+				autoPayment: true,
+			})
+		}
+
+		return resSuccess({
+			res,
+			alert: true,
+			msg: 'Автопродление подписки отключено',
+			autoPayment: false,
 		})
 	} catch (err) {
 		return resError({ res, msg: err })

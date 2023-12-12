@@ -1,96 +1,64 @@
-const crypto = require('crypto')
 const user = require('../models/user')
 const tariff = require('../models/tariff')
 const { default: axios } = require('axios')
 const paymentLog = require('../models/paymentLog')
 const notification = require('../models/notification')
-const repaymentModel = require('../models/repayment')
-const { FIRST_STEP_REFERRAL, SECOND_STEP_REFERRAL } = require('../constants')
-
-const getToken = (params) => {
-	const concatStr = Object.keys(params) // Собрать массив передаваемых данных в виде пар Ключ-Значения
-		.sort() // Отсортировать массив по алфавиту по ключу
-		.map(
-			(
-				key // Привести все значения строку и удалить пробелы
-			) => params[key].toString().replace(/\s+/g, '')
-		)
-		.join('') // Конкетировать каждое значение
-
-	// Токен SHA-256 из конкетированных данных терминала
-	const token = crypto.createHash('sha256').update(concatStr).digest('hex')
-
-	return token
-}
-
-const shareWithReferrer = async (userId, amount, refererUserId) => {
-	if (!userId || !amount || !refererUserId) return
-
-	const referalUser = await user.findByIdAndUpdate(refererUserId, {
-		$inc: {
-			'referral.balance': amount * (FIRST_STEP_REFERRAL / 100),
-		},
-	})
-
-	if (referalUser.refererUserId) {
-		await user.findByIdAndUpdate(referalUser.refererUserId, {
-			$inc: {
-				'referral.balance': amount * (SECOND_STEP_REFERRAL / 100),
-			},
-		})
-	}
-}
+const { getToken, getTerminalParams, shareWithReferrer } = require('../helpers/payment')
 
 const recurrentPayment = async () => {
 	try {
+		// Запуск за 15 минут до завершения подписки
 		const start = new Date()
-		const finish = new Date(start - 3600000)
+		const finish = new Date(start - 900 * 1000)
 
+		// Выборка всех пользователей, которые скоро завершат подписку
 		const users = await user.find(
 			{
-				'subscribe.finishAt': { $lt: start, $gte: finish },
-				RebillId: { $exists: true },
 				autoPayment: true,
+				RebillId: { $exists: true },
+				'subscribe.finishAt': { $lt: start, $gte: finish },
 			},
-			{ _id: true, subscribe: true, RebillId: true }
+			{
+				_id: true,
+				RebillId: true,
+				subscribe: true,
+			}
 		)
 
+		// Завершить, если нет пользователей для выполнения платежей
+		if (!users.length) return
+
+		// Получение пробного тарифа
+		const trialTariff = await tariff.findOne({ price: 1 }).lean()
+		// Получение месячного тарифа
+		const monthTariff = await tariff.findOne({ autoEnableAfterTrialTariff: true }).lean()
+
 		for (const user of users) {
-			const userTariff = await tariff.findById(user.subscribe.tariffId)
+			// Если пользователь взял пробный тариф, то перевести на месячный тариф
+			const userSubscribeTariffId =
+				user.subscribe.tariffId === trialTariff._id ? monthTariff._id : user.subscribe.tariffId
+
+			// Поиск информации о тарифе пользователя
+			const userTariff = await tariff.findById(userSubscribeTariffId)
+
 			const userPaymentLog = await paymentLog.create({
 				type: 'paid',
 				userId: user._id,
-				tariffId: userTariff._id,
 				isChecked: false,
 				isReccurent: true,
+				amount: userTariff.price,
+				tariffId: userTariff._id,
+				tariffPrice: userTariff._id,
 			})
 
-			const terminalParams = {
-				TerminalKey: process.env.PAYMENT_TERMINAL_KEY,
-				Password: process.env.PAYMENT_TERMINAL_PASSWORD,
-				Amount: userTariff.price * 100,
-				OrderId: userPaymentLog._id,
-				Description: `Подписка на ${userTariff.name}`,
-				PayType: 'O',
-				Language: 'ru',
-				Receipt: {
-					Items: [
-						{
-							Name: `Подписка на ${userTariff.name}`, // Наименование товара
-							Price: userTariff.price * 100, // Цена в копейках
-							Quantity: 1, // Количество или вес товара
-							Amount: userTariff.price * 100, // Стоимость товара в копейках. Произведение Quantity и Price
-							PaymentMethod: 'lfull_prepayment', // Признак способа расчёта (предоплата 100%)
-							PaymentObject: 'commodity', // Признак предмета расчёта (товар)
-							Tax: 'none', // Ставка без НДС
-						},
-					],
-					FfdVersion: '1.05',
-					Taxation: 'usn_income',
-					Email: user.email || 'no-relpy@tvoe.team',
-					Phone: user.phone || '+74956635979',
-				},
-			}
+			// Получить параметры терминала
+			const terminalParams = getTerminalParams({
+				amount: userTariff.price,
+				orderId: userPaymentLog._id,
+				tariffName: userTariff.name,
+				userEmail: user.email,
+				userPhone: user.phone,
+			})
 
 			const token = getToken(terminalParams)
 
@@ -106,7 +74,7 @@ const recurrentPayment = async () => {
 			const chargeToken = getToken({
 				TerminalKey: process.env.PAYMENT_TERMINAL_KEY,
 				PaymentId: String(initPayment.PaymentId),
-				Password: process.env.PAYMENT_TERMINAL_PASSWORD,
+				//Password: process.env.PAYMENT_TERMINAL_PASSWORD,
 				RebillId: user.RebillId,
 			})
 
@@ -124,11 +92,6 @@ const recurrentPayment = async () => {
 				}
 
 				if (chargePayment.ErrorCode === '103') {
-					await repaymentModel.create({
-						tariff: userTariff._id,
-						user: user._id,
-					})
-
 					await notification.create({
 						receiversIds: [user._id],
 						title: 'Недостаточно средств на счете для продления подписки',
@@ -137,17 +100,17 @@ const recurrentPayment = async () => {
 						deleted: false,
 					})
 
-					userPaymentLog.isChecked = true
+					//userPaymentLog.isChecked = true
 					userPaymentLog.status = chargePayment.Status
 					userPaymentLog.success = chargePayment.Success
 					userPaymentLog.errorCode = chargePayment.ErrorCode
 					userPaymentLog.orderId = chargePayment.OrderId
 					userPaymentLog.terminalKey = process.env.PAYMENT_TERMINAL_KEY
 					userPaymentLog.rebillId = user.RebillId
-					userPaymentLog.refundedAmount = 0
+					//userPaymentLog.refundedAmount = 0
 					userPaymentLog.message = chargePayment.Message
 					userPaymentLog.details = chargePayment.Details
-					userPaymentLog.token = chargeToken
+					//userPaymentLog.token = chargeToken
 					await userPaymentLog.save()
 				}
 
@@ -160,24 +123,19 @@ const recurrentPayment = async () => {
 						deleted: false,
 					})
 
-					userPaymentLog.isChecked = true
+					//userPaymentLog.isChecked = true
 					userPaymentLog.status = chargePayment.Status
 					userPaymentLog.success = chargePayment.Success
 					userPaymentLog.errorCode = chargePayment.ErrorCode
 					userPaymentLog.orderId = chargePayment.OrderId
 					userPaymentLog.terminalKey = process.env.PAYMENT_TERMINAL_KEY
 					userPaymentLog.rebillId = user.RebillId
-					userPaymentLog.refundedAmount = 0
+					//userPaymentLog.refundedAmount = 0
 					userPaymentLog.message = chargePayment.Message
 					userPaymentLog.details = chargePayment.Details
-					userPaymentLog.token = chargeToken
+					//userPaymentLog.token = chargeToken
 
 					await userPaymentLog.save()
-
-					await repaymentModel.create({
-						tariff: userTariff._id,
-						user: user._id,
-					})
 				}
 			}
 
@@ -194,7 +152,7 @@ const recurrentPayment = async () => {
 
 				await shareWithReferrer(user._id, userTariff.price, user.refererUserId)
 
-				userPaymentLog.isChecked = true
+				//userPaymentLog.isChecked = true
 				userPaymentLog.status = chargePayment.Status
 				userPaymentLog.success = chargePayment.Success
 				userPaymentLog.errorCode = chargePayment.ErrorCode
@@ -203,12 +161,12 @@ const recurrentPayment = async () => {
 				userPaymentLog.rebillId = user.RebillId
 				userPaymentLog.startAt = startAt
 				userPaymentLog.finishAt = new Date(startAt.getTime() + Number(userTariff.duration))
-				userPaymentLog.refundedAmount = 0
+				//userPaymentLog.refundedAmount = 0
 				userPaymentLog.message = chargePayment.Message
 				userPaymentLog.details = chargePayment.Details
 				userPaymentLog.amount = userTariff.price
 				userPaymentLog.sum = userTariff.price
-				userPaymentLog.token = chargeToken
+				//userPaymentLog.token = chargeToken
 
 				await userPaymentLog.save()
 
