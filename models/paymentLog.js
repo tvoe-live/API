@@ -16,7 +16,6 @@ const paymentLogSchema = new mongoose.Schema(
 			ref: 'Tariff',
 		}, // ID тарифа
 		promocodeId: mongoose.Schema.Types.ObjectId, // ID промокода, если оплата была совершена с учетом скидки от промокода. В противном случае это поле null
-		sum: Number, // Уплаченная сумма в рублях
 		type: {
 			// Тип платежного лога
 			type: String,
@@ -33,6 +32,7 @@ const paymentLogSchema = new mongoose.Schema(
 		// Данные от Тинькофф Кассы
 		terminalKey: String, // Идентификатор терминала. Выдается Мерчанту Тинькофф Кассой при заведении терминала.
 		amount: Number, // Сумма пополнения
+		tariffPrice: Number, // Цена тарифа
 		refundedAmount: Number, // Сумма возврата или частичного возврата
 		orderId: mongoose.Schema.Types.ObjectId, // Идентификатор заказа в системе Мерчанта
 		success: Boolean, // Выполнение платежа
@@ -49,7 +49,7 @@ const paymentLogSchema = new mongoose.Schema(
 				'PARTIAL_REVERSED', // Частичная отмена
 				'REVERSED', // Операция отменена
 				'PARTIAL_REFUNDED', // Произведён частичный возврат
-				'REFUNDED', // Произведён возврат
+				'REFUNDED', // Произведён полный возврат
 				'REJECTED', // Списание денежных средств закончилась ошибкой
 				'3DS_CHECKING', // Автоматическое закрытие сессии, которая превысила срок пребывания в статусе 3DS_CHECKING (более 36 часов)
 			],

@@ -1,6 +1,6 @@
 const movie = require('../models/movie')
 
-const resetMovieBadgeMovieTask = async () => {
+const resetMovieBadge = async () => {
 	try {
 		const movies = await movie.find({
 			'badge.finishAt': {
@@ -18,4 +18,4 @@ const resetMovieBadgeMovieTask = async () => {
 	}
 }
 
-module.exports = resetMovieBadgeMovieTask
+module.exports = resetMovieBadge

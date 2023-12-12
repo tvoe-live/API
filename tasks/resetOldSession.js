@@ -2,15 +2,15 @@ const user = require('../models/user')
 const { USER_MAX_SESSION_DAYS } = require('../constants')
 
 /**
- * Крон-задача для сброса старых сессий
+ * Сron-задача для сброса старых сессий
  */
-const resetOldSessions = async () => {
+const resetOldSession = async () => {
 	try {
 		const users = await user.find({
 			sessions: {
 				$elemMatch: {
 					lastVisitAt: {
-						$lte: new Date() - 1000 * 60 * 60 * 24 * USER_MAX_SESSION_DAYS,
+						$lte: new Date() - 1000 * 60 * 60 * 24 * +USER_MAX_SESSION_DAYS,
 					},
 				},
 			},
@@ -18,8 +18,7 @@ const resetOldSessions = async () => {
 		for (const usr of users) {
 			usr.sessions = usr.sessions.filter(
 				(session) =>
-					session.lastVisitAt >=
-					new Date() - 1000 * 60 * 60 * 24 * Number(process.env.SESSIONS_DAYS)
+					session.lastVisitAt >= new Date() - 1000 * 60 * 60 * 24 * +USER_MAX_SESSION_DAYS
 			)
 			await usr.save()
 		}
@@ -28,4 +27,4 @@ const resetOldSessions = async () => {
 	}
 }
 
-module.exports = resetOldSessions
+module.exports = resetOldSession

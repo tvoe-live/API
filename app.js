@@ -7,15 +7,13 @@ const express = require('express')
 const mongoose = require('mongoose')
 const bodyParser = require('body-parser')
 const verify = require('./middlewares/verify')
-const { Tasks } = require('./helpers/createTask')
 const expressUseragent = require('express-useragent')
-const repaymentTask = require('./helpers/repaymentTask')
-const resetOldSessions = require('./helpers/resetOldSessions')
-const resetSubscribe = require('./helpers/resetSubscribeTask')
-const recurrentPayment = require('./helpers/reccurentPayment')
-const subscribeRouter = require('./routes/profile/changeAutopayment')
-const autoTransitionTariff = require('./helpers/autoTransitionTariffTask')
-const resetMovieBadgeMovieTask = require('./helpers/resetMovieBadgeMovieTask')
+
+// Cron-задачи
+const { Tasks } = require('./tasks/createTask')
+const resetOldSession = require('./tasks/resetOldSession')
+const resetMovieBadge = require('./tasks/resetMovieBadge')
+const recurrentPayment = require('./tasks/reccurentPayment')
 
 const { PORT, DATABASE_URL } = process.env
 
@@ -92,7 +90,6 @@ app.use('/profile/devices', profileDevices) // Профиль > Мои устр�
 app.use('/profile/history', profileHistory) // Моё > История просмотров
 app.use('/profile/favorites', profileFavorites) // Моё > Избранное
 app.use('/profile/bookmarks', profileBookmarks) // Моё > Закладки
-app.use('/profile/autopayment', subscribeRouter) // Управление автоплатежами
 app.use('/profile/withdrawal', profileWithdrawal) // Профиль > Журнал заявок на возврат денежных средств
 app.use('/profile/notifications', profileNotifications) // Навигация > Уведомления
 
@@ -121,10 +118,7 @@ app.use('*', notFound) // 404 - Обработка несуществующих 
 app.listen(PORT, () => {
 	console.log(`Server Started at ${PORT}`)
 
-	Tasks.restart('repayment', repaymentTask)
-	Tasks.restart('resetSubscribes', resetSubscribe)
-	Tasks.restart('reccurentPayment', recurrentPayment)
-	Tasks.restart('resetOldSessions', resetOldSessions)
-	Tasks.restart('autoTransitionTariff', autoTransitionTariff)
-	Tasks.restart('resetMovieBadgeMovieTask', resetMovieBadgeMovieTask)
+	Tasks.restart('resetMovieBadge', resetMovieBadge) // Сброс бейджев фильмов/сериалов
+	Tasks.restart('resetOldSession', resetOldSession) // Сброс сессий пользователей
+	Tasks.restart('reccurentPayment', recurrentPayment) // Создание рекуррентных платежей
 })

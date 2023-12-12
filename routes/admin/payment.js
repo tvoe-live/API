@@ -225,9 +225,12 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 							$project: {
 								user: true,
 								tariff: true,
+								status: true,
 								startAt: true,
 								finishAt: true,
 								updatedAt: true,
+								promocodeId: true,
+								refundedAmount: true,
 								amount: {
 									$cond: ['$withdrawAmount', '$withdrawAmount', '$amount'],
 								},

@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const userSchema = require('../../models/user')
+const User = require('../../models/user')
 const { default: mongoose } = require('mongoose')
 const resError = require('../../helpers/resError')
 const verify = require('../../middlewares/verify')
@@ -23,7 +23,7 @@ router.get('/search', async (req, res) => {
 	try {
 		// Если параметром запроса передан валидный id
 		if (isValidObjectId) {
-			const users = await userSchema.aggregate([
+			const users = await User.aggregate([
 				{
 					$match: {
 						_id: new mongoose.Types.ObjectId(req.query.searchStr),
@@ -144,7 +144,7 @@ router.get('/search', async (req, res) => {
 			return res.status(200).send(response)
 		}
 
-		const users = await userSchema.aggregate([
+		const users = await User.aggregate([
 			{
 				$match: {
 					_id: { $exists: true },
@@ -356,7 +356,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 		{ $match: { rUsers: { $exists: true, $not: { $size: 0 } } } },
 	]
 	try {
-		const result = await userSchema.aggregate([
+		const result = await User.aggregate([
 			{
 				$facet: {
 					// Всего записей
@@ -553,7 +553,7 @@ router.patch('/withdrawals/:id', verify.token, verify.isAdmin, async (req, res) 
 	const possibleStatuses = ['canceled', 'success', 'pending']
 
 	const id = mongoose.Types.ObjectId(req.params.id)
-	const { approverUserId } = req.user._id
+	const approverUserId = req.user._id
 	const { status } = req.body
 
 	if (!possibleStatuses.includes(status)) {
@@ -582,16 +582,34 @@ router.patch('/withdrawals/:id', verify.token, verify.isAdmin, async (req, res) 
 		)
 
 		if (!result) {
-			return resError({ res, msg: 'Не найдена запись по указанному id' })
+			return resError({
+				res,
+				alert: true,
+				msg: 'Не найдена запись по указанному id',
+			})
+		}
+
+		// Вернуть баланс назад пользователю при отказе
+		if (status === 'canceled') {
+			await User.updateOne(
+				{
+					_id: result.userId,
+				},
+				{
+					$set: {
+						'referral.balance': result.amount,
+					},
+				}
+			)
 		}
 
 		return resSuccess({
 			res,
 			alert: true,
-			msg: 'Статус обновлен',
+			msg: 'Заявка обновлена',
 		})
-	} catch (e) {
-		resError(res, error)
+	} catch (err) {
+		return resError({ res, msg: err })
 	}
 })
 
@@ -603,89 +621,87 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
 
 	try {
-		const user = await userSchema
-			.aggregate([
-				{
-					$match: {
-						_id: new mongoose.Types.ObjectId(req.params.id),
-						'referral.userIds': { $exists: true },
-					},
+		const user = await User.aggregate([
+			{
+				$match: {
+					_id: new mongoose.Types.ObjectId(req.params.id),
+					'referral.userIds': { $exists: true },
 				},
-				{
-					$lookup: {
-						from: 'users',
-						let: { usersIds: '$referral.userIds' },
-						pipeline: [
-							{
-								$match: {
-									$expr: { $in: ['$_id', '$$usersIds'] },
-								},
+			},
+			{
+				$lookup: {
+					from: 'users',
+					let: { usersIds: '$referral.userIds' },
+					pipeline: [
+						{
+							$match: {
+								$expr: { $in: ['$_id', '$$usersIds'] },
 							},
-							{
-								$lookup: {
-									from: 'paymentlogs',
-									localField: '_id',
-									foreignField: 'userId',
-									pipeline: [
-										{
-											$match: {
-												type: 'paid',
+						},
+						{
+							$lookup: {
+								from: 'paymentlogs',
+								localField: '_id',
+								foreignField: 'userId',
+								pipeline: [
+									{
+										$match: {
+											type: 'paid',
+										},
+									},
+									{
+										$project: {
+											_id: false,
+											bonuseAmount: {
+												$multiply: ['$amount', +REFERRAL_PERCENT_BONUSE / 100],
 											},
 										},
-										{
-											$project: {
-												_id: false,
-												bonuseAmount: {
-													$multiply: ['$amount', +REFERRAL_PERCENT_BONUSE / 100],
-												},
-											},
-										},
-									],
-									as: 'bonusAmount',
-								},
+									},
+								],
+								as: 'bonusAmount',
 							},
-							{
-								$lookup: {
-									from: 'tariffs',
-									localField: 'subscribe.tariffId',
-									foreignField: '_id',
-									as: 'tariff',
-								},
+						},
+						{
+							$lookup: {
+								from: 'tariffs',
+								localField: 'subscribe.tariffId',
+								foreignField: '_id',
+								as: 'tariff',
 							},
-							{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: false } },
-							{
-								$project: {
-									_id: true,
-									bonusAmount: true,
-									avatar: true,
-									email: true,
-									phone: true,
-									'subscribe.startAt': true,
-									'subscribe.finishAt': true,
-									displayName: true,
-									'tariff.name': true,
-								},
+						},
+						{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: false } },
+						{
+							$project: {
+								_id: true,
+								bonusAmount: true,
+								avatar: true,
+								email: true,
+								phone: true,
+								'subscribe.startAt': true,
+								'subscribe.finishAt': true,
+								displayName: true,
+								'tariff.name': true,
 							},
-						],
-						as: 'users',
-					},
+						},
+					],
+					as: 'users',
 				},
-				{
-					$project: {
-						'tariff.name': true,
-						refererUserId: true,
-						avatar: true,
-						email: true,
-						phone: '$authPhone',
-						displayName: true,
-						_id: true,
-						users: true,
-						referral: true,
-						subscribe: true,
-					},
+			},
+			{
+				$project: {
+					'tariff.name': true,
+					refererUserId: true,
+					avatar: true,
+					email: true,
+					phone: '$authPhone',
+					displayName: true,
+					_id: true,
+					users: true,
+					referral: true,
+					subscribe: true,
 				},
-			])
-			.limit(limit)
+			},
+		]).limit(limit)
 
 		user[0].balance = user[0].referral?.balance
 		user[0].cardNumber = user[0].referral?.card?.number
