@@ -23,6 +23,8 @@ const filterUsersOptions = {
 
 // Получение списка пользователей
 router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
+	// router.get('/', getSearchQuery, async (req, res) => {
+
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
@@ -35,6 +37,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 				: []),
 			{ email: req.RegExpQuery },
 			{ firstname: req.RegExpQuery },
+			{ authPhone: req.RegExpQuery },
 		],
 	}
 
@@ -83,6 +86,37 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 								createdAt: true,
 								subscribe: true,
 								lastVisitAt: true,
+								phone: '$authPhone',
+							},
+						},
+						{
+							$lookup: {
+								from: 'tariffs',
+								localField: 'subscribe.tariffId',
+								foreignField: '_id',
+								pipeline: [
+									{
+										$project: {
+											name: true,
+										},
+									},
+								],
+								as: 'tariff',
+							},
+						},
+						{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
+						{
+							$project: {
+								role: true,
+								email: true,
+								avatar: true,
+								firstname: true,
+								updatedAt: true,
+								createdAt: true,
+								subscribe: true,
+								lastVisitAt: true,
+								phone: true,
+								tariffName: '$tariff.name',
 							},
 						},
 						{ $sort: { _id: -1 } },

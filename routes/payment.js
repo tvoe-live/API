@@ -29,7 +29,7 @@ router.get('/tariffs', async (req, res) => {
 					sort: 1,
 				},
 			},
-			{ $limit: 4 },
+			{ $limit: 5 },
 		])
 
 		// Получение данных пользователя, если он авторизован
@@ -62,10 +62,12 @@ router.get('/tariffs', async (req, res) => {
 									startAt: {
 										$lte: new Date(),
 									},
-									finishAt: {
-										$gte: new Date(),
-									},
-									discountFormat: { $ne: 'free-month' },
+									$or: [
+										{ finishAt: { $gte: new Date() } },
+										{ finishAt: { $exists: false } },
+										{ finishAt: null },
+									],
+									discountFormat: { $ne: 'free' },
 								},
 							},
 							{
@@ -245,10 +247,12 @@ router.post('/createPayment', verify.token, async (req, res) => {
 							startAt: {
 								$lte: new Date(),
 							},
-							finishAt: {
-								$gte: new Date(),
-							},
-							discountFormat: { $ne: 'free-month' },
+							$or: [
+								{ finishAt: { $gte: new Date() } },
+								{ finishAt: { $exists: false } },
+								{ finishAt: null },
+							],
+							discountFormat: { $ne: 'free' },
 						},
 					},
 					{
@@ -628,7 +632,7 @@ router.post('/notification', async (req, res) => {
 				errorCode,
 				terminalKey,
 				amount: status === 'REFUNDED' || status === 'PARTIAL_REFUNDED' ? paymentLog.amount : amount,
-				refundedAmount: status === 'REFUNDED' || status === 'PARTIAL_REFUNDED' ? amount : 0,
+				refundedAmount: status === 'REFUNDED' || status === 'PARTIAL_REFUNDED' ? amount : null,
 			},
 			$unset: { token: null },
 			$inc: { __v: 1 },

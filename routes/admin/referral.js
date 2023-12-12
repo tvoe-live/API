@@ -79,7 +79,7 @@ router.get('/search', async (req, res) => {
 											$project: {
 												_id: false,
 												bonuseAmount: {
-													$multiply: ['$amount', +REFERRAL_PERCENT_BONUSE / 100],
+													$multiply: ['$amount', REFERRAL_PERCENT_BONUSE / 100],
 												},
 											},
 										},
@@ -204,7 +204,7 @@ router.get('/search', async (req, res) => {
 										$project: {
 											_id: false,
 											bonuseAmount: {
-												$multiply: ['$amount', +REFERRAL_PERCENT_BONUSE / 100],
+												$multiply: ['$amount', REFERRAL_PERCENT_BONUSE / 100],
 											},
 										},
 									},
@@ -283,14 +283,18 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 			...(checkValidId(req.searchQuery) ? [{ _id: mongoose.Types.ObjectId(req.searchQuery) }] : []),
 			{ email: req.RegExpQuery },
 			{ firstname: req.RegExpQuery },
+			{ authPhone: req.RegExpQuery },
 		],
 	}
 	const mainAgregation = [
 		{
 			$match: {
 				_id: { $exists: true },
-				'referral.userIds': { $exists: true },
 				...searchMatch,
+				'referral.userIds': {
+					$exists: true,
+					$not: { $size: 0 },
+				},
 			},
 		},
 		{
@@ -303,7 +307,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 			},
 		},
 		{
-			$unwind: { path: '$subscribeName', preserveNullAndEmptyArrays: false },
+			$unwind: { path: '$subscribeName', preserveNullAndEmptyArrays: true },
 		},
 		{
 			// Добавляем поле в котором указываеи кол-во приведенных пользователей
@@ -341,7 +345,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 									$project: {
 										_id: false,
 										bonuseAmount: {
-											$multiply: ['$amount', +process.env.REFERRAL_PERCENT_BONUSE / 100],
+											$multiply: ['$amount', REFERRAL_PERCENT_BONUSE / 100],
 										},
 									},
 								},
@@ -353,8 +357,8 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 				as: 'rUsers',
 			},
 		},
-		{ $match: { rUsers: { $exists: true, $not: { $size: 0 } } } },
 	]
+
 	try {
 		const result = await User.aggregate([
 			{
@@ -449,9 +453,17 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 /**
  * Роут для получения запросов на вывод
  */
-router.get('/withdrawals', verify.token, verify.isAdmin, async (req, res) => {
+router.get('/withdrawals', verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
+
+	const searchMatch = req.RegExpQuery && {
+		$or: [
+			...(checkValidId(req.searchQuery) ? [{ _id: mongoose.Types.ObjectId(req.searchQuery) }] : []),
+			{ email: req.RegExpQuery },
+			{ firstname: req.RegExpQuery },
+		],
+	}
 
 	const mainAgregation = [
 		{
@@ -466,26 +478,44 @@ router.get('/withdrawals', verify.token, verify.isAdmin, async (req, res) => {
 				foreignField: '_id',
 				pipeline: [
 					{
-						$project: {
-							email: true,
-							authPhone: true,
-							_id: true,
+						$match: {
+							...searchMatch,
 						},
 					},
 					{
-						$addFields: {
-							isHaveSubscribe: {
-								$cond: {
-									if: {
-										$and: [
-											{ $ne: ['$subscribe', null] },
-											{ $gt: ['$subscribe.finishAt', new Date()] },
-										],
+						$project: {
+							_id: true,
+							avatar: true,
+							firstname: true,
+							phone: '$authPhone',
+							tariffId: '$subscribe.tariffId',
+							role: true,
+						},
+					},
+					{
+						$lookup: {
+							from: 'tariffs',
+							localField: 'tariffId',
+							foreignField: '_id',
+							pipeline: [
+								{
+									$project: {
+										name: true,
 									},
-									then: true,
-									else: false,
 								},
-							},
+							],
+							as: 'tariff',
+						},
+					},
+					{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
+					{
+						$project: {
+							tariffName: '$tariff.name',
+							role: true,
+							avatar: true,
+							firstname: true,
+							phone: true,
+							role: true,
 						},
 					},
 				],
@@ -541,7 +571,7 @@ router.get('/withdrawals', verify.token, verify.isAdmin, async (req, res) => {
 		])
 
 		return res.status(200).json(result[0])
-	} catch (e) {
+	} catch (error) {
 		resError(res, error)
 	}
 })
@@ -668,43 +698,55 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 								foreignField: '_id',
 								as: 'tariff',
 							},
-						},
-						{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: false } },
-						{
-							$project: {
-								_id: true,
-								bonusAmount: true,
-								avatar: true,
-								email: true,
-								phone: true,
-								'subscribe.startAt': true,
-								'subscribe.finishAt': true,
-								displayName: true,
-								'tariff.name': true,
+							{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
+							{
+								$project: {
+									_id: true,
+									bonusAmount: true,
+									avatar: true,
+									email: true,
+									phone: '$authPhone',
+									'subscribe.startAt': true,
+									'subscribe.finishAt': true,
+									displayName: true,
+									'tariff.name': true,
+									firstname: true,
+								},
 							},
 						},
 					],
 					as: 'users',
 				},
-			},
-			{
-				$project: {
-					'tariff.name': true,
-					refererUserId: true,
-					avatar: true,
-					email: true,
-					phone: '$authPhone',
-					displayName: true,
-					_id: true,
-					users: true,
-					referral: true,
-					subscribe: true,
+				{
+					$lookup: {
+						from: 'tariffs',
+						localField: 'subscribe.tariffId',
+						foreignField: '_id',
+						as: 'tariff',
+					},
+				},
+				{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
+				{
+					$project: {
+						tariffName: '$tariff.name',
+						refererUserId: true,
+						avatar: true,
+						email: true,
+						firstname: true,
+						phone: '$authPhone',
+						displayName: true,
+						_id: true,
+						users: true,
+						referral: true,
+						subscribe: true,
+					},
 				},
 			},
 		]).limit(limit)
 
 		user[0].balance = user[0].referral?.balance
 		user[0].cardNumber = user[0].referral?.card?.number
+
 		delete user[0].referral
 
 		const income = user[0].users
@@ -721,10 +763,11 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 			avatar: usr.avatar,
 			displayName: usr.displayName,
 			phone: usr.phone,
+			firstname: usr.firstname,
 			subscribe: {
-				startAt: usr.subscribe.startAt,
-				finishAt: usr.subscribe.finishAt,
-				name: usr.tariff.name,
+				startAt: usr.subscribe?.startAt,
+				finishAt: usr.subscribe?.finishAt,
+				tariffName: usr.tariff?.name,
 			},
 		}))
 

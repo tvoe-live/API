@@ -122,6 +122,7 @@ router.get('/', verify.token, async (req, res) => {
 								promocodeId: true,
 								refundedAmount: true,
 								notificationType: true,
+								tariffPrice: true,
 								tariff: {
 									_id: true,
 									name: true,

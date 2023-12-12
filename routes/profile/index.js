@@ -210,9 +210,11 @@ router.patch('/phone', verify.token, async (req, res) => {
 			userId,
 		})
 
+		const mes = `${code} — код подтверждения`
+
 		const url = imgcode
-			? `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}&imgcode=${imgcode}&userip=${ip}&op=1`
-			: `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${code}`
+			? `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${mes}&imgcode=${imgcode}&userip=${ip}&op=1`
+			: `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${mes}`
 
 		const response = await fetch(url)
 
@@ -492,7 +494,7 @@ router.post('/recover', verify.token, async (req, res) => {
 // Загрузка аватара
 router.post('/avatar', verify.token, uploadMemoryStorage.single('file'), async (req, res) => {
 	const { buffer } = req.file
-	const maxSizeMbyte = 5 // Лимит 5MB
+	const maxSizeMbyte = 15 // Лимит 15MB
 	const maxSizeByte = maxSizeMbyte * 1024 * 1024
 
 	if (!buffer) return resError({ res, msg: 'Фаил не получен' })

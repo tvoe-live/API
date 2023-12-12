@@ -210,7 +210,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 									{
 										$project: {
 											role: true,
-											email: true,
+											phone: '$authPhone',
 											avatar: true,
 											subscribe: true,
 											firstname: true,
@@ -231,6 +231,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 								updatedAt: true,
 								promocodeId: true,
 								refundedAmount: true,
+								tariffPrice: true,
 								amount: {
 									$cond: ['$withdrawAmount', '$withdrawAmount', '$amount'],
 								},
