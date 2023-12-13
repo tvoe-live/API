@@ -127,11 +127,11 @@ const token = async (req, res, next) => {
 			})
 		}
 
-		if (user.subscribe && new Date() >= user.subscribe.finishAt) {
-			user.subscribe = null
+		// if (user.subscribe && new Date() >= user.subscribe.finishAt) {
+		// 	user.subscribe = null
 
-			await User.updateOne({ _id: userId }, { $unset: { subscribe: null } }, { timestamps: false })
-		}
+		// 	await User.updateOne({ _id: userId }, { $unset: { subscribe: null } }, { timestamps: false })
+		// }
 
 		user.token = token
 
