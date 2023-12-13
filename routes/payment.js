@@ -641,13 +641,8 @@ router.post('/notification', async (req, res) => {
 
 	switch (status) {
 		case 'AUTHORIZED': // Деньги захолдированы на карте клиента. Ожидается подтверждение операции
-			if (rebillId) {
-				await User.findByIdAndUpdate(user._id, {
-					$set: {
-						RebillId: rebillId,
-					},
-				})
-			}
+			if (rebillId) await User.findByIdAndUpdate(user._id, { $set: { rebillId } })
+
 		case 'CONFIRMED': // Операция подтверждена
 			// Обновить время подписки пользователю
 			await User.updateOne(
@@ -659,7 +654,7 @@ router.post('/notification', async (req, res) => {
 							finishAt,
 							tariffId: paymentLog.tariffId,
 						},
-						RebillId: rebillId || null,
+						rebillId: rebillId || null,
 						allowTrialTariff: false,
 					},
 				}
@@ -703,18 +698,30 @@ router.post('/notification', async (req, res) => {
 					{ _id: user._id },
 					{
 						$set: {
+							autoPayment: false,
 							subscribe: {
 								startAt: lastActivePayment.startAt,
 								finishAt: lastActivePayment.finishAt,
 								tariffId: lastActivePayment.tariffId,
 							},
 						},
+					},
+					{
+						$unset: {
+							rebillId: false,
+						},
 					}
 				)
 			} else {
 				await User.updateOne(
 					{ _id: user._id },
-					{ $unset: { subscribe: null } },
+					{
+						$unset: {
+							rebillId: false,
+							subscribe: false,
+							autoPayment: false,
+						},
+					},
 					{ timestamps: false }
 				)
 			}

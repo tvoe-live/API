@@ -24,12 +24,14 @@ const userSchema = new mongoose.Schema(
 		firstname: String,
 		lastname: String,
 		displayName: String,
-		authPhone: String,
 
-		RebillId: String,
+		authPhone: String, // Номер телефона
+
+		rebillId: String, // ID для автосписания
 		autoPayment: {
+			// Включено/выключено автосписание
 			type: Boolean,
-			default: true,
+			default: false,
 		},
 
 		// Сессии
