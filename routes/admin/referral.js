@@ -467,11 +467,6 @@ router.get('/withdrawals', verify.token, verify.isAdmin, getSearchQuery, async (
 
 	const mainAgregation = [
 		{
-			$match: {
-				status: 'pending',
-			},
-		},
-		{
 			$lookup: {
 				from: 'users',
 				localField: 'userId',
@@ -547,14 +542,31 @@ router.get('/withdrawals', verify.token, verify.isAdmin, getSearchQuery, async (
 					items: [
 						...mainAgregation,
 						{
+							$addFields: {
+								statusMatch: {
+									$cond: {
+										if: { $eq: ['$status', 'pending'] },
+										then: 1,
+										else: 0,
+									},
+								},
+							},
+						},
+						{
+							$sort: {
+								statusMatch: -1,
+								createdAt: -1,
+							},
+						},
+						{
 							$project: {
 								amount: true,
 								card: true,
 								createdAt: true,
 								user: true,
+								status: true,
 							},
 						},
-						{ $sort: { createdAt: -1 } },
 						{ $skip: skip },
 						{ $limit: limit },
 					],

@@ -82,6 +82,154 @@ router.get('/', async (req, res) => {
 	}
 })
 
+/*
+ *  Получение фильмов и сериалов по фильтрам
+ */
+
+router.get('/search', async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
+
+	const editSpacePerson = req.query.person?.replace(/ /gi, '\\s.*')
+	const RegExpQueryRerson = new RegExp(editSpacePerson?.replace(/[её]/gi, '[её]'), 'i')
+
+	const editSpaceCountry = req.query.country?.replace(/ /gi, '\\s.*')
+	const RegExpQueryCountry = new RegExp(editSpaceCountry?.replace(/[её]/gi, '[её]'), 'i')
+
+	const editSpaceGenreRu = req.query.genreRU?.replace(/ /gi, '\\s.*')
+	const RegExpQueryGenreRu = new RegExp(editSpaceGenreRu?.replace(/[её]/gi, '[её]'), 'i')
+
+	const lookupFromCategories = {
+		from: 'categories',
+		localField: 'categoryAlias',
+		foreignField: 'alias',
+		let: { genresAliases: '$genresAliases' },
+		pipeline: [
+			{
+				$project: {
+					_id: false,
+					genres: {
+						$map: {
+							input: '$$genresAliases',
+							as: 'this',
+							in: {
+								$first: {
+									$filter: {
+										input: '$genres',
+										as: 'genres',
+										cond: { $eq: ['$$genres.alias', '$$this'] },
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		],
+		as: 'category',
+	}
+
+	const agregationListForTotalSize = [
+		{
+			$match: {
+				publishedAt: { $ne: null },
+				...(req.query.country && {
+					countries: {
+						$in: [RegExpQueryCountry],
+					},
+				}),
+				...(req.query.person && {
+					persons: {
+						$elemMatch: { name: RegExpQueryRerson },
+					},
+				}),
+				...(req.query.category && {
+					categoryAlias: req.query.category,
+				}),
+				...(req.query.genre && {
+					genresAliases: { $in: [req.query.genre] },
+				}),
+			},
+		},
+	]
+
+	try {
+		Movie.aggregate(
+			[
+				{
+					$facet: {
+						// Всего записей
+						totalSize: [
+							...agregationListForTotalSize,
+							{ $lookup: lookupFromCategories },
+							{ $unwind: '$category' },
+							{ $addFields: { genres: '$category.genres' } },
+							{
+								$match: {
+									...(req.query.genreRU && {
+										genres: {
+											$elemMatch: { name: RegExpQueryGenreRu },
+										},
+									}),
+								},
+							},
+							{
+								$group: {
+									_id: null,
+									count: { $sum: 1 },
+								},
+							},
+							{ $project: { _id: false } },
+							{ $limit: 1 },
+						],
+						items: [
+							...agregationListForTotalSize,
+							{ $lookup: lookupFromCategories },
+							{ $unwind: '$category' },
+							{ $addFields: { genres: '$category.genres' } },
+							{
+								$match: {
+									...(req.query.genreRU && {
+										genres: {
+											$elemMatch: { name: RegExpQueryGenreRu },
+										},
+									}),
+								},
+							},
+							{
+								$project: {
+									alias: true,
+									name: true,
+									poster: true,
+									countries: true,
+									categoryAlias: true,
+									genresAliases: true,
+									url: { $concat: ['/p/', '$alias'] },
+								},
+							},
+
+							{ $skip: skip },
+							{ $limit: limit },
+						],
+					},
+				},
+				{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
+				{
+					$project: {
+						totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+						items: '$items',
+					},
+				},
+			],
+			(err, result) => {
+				return res.status(200).json(result[0])
+			}
+		)
+	} catch (err) {
+		return resError({ res, msg: err })
+	}
+})
+
 // Получение одной записи
 router.get('/movie', async (req, res) => {
 	const skipMovieRatings = +req.query.skipMovieRatings || 0
