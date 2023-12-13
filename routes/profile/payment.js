@@ -149,22 +149,20 @@ router.get('/', verify.token, async (req, res) => {
 		])
 
 		// Данные о текущей подписки
-		const currentSubscribe = {
-			tariffId: null,
-			tariffPrice: null,
-			...req.user.subscribe,
-		}
+		const currentSubscribe = req.user.subscribe
 
-		currentSubscribe.tariffPrice = tariffs.find(
-			(tariff) => tariff._id.toString() === req.user.subscribe.tariffId.toString()
-		)?.price
+		if (req.user.subscribe) {
+			currentSubscribe.tariffPrice = tariffs.find(
+				(tariff) => tariff._id.toString() === req.user.subscribe.tariffId.toString()
+			)?.price
 
-		// Если тариф за 1р, то показать цену следующего списания за 1 месяц
-		if (currentSubscribe.tariffPrice === 1) {
-			monthTariff = tariffs.find((tariff) => tariff.autoEnableAfterTrialTariff)
+			// Если тариф за 1р, то показать цену следующего списания за 1 месяц
+			if (currentSubscribe.tariffPrice === 1) {
+				monthTariff = tariffs.find((tariff) => tariff.autoEnableAfterTrialTariff)
 
-			currentSubscribe.tariffId = monthTariff._id
-			currentSubscribe.tariffPrice = monthTariff.price
+				currentSubscribe.tariffId = monthTariff._id
+				currentSubscribe.tariffPrice = monthTariff.price
+			}
 		}
 
 		return res.status(200).json({

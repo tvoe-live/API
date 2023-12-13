@@ -56,7 +56,7 @@ const getTerminalParams = ({
 const getToken = (params) => {
 	const concatStr = Object.keys(params) // Собрать массив передаваемых данных в виде пар Ключ-Значения
 		.sort() // Отсортировать массив по алфавиту по ключу
-		.map((key) => params[key].toString().replace(/\s+/g, '')) // Привести все значения строку и удалить пробелы
+		.map((key) => params[key] && params[key].toString().replace(/\s+/g, '')) // Привести все значения строку и удалить пробелы
 		.join('') // Конкетировать каждое значение
 
 	// Токен SHA-256 из конкетированных данных терминала
