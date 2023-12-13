@@ -34,7 +34,7 @@ const recurrentPayment = async () => {
 
 		for (const user of users) {
 			// Если пользователь отключил автопродление, снять подписку
-			if (!user.autoPayment) {
+			if (!user.autoPayment || !user.subscribe.tariffId) {
 				user.subscribe = null
 				await user.save()
 
@@ -60,7 +60,7 @@ const recurrentPayment = async () => {
 				isReccurent: true,
 				amount: userTariff.price,
 				tariffId: userTariff._id,
-				tariffPrice: userTariff._id,
+				tariffPrice: userTariff.price,
 			})
 
 			// Получить параметры терминала
@@ -99,7 +99,13 @@ const recurrentPayment = async () => {
 			})
 
 			if (chargePayment.Status === 'REJECTED') {
-				if (chargePayment.ErrorCode === '10') console.log('Невозможна реализация автоплатежей')
+				user.subscribe = null
+				await user.save()
+
+				if (chargePayment.ErrorCode === '10') {
+					console.log('Невозможна реализация автоплатежей')
+					continue
+				}
 
 				if (chargePayment.ErrorCode === '103' || chargePayment.ErrorCode === '116') {
 					await notification.create({
@@ -120,6 +126,16 @@ const recurrentPayment = async () => {
 					userPaymentLog.terminalKey = process.env.PAYMENT_TERMINAL_KEY
 
 					await userPaymentLog.save()
+					continue
+				} else {
+					await notification.create({
+						receiversIds: [user._id],
+						title: 'Платеж отклонен',
+						description: chargePayment.Message,
+						willPublishedAt: Date.now(),
+						type: 'PROFILE',
+						deleted: false,
+					})
 				}
 			}
 
