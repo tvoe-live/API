@@ -3,7 +3,7 @@ require('dotenv').config()
 
 const transporter = nodemailer.createTransport(
 	{
-		host: 'smtp.mail.ru',
+		host: 'smtp.yandex.ru',
 		port: 465,
 		secure: true,
 		auth: {
@@ -19,7 +19,7 @@ const transporter = nodemailer.createTransport(
 const mailer = (message) => {
 	transporter.sendMail(message, (err, info) => {
 		if (err) return console.log(err)
-		console.log('Email sent: ', info)
+		//console.log('Email sent: ', info)
 	})
 }
 

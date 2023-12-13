@@ -11,8 +11,7 @@ const getSearchQuery = require('../../middlewares/getSearchQuery')
 
 // Возможные причины для удаления отзыва
 const validValues = {
-	violationRightsOrContentConfidentialInformation:
-		'Отзыв нарушает чьи-то права или содержит конфиденциальную информацию',
+	other: 'Другое',
 	swearingInsultsOrCallsIllegalActions: 'Мат, оскорбления или призыв к противоправным действиям',
 	linkOrAdvertising: 'Отзыв со ссылкой или скрытой рекламой',
 	missingRelationshipToContent: 'Отзыв не имеет отношения к контенту',
@@ -500,6 +499,7 @@ router.delete('/rating', verify.token, verify.isManager, async (req, res) => {
 		// Обновить среднюю оценку фильма
 		await Movie.updateOne({ _id: movieId }, { $set: { rating: newMovieRating } })
 
+		const { alias, name, categoryAlias } = await Movie.findOne({ _id: movieId })
 		let textForDescr = ''
 
 		if (comment) {
@@ -515,9 +515,13 @@ router.delete('/rating', verify.token, verify.isManager, async (req, res) => {
 			})
 		}
 
+		const category = categoryAlias === 'serials' ? 'сериалу' : 'фильму'
+
+		const title = `Ваш отзыв к ${category} "${name}" (${process.env.CLIENT_URL}/p/${alias}) не был опубликован из-за нарушений правил сервиса:`
+
 		// Создание индивидуального уведомления для пользователя
 		Notification.create({
-			title: `Ваш отзыв "${review}" не был опубликован из-за нарушений правил сервиса:`,
+			title,
 			description: textForDescr,
 			type: 'PROFILE',
 			receiversIds: [userId],

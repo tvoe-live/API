@@ -42,19 +42,21 @@ const existMovie = async (req, res, next) => {
 	next()
 }
 
-// Когда можно удалить видео?
-const cannotBeDeleted = (req, video) =>
-	!(
-		(
-			!video || // Когда нет видео
-			!video._id || // Когда оно пустое
-			!video.status || // Когда оно старое
-			!video.managerUserId || // Когда оно не содержит записи о менеджере (тоже старое)
-			video.status === 'READY' || // Когда загрузка окончена
-			req.user.role === 'admin' || // Если пользователь - администратор
-			req.user._id.toString() === video.managerUserId.toString()
-		) // Когда инициатор удаления - тот, кто загружает
-	)
+// Если нельзя удалить видео, то выдать ошибку, иначе удалить
+const cannotBeDeleted = (req, video) => {
+	if (!video || !video._id || !video.status) return false
+
+	if (
+		!video.managerUserId ||
+		video.status === 'READY' ||
+		req.user._id.toString() === video.managerUserId.toString()
+	) {
+		deleteVideoExecute(video)
+		return false
+	}
+
+	return true
+}
 
 // Удаление видео
 const deleteVideoExecute = async (video, createLog = true) => {
@@ -279,7 +281,6 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 				if (cannotBeDeleted(req, movie.trailer)) {
 					return notEnoughRights()
 				}
-				deleteVideoExecute(movie.trailer)
 
 				updateOptions.$set = { trailer: videoParams }
 				break
@@ -288,7 +289,6 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 					if (cannotBeDeleted(req, movie.films[0])) {
 						return notEnoughRights()
 					}
-					deleteVideoExecute(movie.films[0])
 
 					if (movie.films.length) {
 						updateOptions.$set = { 'films.0': videoParams }
@@ -303,7 +303,6 @@ router.post('/video', verify.token, verify.isManager, existMovie, async (req, re
 					if (cannotBeDeleted(req, movie.series[seasonKey][episodeKey])) {
 						return notEnoughRights()
 					}
-					deleteVideoExecute(movie.series[seasonKey][episodeKey])
 
 					if (episodeKey < movie.series[seasonKey].length) {
 						updateOptions.$set = { [`series.${seasonKey}.${episodeKey}`]: videoParams }
@@ -442,7 +441,6 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 				if (cannotBeDeleted(req, movie.trailer)) {
 					return notEnoughRights()
 				}
-				deleteVideoExecute(movie.trailer)
 
 				updateOptions = { $unset: { trailer: {} } }
 				break
@@ -454,7 +452,6 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 				if (cannotBeDeleted(req, film)) {
 					return notEnoughRights()
 				}
-				deleteVideoExecute(film)
 
 				updateOptions = { $pull: { films: { _id: film._id } } }
 				break
@@ -468,7 +465,6 @@ router.delete('/video', verify.token, verify.isManager, async (req, res) => {
 				if (cannotBeDeleted(req, episode)) {
 					return notEnoughRights()
 				}
-				deleteVideoExecute(episode)
 
 				updateOptions = { $pull: { [`series.${seasonKey}`]: { _id: episode._id } } }
 		}
@@ -596,21 +592,6 @@ router.delete('/', verify.token, verify.isManager, async (req, res) => {
 		const movie = await Movie.findOne({ _id })
 
 		const { logo, films, cover, series, poster, trailer } = movie
-
-		// Нельзя удалить страницу, пока проводится какая-то загрузка
-		if (
-			cannotBeDeleted(req, trailer) ||
-			films.find((film) => cannotBeDeleted(req, film)) ||
-			series.find((season) => {
-				season.find((episode) => cannotBeDeleted(req, episode))
-			})
-		) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Недостаточно прав',
-			})
-		}
 
 		// Удаление логотипа
 		if (logo && logo.src) await deleteFileFromS3(logo.src)

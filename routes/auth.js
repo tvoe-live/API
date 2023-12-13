@@ -11,7 +11,7 @@ const verify = require('../middlewares/verify')
 const resError = require('../helpers/resError')
 const resSuccess = require('../helpers/resSuccess')
 const { uploadImageToS3 } = require('../helpers/uploadImage')
-const { amountLoginWithoutCapcha } = require('../constants')
+const { AMOUNT_LOGIN_WITHOUT_CAPTCHA } = require('../constants')
 /*
  * Авторизация / регистрация через Яндекс и разрушение сессии
  */
@@ -56,7 +56,7 @@ const generateAccessToken = (userId) => {
 
 router.post('/login', async (req, res) => {
 	const authorization = req.header('Authorization') || null
-	// let refererUserId = req.header('RefererUserId') || null
+	let refererUserId = req.header('RefererUserId') || null
 
 	if (!authorization) {
 		return resError({
@@ -240,9 +240,6 @@ router.post('/sms/capcha', async (req, res) => {
 		})
 
 		if (!!previousPhoneCheckingMinute.length) {
-			console.log(
-				`Для телефона ${phone} и ip ${ip} капча не требуется, превышено  previousPhoneCheckingMinute`
-			)
 			return resSuccess({ res, value: false })
 		}
 
@@ -255,9 +252,6 @@ router.post('/sms/capcha', async (req, res) => {
 		})
 
 		if (previousPhoneChecking.length >= 25) {
-			console.log(
-				`Для телефона ${phone} и ip ${ip} капча не требуется, превышено  previousPhoneChecking`
-			)
 			return resSuccess({ res, value: false })
 		}
 
@@ -265,24 +259,22 @@ router.post('/sms/capcha', async (req, res) => {
 			phone,
 		})
 			.sort({ createdAt: -1 })
-			.limit(amountLoginWithoutCapcha)
+			.limit(AMOUNT_LOGIN_WITHOUT_CAPTCHA)
 
 		const prevIpChecking = await PhoneChecking.find({
 			ip,
 		})
 			.sort({ createdAt: -1 })
-			.limit(amountLoginWithoutCapcha)
+			.limit(AMOUNT_LOGIN_WITHOUT_CAPTCHA)
 
 		if (
-			(prevPhoneChecking.length === amountLoginWithoutCapcha &&
+			(prevPhoneChecking.length === AMOUNT_LOGIN_WITHOUT_CAPTCHA &&
 				prevPhoneChecking.every((log) => !log.isConfirmed)) ||
-			(prevIpChecking.length === amountLoginWithoutCapcha &&
+			(prevIpChecking.length === AMOUNT_LOGIN_WITHOUT_CAPTCHA &&
 				prevIpChecking.every((log) => !log.isConfirmed))
 		) {
-			console.log(`Для телефона ${phone} и ip ${ip} капча требуется `)
 			return resSuccess({ res, value: true })
 		}
-		console.log(`Для телефона ${phone} и ip ${ip} капча не требуется `)
 		return resSuccess({ res, value: false })
 	} catch (error) {
 		return res.json(error)
@@ -297,7 +289,6 @@ router.post('/sms/login', async (req, res) => {
 	const { phone, imgcode } = req.body
 
 	const ip = req.headers['x-real-ip']
-	console.log('ip:', ip)
 
 	try {
 		if (req.useragent?.isBot) {
@@ -330,6 +321,7 @@ router.post('/sms/login', async (req, res) => {
 		const previousPhoneCheckingMinute = await PhoneChecking.find({
 			$or: [{ phone }, { ip }],
 			createdAt: { $gt: minuteAgo },
+			type: 'authorization',
 		})
 
 		if (!!previousPhoneCheckingMinute.length) {
@@ -346,6 +338,7 @@ router.post('/sms/login', async (req, res) => {
 		const previousPhoneChecking = await PhoneChecking.find({
 			phone,
 			createdAt: { $gt: DayAgo },
+			type: 'authorization',
 		})
 
 		if (previousPhoneChecking.length >= 25) {
@@ -360,20 +353,20 @@ router.post('/sms/login', async (req, res) => {
 			phone,
 		})
 			.sort({ createdAt: -1 })
-			.limit(amountLoginWithoutCapcha)
+			.limit(AMOUNT_LOGIN_WITHOUT_CAPTCHA)
 
 		const prevIpChecking = await PhoneChecking.find({
 			ip,
 		})
 			.sort({ createdAt: -1 })
-			.limit(amountLoginWithoutCapcha)
+			.limit(AMOUNT_LOGIN_WITHOUT_CAPTCHA)
 
 		//Если последние 2 заявки на подтверждения для указанного номера телефона или ip адреса клиента не были подтверждены правильным смс кодом, необходимо показать капчу
 		if (
-			(prevPhoneChecking2.length === amountLoginWithoutCapcha &&
+			(prevPhoneChecking2.length === AMOUNT_LOGIN_WITHOUT_CAPTCHA &&
 				prevPhoneChecking2.every((log) => !log.isConfirmed) &&
 				!imgcode) ||
-			(prevIpChecking.length === amountLoginWithoutCapcha &&
+			(prevIpChecking.length === AMOUNT_LOGIN_WITHOUT_CAPTCHA &&
 				prevIpChecking.every((log) => !log.isConfirmed) &&
 				!imgcode)
 		) {
@@ -408,7 +401,6 @@ router.post('/sms/login', async (req, res) => {
 			? `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${mes}&imgcode=${imgcode}&userip=${ip}&op=1`
 			: `https://smsc.ru/sys/send.php?login=${process.env.SMS_SERVICE_LOGIN}&psw=${process.env.SMS_SERVICE_PASSWORD}&phones=${phone}&mes=${mes}`
 
-		console.log('url:', url)
 		const response = await fetch(url)
 
 		const responseText = await response?.text()
@@ -507,25 +499,6 @@ router.post('/sms/compare', async (req, res) => {
 
 		phoneCheckingLog.isConfirmed = true
 		await phoneCheckingLog.save()
-
-		// Получение данных пользователя, если он авторизован. при смене номера телефона
-		await verify.token(req)
-
-		if (req.user) {
-			await User.findOneAndUpdate(
-				{ _id: req.user._id },
-				{
-					authPhone: phone,
-				}
-			)
-
-			await User.updateMany(
-				{ authPhone: phone, _id: { $ne: req.user._id } },
-				{ $set: { authPhone: null } }
-			)
-
-			return resSuccess({ res, msg: 'Номер телефона привязан' })
-		}
 
 		// Поиск пользователя в БД
 		let user = await User.findOne({

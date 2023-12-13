@@ -114,9 +114,7 @@ router.get('/oftenSeek', async (req, res) => {
 						$project: {
 							_id: true,
 							name: true,
-							poster: {
-								src: true,
-							},
+							poster: true,
 							dateReleased: true,
 							url: { $concat: ['/p/', '$alias'] },
 						},
@@ -686,13 +684,10 @@ router.get('/', getSearchQuery, async (req, res) => {
 						...mainAgregation,
 						{
 							$project: {
-								_id: false,
 								exactNameMatch: true,
 								name: true,
-								dateReleased: true,
-								poster: {
-									src: true,
-								},
+								dataReleased: true,
+								poster: true,
 								url: { $concat: ['/p/', '$alias'] },
 							},
 						},

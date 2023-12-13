@@ -10,7 +10,11 @@ const tariffSchema = new mongoose.Schema(
 		sort: Number, // Сортировка
 		price: Number, // Цена
 		hidden: Boolean, // Скрыт ли нет
-		duration: String, // Длительность
+		duration: String, // Длительность,
+		autoSwitchingFromTrialTariff: {
+			type: Boolean,
+			default: false,
+		},
 	},
 	{
 		versionKey: false,

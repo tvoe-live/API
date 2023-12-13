@@ -140,6 +140,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 								__v: false,
 								userId: false,
 								movieId: false,
+								createdAt: false,
 							},
 						},
 						{ $sort: { _id: -1 } }, // Была сортировка updatedAt

@@ -23,6 +23,8 @@ const filterUsersOptions = {
 
 // Получение списка пользователей
 router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
+	// router.get('/', getSearchQuery, async (req, res) => {
+
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
@@ -35,6 +37,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 				: []),
 			{ email: req.RegExpQuery },
 			{ firstname: req.RegExpQuery },
+			{ authPhone: req.RegExpQuery },
 		],
 	}
 
@@ -149,6 +152,7 @@ router.get('/profile', verify.token, verify.isAdmin, async (req, res) => {
 		let tariffs = await Tariff.aggregate([
 			{
 				$match: {
+					price: { $nin: [0, 1] },
 					hidden: { $ne: true },
 				},
 			},

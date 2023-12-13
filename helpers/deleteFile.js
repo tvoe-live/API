@@ -1,11 +1,5 @@
-const {
-	STATIC_DIR,
-	S3_UPLOAD_KEY,
-	S3_UPLOAD_SECRET,
-	S3_UPLOAD_REGION,
-	S3_UPLOAD_BUCKET,
-	S3_UPLOAD_ENDPOINT,
-} = process.env
+const { S3_UPLOAD_KEY, S3_UPLOAD_SECRET, S3_UPLOAD_REGION, S3_UPLOAD_BUCKET, S3_UPLOAD_ENDPOINT } =
+	process.env
 const fs = require('fs')
 const customS3Client = require('./customS3Client')
 const { ListObjectsCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3')
@@ -18,25 +12,6 @@ const client = customS3Client({
 		secretAccessKey: S3_UPLOAD_SECRET,
 	},
 })
-
-/*
- * Удаление файла с диска сервера
- */
-const deleteFileFromDisk = async (path, isPathFull) => {
-	try {
-		filePath = isPathFull ? path : STATIC_DIR + path
-
-		if (fs.existsSync(filePath)) {
-			fs.unlinkSync(filePath)
-		} else {
-			throw new Error(`Фаил ${filePath} не существует`)
-		}
-
-		return path
-	} catch (err) {
-		console.log(err)
-	}
-}
 
 /*
  * Очистка папки для и ее удаление в S3
@@ -81,6 +56,5 @@ const deleteFileFromS3 = async (Key) => {
 
 module.exports = {
 	deleteFileFromS3,
-	deleteFileFromDisk,
 	deleteFolderFromS3,
 }

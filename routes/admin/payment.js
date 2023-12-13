@@ -38,105 +38,102 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 	}
 
 	try {
-		// УДАЛИТЬ ЗАКОММЕНТИРОВАНЫЙ КОД, КОГДА ПОЯВИТСЯ ДАШБОРД В АДМИНКЕ!!!
-
-		// Статистика по тарифам
-		// let tariffsStats = await Tariff.aggregate([
-		// 	// Действующие подписок
-		// 	{
-		// 		$lookup: {
-		// 			from: 'paymentlogs',
-		// 			localField: '_id',
-		// 			foreignField: 'tariffId',
-		// 			pipeline: [
-		// 				{
-		// 					$match: {
-		// 						finishAt: { $gte: new Date() },
-		// 					},
-		// 				},
-		// 				{
-		// 					$group: {
-		// 						_id: null,
-		// 						count: { $sum: 1 },
-		// 					},
-		// 				},
-		// 				{ $project: { _id: false } },
-		// 				{ $limit: 1 },
-		// 			],
-		// 			as: 'activeSubscriptions',
-		// 		},
-		// 	},
-		// 	// Активаций подписок
-		// 	{
-		// 		$lookup: {
-		// 			from: 'paymentlogs',
-		// 			localField: '_id',
-		// 			foreignField: 'tariffId',
-		// 			pipeline: [
-		// 				{
-		// 					$match: {
-		// 						finishAt: { $ne: null },
-		// 					},
-		// 				},
-		// 				{
-		// 					$group: {
-		// 						_id: null,
-		// 						count: { $sum: 1 },
-		// 					},
-		// 				},
-		// 				{ $project: { _id: false } },
-		// 				{ $limit: 1 },
-		// 			],
-		// 			as: 'activationsSubscriptions',
-		// 		},
-		// 	},
-		// 	// Сумма всех пополнений
-		// 	{
-		// 		$lookup: {
-		// 			from: 'paymentlogs',
-		// 			localField: '_id',
-		// 			foreignField: 'tariffId',
-		// 			pipeline: [
-		// 				{
-		// 					$match: {
-		// 						$or: [{ status: 'success' }, { status: 'CONFIRMED' }, { status: 'AUTHORIZED' }],
-		// 					},
-		// 				},
-		// 				{
-		// 					$group: {
-		// 						_id: null,
-		// 						count: {
-		// 							$sum: {
-		// 								$cond: ['$withdrawAmount' > 0, '$withdrawAmount', '$amount'],
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 				{ $project: { _id: false } },
-		// 				{ $limit: 1 },
-		// 			],
-		// 			as: 'totalAmount',
-		// 		},
-		// 	},
-		// 	{ $unwind: { path: '$totalAmount', preserveNullAndEmptyArrays: true } },
-		// 	{ $unwind: { path: '$activeSubscriptions', preserveNullAndEmptyArrays: true } },
-		// 	{ $unwind: { path: '$activationsSubscriptions', preserveNullAndEmptyArrays: true } },
-		// 	{
-		// 		$project: {
-		// 			name: true,
-		// 			duration: true,
-		// 			totalAmount: { $cond: ['$totalAmount.count', '$totalAmount.count', 0] },
-		// 			activeSubscriptions: {
-		// 				$cond: ['$activeSubscriptions.count', '$activeSubscriptions.count', 0],
-		// 			},
-		// 			activationsSubscriptions: {
-		// 				$cond: ['$activationsSubscriptions.count', '$activationsSubscriptions.count', 0],
-		// 			},
-		// 		},
-		// 	},
-		// 	{ $sort: { duration: 1 } },
-		// 	{ $limit: 5 },
-		// ])
+		let tariffsStats = await Tariff.aggregate([
+			// Действующие подписок
+			{
+				$lookup: {
+					from: 'paymentlogs',
+					localField: '_id',
+					foreignField: 'tariffId',
+					pipeline: [
+						{
+							$match: {
+								finishAt: { $gte: new Date() },
+							},
+						},
+						{
+							$group: {
+								_id: null,
+								count: { $sum: 1 },
+							},
+						},
+						{ $project: { _id: false } },
+						{ $limit: 1 },
+					],
+					as: 'activeSubscriptions',
+				},
+			},
+			// Активаций подписок
+			{
+				$lookup: {
+					from: 'paymentlogs',
+					localField: '_id',
+					foreignField: 'tariffId',
+					pipeline: [
+						{
+							$match: {
+								finishAt: { $ne: null },
+							},
+						},
+						{
+							$group: {
+								_id: null,
+								count: { $sum: 1 },
+							},
+						},
+						{ $project: { _id: false } },
+						{ $limit: 1 },
+					],
+					as: 'activationsSubscriptions',
+				},
+			},
+			// Сумма всех пополнений
+			{
+				$lookup: {
+					from: 'paymentlogs',
+					localField: '_id',
+					foreignField: 'tariffId',
+					pipeline: [
+						{
+							$match: {
+								$or: [{ status: 'success' }, { status: 'CONFIRMED' }, { status: 'AUTHORIZED' }],
+							},
+						},
+						{
+							$group: {
+								_id: null,
+								count: {
+									$sum: {
+										$cond: ['$withdrawAmount' > 0, '$withdrawAmount', '$amount'],
+									},
+								},
+							},
+						},
+						{ $project: { _id: false } },
+						{ $limit: 1 },
+					],
+					as: 'totalAmount',
+				},
+			},
+			{ $unwind: { path: '$totalAmount', preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$activeSubscriptions', preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$activationsSubscriptions', preserveNullAndEmptyArrays: true } },
+			{
+				$project: {
+					name: true,
+					duration: true,
+					totalAmount: { $cond: ['$totalAmount.count', '$totalAmount.count', 0] },
+					activeSubscriptions: {
+						$cond: ['$activeSubscriptions.count', '$activeSubscriptions.count', 0],
+					},
+					activationsSubscriptions: {
+						$cond: ['$activationsSubscriptions.count', '$activationsSubscriptions.count', 0],
+					},
+				},
+			},
+			{ $sort: { duration: 1 } },
+			{ $limit: 5 },
+		])
 
 		const result = await PaymentLog.aggregate([
 			{
@@ -213,10 +210,10 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 									{
 										$project: {
 											role: true,
+											phone: '$authPhone',
 											avatar: true,
 											subscribe: true,
 											firstname: true,
-											phone: '$authPhone',
 										},
 									},
 								],
@@ -228,9 +225,12 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 							$project: {
 								user: true,
 								tariff: true,
+								status: true,
 								startAt: true,
 								finishAt: true,
 								updatedAt: true,
+								promocodeId: true,
+								refundedAmount: true,
 								tariffPrice: true,
 								amount: {
 									$cond: ['$withdrawAmount', '$withdrawAmount', '$amount'],
@@ -255,7 +255,10 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 			},
 		])
 
-		return res.status(200).json(result[0])
+		return res.status(200).json({
+			tariffsStats,
+			...result[0],
+		})
 	} catch (err) {
 		return resError({ res, msg: err })
 	}
