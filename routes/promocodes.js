@@ -38,7 +38,7 @@ router.patch('/activate', verify.token, async (req, res) => {
 		}
 
 		if (promocode.isOnlyForNewUsers) {
-			const existPaymentLog = PaymentLog.findOne({ userId: req.user._id, type: 'paid' })
+			const existPaymentLog = await PaymentLog.findOne({ userId: req.user._id, type: 'paid' })
 			if (existPaymentLog)
 				return resError({ res, msg: 'Промокод доступен только новым пользователям' })
 		}
