@@ -9,7 +9,10 @@ const recurrentPayment = async () => {
 	try {
 		// Запуск за 15 минут до завершения подписки
 		const start = new Date()
-		const finish = new Date(start - 900 * 1000)
+		const finish = new Date(start - 60 * 1000)
+
+		// Снять подписки у кого нет автосписания сутки назад
+		const finishDay = new Date(start - 86400 * 1000)
 
 		// Выборка всех пользователей, которые скоро завершат подписку
 		const users = await User.find(
@@ -33,15 +36,20 @@ const recurrentPayment = async () => {
 			.lean()
 
 		for (const user of users) {
+			console.log(user)
+
 			// Если пользователь отключил автопродление, снять подписку
-			if (!user.autoPayment || !user.subscribe.tariffId) {
+			if (
+				!user.autoPayment ||
+				!user.subscribe.tariffId ||
+				!user.rebillId ||
+				(!user.autoPayment && user.subscribe.finishAt < finishDay)
+			) {
 				user.subscribe = null
 				await user.save()
 
 				continue
 			}
-
-			if (!user.rebillId) continue
 
 			// Если пользователь взял пробный тариф, то перевести на месячный тариф
 			const userSubscribeTariffId =
@@ -50,7 +58,12 @@ const recurrentPayment = async () => {
 					: user.subscribe.tariffId
 
 			// Поиск информации о тарифе пользователя
-			const userTariff = await tariff.findById(userSubscribeTariffId, { _id: true, price: true })
+			const userTariff = await tariff.findById(userSubscribeTariffId, {
+				_id: true,
+				name: true,
+				price: true,
+				duration: true,
+			})
 
 			// Создание платежного лога
 			const userPaymentLog = await paymentLog.create({
@@ -85,8 +98,8 @@ const recurrentPayment = async () => {
 
 			const chargeToken = getToken({
 				TerminalKey: process.env.PAYMENT_TERMINAL_KEY,
-				PaymentId: String(initPayment.PaymentId),
 				Password: process.env.PAYMENT_TERMINAL_PASSWORD,
+				PaymentId: String(initPayment.PaymentId),
 				RebillId: user.rebillId,
 			})
 
@@ -98,7 +111,7 @@ const recurrentPayment = async () => {
 				Token: chargeToken,
 			})
 
-			if (chargePayment.Status === 'REJECTED') {
+			if (chargePayment.Status === 'REJECTED' || +chargePayment.ErrorCode > 0) {
 				user.subscribe = null
 				await user.save()
 
@@ -139,20 +152,26 @@ const recurrentPayment = async () => {
 				}
 			}
 
-			if (chargePayment.Status === 'CONFIRMED') {
-				const startAt = start
+			if (chargePayment.Status === 'AUTHORIZED' || chargePayment.Status === 'CONFIRMED') {
+				const startAt = user.subscribe.finishAt
+				const finishAt = new Date(user.subscribe.finishAt.getTime() + +userTariff.duration)
+
+				console.log(startAt, finishAt, +userTariff.duration)
 
 				user.subscribe = {
 					startAt,
-					finishAt: new Date(startAt.getTime() + Number(userTariff.duration)),
+					finishAt,
 					tariffId: userTariff._id,
 				}
 
 				await user.save()
 
-				await shareWithReferrer(user._id, userTariff.price, user.refererUserId)
+				await shareWithReferrer({
+					userId: user._id,
+					amount: userTariff.price,
+					refererUserId: user.refererUserId,
+				})
 
-				//userPaymentLog.isChecked = true
 				userPaymentLog.status = chargePayment.Status
 				userPaymentLog.success = chargePayment.Success
 				userPaymentLog.errorCode = chargePayment.ErrorCode
@@ -160,19 +179,23 @@ const recurrentPayment = async () => {
 				userPaymentLog.terminalKey = process.env.PAYMENT_TERMINAL_KEY
 				userPaymentLog.rebillId = user.rebillId
 				userPaymentLog.startAt = startAt
-				userPaymentLog.finishAt = new Date(startAt.getTime() + Number(userTariff.duration))
-				//userPaymentLog.refundedAmount = 0
+				userPaymentLog.finishAt = finishAt
 				userPaymentLog.message = chargePayment.Message
 				userPaymentLog.details = chargePayment.Details
 				userPaymentLog.amount = userTariff.price
 				userPaymentLog.sum = userTariff.price
-				//userPaymentLog.token = chargeToken
 
 				await userPaymentLog.save()
 
+				const addZero = (date) => ('0' + date.toString()).slice(-2)
+
+				const finishAtFormatted = `${addZero(finishAt.getDate())}.${addZero(
+					finishAt.getMonth() + 1
+				)}.${finishAt.getFullYear()}`
+
 				await notification.create({
 					receiversIds: [user._id],
-					title: 'Подписка продлена',
+					title: 'Подписка продлена до ' + finishAtFormatted,
 					willPublishedAt: Date.now(),
 					type: 'PROFILE',
 					deleted: false,

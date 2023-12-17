@@ -28,7 +28,7 @@ router.get('/', verify.token, async (req, res) => {
 			},
 			{
 				status: {
-					$in: ['success', 'CONFIRMED', 'AUTHORIZED', 'PARTIAL_REFUNDED', 'REFUNDED'],
+					$in: ['success', 'CONFIRMED', 'AUTHORIZED', 'PARTIAL_REFUNDED', 'REFUNDED', 'REVERSED'],
 				},
 			},
 		],
@@ -114,15 +114,12 @@ router.get('/', verify.token, async (req, res) => {
 								tariffPrice: true,
 								promocodeId: true,
 								refundedAmount: true,
-								notificationType: true,
 								tariffPrice: true,
 								tariff: {
 									_id: true,
 									name: true,
 								},
-								amount: {
-									$cond: ['$withdrawAmount', '$withdrawAmount', '$amount'],
-								},
+								amount: { $cond: ['$withdrawAmount', '$withdrawAmount', '$amount'] },
 							},
 						},
 						{ $sort: { _id: -1 } },
