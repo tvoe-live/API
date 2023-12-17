@@ -36,8 +36,6 @@ const recurrentPayment = async () => {
 			.lean()
 
 		for (const user of users) {
-			console.log(user)
-
 			// Если пользователь отключил автопродление, снять подписку
 			if (
 				!user.autoPayment ||
@@ -155,8 +153,6 @@ const recurrentPayment = async () => {
 			if (chargePayment.Status === 'AUTHORIZED' || chargePayment.Status === 'CONFIRMED') {
 				const startAt = user.subscribe.finishAt
 				const finishAt = new Date(user.subscribe.finishAt.getTime() + +userTariff.duration)
-
-				console.log(startAt, finishAt, +userTariff.duration)
 
 				user.subscribe = {
 					startAt,
