@@ -795,7 +795,8 @@ router.get('/status', async (req, res) => {
 			updatedAt: paymentLog.updatedAt,
 			isChecked: paymentLog.isChecked ?? true,
 			status:
-				paymentLog.status === 'REVERSED' && paymentLog.amount === 1
+				(paymentLog.status === 'REVERSED' || paymentLog.status === 'REFUNDED') &&
+				paymentLog.amount === 1
 					? 'CONFIRMED'
 					: paymentLog.status,
 			tariff,
