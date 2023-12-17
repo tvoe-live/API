@@ -515,6 +515,7 @@ router.post('/sms/compare', async (req, res) => {
 		if (!user) {
 			user = await new User({
 				authPhone: phone,
+				autoPayment: true,
 				lastVisitAt: Date.now(),
 			}).save()
 

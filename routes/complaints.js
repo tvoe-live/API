@@ -92,7 +92,7 @@ router.post('/', verify.token, async (req, res) => {
 		}
 
 		const message = {
-			to: process.env.CONTENT_MAIL,
+			to: process.env.CONTENT_DEPARTMENT_EMAIL,
 			subject: 'Жалоба',
 			text: textForMail,
 		}
@@ -100,6 +100,7 @@ router.post('/', verify.token, async (req, res) => {
 		mailer(message)
 
 		return res.status(200).json({
+			alert: true,
 			success: true,
 			msg: 'Жалоба отправлена',
 		})

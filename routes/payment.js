@@ -188,7 +188,8 @@ router.get('/tariffs', async (req, res) => {
 						finishOfSubscriptionIn = req.user.subscribe.finishAt
 				} else {
 					// Разрешить пробный бесплатный тариф, если еще не использовались тарифы
-					if (tariff.price === 0 && !req.user.allowTrialTariff) allowSubscribe = false
+					if ((tariff.price === 0 || tariff.price === 1) && !req.user.allowTrialTariff)
+						allowSubscribe = false
 				}
 
 				return {
@@ -434,16 +435,16 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		}
 	}
 
+	if (!req.user.allowTrialTariff && (selectedTariff.price === 0 || selectedTariff.price === 1)) {
+		return resError({
+			res,
+			alert: true,
+			msg: 'Тариф уже был использован',
+		})
+	}
+
 	// Бесплатные тарифы выдавать сразу, без платежной системы
 	if (selectedTariff.price === 0) {
-		if (!req.user.allowTrialTariff) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Тариф уже был использован',
-			})
-		}
-
 		const tariffDuration = Number(selectedTariff.duration)
 		const startAt = new Date()
 		const finishAt = new Date(startAt.getTime() + tariffDuration)
@@ -594,7 +595,7 @@ router.post('/notification', async (req, res) => {
 	const paymentStartAt = user && user.subscribe ? new Date(user.subscribe.finishAt) : new Date()
 
 	// Дата окончания использования тарифа для пользователя
-	const finishAt = new Date(paymentStartAt.getTime() + tariffDuration)
+	const finishAt = new Date(paymentStartAt.getTime() + +tariffDuration)
 
 	// Обновить статус платежного лога, если деньги захолдированы
 	if (paymentLog.status === 'AUTHORIZED' && status === 'CONFIRMED') {
@@ -602,8 +603,8 @@ router.post('/notification', async (req, res) => {
 			{ _id: paymentLogId },
 			{
 				$set: {
-					isChecked: false,
 					status,
+					isChecked: false,
 				},
 			}
 		)
@@ -616,9 +617,6 @@ router.post('/notification', async (req, res) => {
 		{ _id: paymentLogId },
 		{
 			$set: {
-				isChecked: false,
-				finishAt,
-				startAt: paymentStartAt,
 				pan,
 				cardId,
 				status,
@@ -631,8 +629,16 @@ router.post('/notification', async (req, res) => {
 				paymentId,
 				errorCode,
 				terminalKey,
+				isChecked: paymentLog.isChecked ? paymentLog.isChecked : false,
+				...((status === 'AUTHORIZED' || status === 'CONFIRMED') && {
+					finishAt,
+					startAt: paymentStartAt,
+				}),
 				amount: status === 'REFUNDED' || status === 'PARTIAL_REFUNDED' ? paymentLog.amount : amount,
-				refundedAmount: status === 'REFUNDED' || status === 'PARTIAL_REFUNDED' ? amount : null,
+				...((status === 'REFUNDED' ||
+					status === 'PARTIAL_REFUNDED' ||
+					status === 'REVERSED' ||
+					status === 'PARTIAL_REVERSED') && { refundedAmount: amount }),
 			},
 			$unset: { token: null },
 			$inc: { __v: 1 },
@@ -641,13 +647,6 @@ router.post('/notification', async (req, res) => {
 
 	switch (status) {
 		case 'AUTHORIZED': // Деньги захолдированы на карте клиента. Ожидается подтверждение операции
-			if (rebillId) {
-				await User.findByIdAndUpdate(user._id, {
-					$set: {
-						RebillId: rebillId,
-					},
-				})
-			}
 		case 'CONFIRMED': // Операция подтверждена
 			// Обновить время подписки пользователю
 			await User.updateOne(
@@ -659,11 +658,29 @@ router.post('/notification', async (req, res) => {
 							finishAt,
 							tariffId: paymentLog.tariffId,
 						},
-						RebillId: rebillId || null,
+						rebillId: rebillId || null,
 						allowTrialTariff: false,
 					},
 				}
 			)
+
+			// Вернуть 1 рубль пользователю за оплату пробного тарифа
+			if (amount === 1) {
+				const cancelToken = getToken({
+					TerminalKey: process.env.PAYMENT_TERMINAL_KEY,
+					Password: process.env.PAYMENT_TERMINAL_PASSWORD,
+					PaymentId: String(paymentId),
+				})
+
+				await axios.post('https://securepay.tinkoff.ru/v2/Cancel', {
+					TerminalKey: process.env.PAYMENT_TERMINAL_KEY,
+					Password: process.env.PAYMENT_TERMINAL_PASSWORD,
+					Token: cancelToken,
+					PaymentId: paymentId,
+				})
+
+				break
+			}
 
 			await shareWithReferrer({
 				amount,
@@ -703,18 +720,30 @@ router.post('/notification', async (req, res) => {
 					{ _id: user._id },
 					{
 						$set: {
+							autoPayment: false,
 							subscribe: {
 								startAt: lastActivePayment.startAt,
 								finishAt: lastActivePayment.finishAt,
 								tariffId: lastActivePayment.tariffId,
 							},
 						},
+					},
+					{
+						$unset: {
+							rebillId: false,
+						},
 					}
 				)
 			} else {
 				await User.updateOne(
 					{ _id: user._id },
-					{ $unset: { subscribe: null } },
+					{
+						$unset: {
+							rebillId: false,
+							subscribe: false,
+							autoPayment: false,
+						},
+					},
 					{ timestamps: false }
 				)
 			}
@@ -760,13 +789,15 @@ router.get('/status', async (req, res) => {
 
 		return res.status(200).json({
 			_id: paymentLog._id,
-			userId: paymentLog.userId,
 			type: paymentLog.type,
-			status: paymentLog.status,
-			isChecked: paymentLog.isChecked ?? true,
+			userId: paymentLog.userId,
 			createdAt: paymentLog.createdAt,
 			updatedAt: paymentLog.updatedAt,
-			__v: paymentLog.__v,
+			isChecked: paymentLog.isChecked ?? true,
+			status:
+				paymentLog.status === 'REVERSED' && paymentLog.amount === 1
+					? 'CONFIRMED'
+					: paymentLog.status,
 			tariff,
 		})
 	} catch (err) {

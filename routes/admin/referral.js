@@ -467,11 +467,6 @@ router.get('/withdrawals', verify.token, verify.isAdmin, getSearchQuery, async (
 
 	const mainAgregation = [
 		{
-			$match: {
-				status: 'pending',
-			},
-		},
-		{
 			$lookup: {
 				from: 'users',
 				localField: 'userId',
@@ -547,11 +542,104 @@ router.get('/withdrawals', verify.token, verify.isAdmin, getSearchQuery, async (
 					items: [
 						...mainAgregation,
 						{
+							$addFields: {
+								statusMatch: {
+									$cond: {
+										if: { $eq: ['$status', 'pending'] },
+										then: 1,
+										else: 0,
+									},
+								},
+							},
+						},
+						{
+							$sort: {
+								statusMatch: -1,
+								createdAt: -1,
+							},
+						},
+						{
 							$project: {
 								amount: true,
 								card: true,
 								createdAt: true,
 								user: true,
+								status: true,
+							},
+						},
+						{ $skip: skip },
+						{ $limit: limit },
+					],
+				},
+			},
+			{ $limit: 1 },
+			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
+			{
+				$project: {
+					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+					items: '$items',
+				},
+			},
+		])
+
+		return res.status(200).json(result[0])
+	} catch (error) {
+		resError(res, error)
+	}
+})
+
+/**
+ * Роут для получения пользователей, которые зарегистрировались по реферальной программе
+ */
+router.get('/invited', verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
+
+	const searchMatch = req.RegExpQuery && {
+		$or: [
+			...(checkValidId(req.searchQuery) ? [{ _id: mongoose.Types.ObjectId(req.searchQuery) }] : []),
+			{ email: req.RegExpQuery },
+			{ firstname: req.RegExpQuery },
+			{ authPhone: req.RegExpQuery },
+		],
+	}
+
+	const mainAgregation = [
+		{
+			$match: {
+				refererUserId: { $ne: null },
+				...searchMatch,
+			},
+		},
+	]
+
+	try {
+		const result = await User.aggregate([
+			{
+				$facet: {
+					// Всего записей
+					totalSize: [
+						...mainAgregation,
+						{
+							$group: {
+								_id: null,
+								count: { $sum: 1 },
+							},
+						},
+						{ $project: { _id: false } },
+						{ $limit: 1 },
+					],
+					// Список
+					items: [
+						...mainAgregation,
+						{
+							$project: {
+								_id: true,
+								phone: '$authPhone',
+								createdAt: true,
+								refererUserId: true,
+								firstname: true,
+								avatar: true,
 							},
 						},
 						{ $sort: { createdAt: -1 } },
@@ -705,11 +793,9 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 								_id: true,
 								bonusAmount: true,
 								avatar: true,
-								email: true,
 								phone: '$authPhone',
 								'subscribe.startAt': true,
 								'subscribe.finishAt': true,
-								displayName: true,
 								'tariff.name': true,
 								firstname: true,
 							},
@@ -732,10 +818,8 @@ router.get('/:id', verify.token, verify.isAdmin, async (req, res) => {
 					tariffName: '$tariff.name',
 					refererUserId: true,
 					avatar: true,
-					email: true,
 					firstname: true,
 					phone: '$authPhone',
-					displayName: true,
 					_id: true,
 					users: true,
 					referral: true,

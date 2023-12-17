@@ -31,6 +31,4 @@ class Tasks {
 	getTask = (name) => cron.getTasks().get(name)
 }
 
-module.exports = {
-	Tasks,
-}
+module.exports = { Tasks }
