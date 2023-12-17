@@ -706,6 +706,9 @@ router.post('/notification', async (req, res) => {
 			break
 		case 'REFUNDED': // Произведён возврат
 		case 'PARTIAL_REFUNDED': // Произведён частичный возврат
+			// Не изменять пользователя при подписки за 1₽
+			if (amount === 1) break
+
 			// Проверить доступен ли еще предыдущий тариф
 			const lastActivePayment = await PaymentLog.findOne({
 				userId: user._id,

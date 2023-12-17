@@ -99,14 +99,16 @@ const recurrentPayment = async () => {
 				Password: process.env.PAYMENT_TERMINAL_PASSWORD,
 				PaymentId: String(initPayment.PaymentId),
 				RebillId: user.rebillId,
+				Email: 'no-relpy@tvoe.team',
 			})
 
 			const { data: chargePayment } = await axios.post('https://securepay.tinkoff.ru/v2/Charge', {
 				TerminalKey: process.env.PAYMENT_TERMINAL_KEY,
+				Password: process.env.PAYMENT_TERMINAL_PASSWORD,
 				PaymentId: initPayment.PaymentId,
 				RebillId: user.rebillId,
-				Password: process.env.PAYMENT_TERMINAL_PASSWORD,
 				Token: chargeToken,
+				InfoEmail: 'no-relpy@tvoe.team',
 			})
 
 			if (chargePayment.Status === 'REJECTED' || +chargePayment.ErrorCode > 0) {
