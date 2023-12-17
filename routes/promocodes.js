@@ -52,6 +52,19 @@ router.patch('/activate', verify.token, async (req, res) => {
 			return resError({ res, msg: 'Данный промокод уже применен' })
 		}
 
+		if (promocode.discountFormat === 'free' && promocode.tariffName == 'univeral') {
+			return resError({ res, msg: 'Неверный промокод' })
+		}
+
+		await PromocodesLog.updateMany(
+			{
+				userId: req.user._id,
+				isCancelled: { $ne: true },
+				isPurchaseCompleted: { $ne: true },
+			},
+			{ $set: { isCancelled: true } }
+		)
+
 		// Создание лога об активации промокода
 		await PromocodesLog.create({ promocodeId: promocode._id, userId: req.user._id })
 
