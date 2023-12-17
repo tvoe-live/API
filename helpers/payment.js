@@ -1,7 +1,7 @@
-const { API_URL, PAYMENT_TERMINAL_KEY, PAYMENT_TERMINAL_PASSWORD } = process.env
-const { FIRST_STEP_REFERRAL, SECOND_STEP_REFERRAL } = require('../constants')
 const crypto = require('crypto')
 const User = require('../models/user')
+const { FIRST_STEP_REFERRAL, SECOND_STEP_REFERRAL } = require('../constants')
+const { API_URL, PAYMENT_TERMINAL_KEY, PAYMENT_TERMINAL_PASSWORD } = process.env
 
 /*
  * Функции для платежной системы
@@ -66,23 +66,22 @@ const getToken = (params) => {
 }
 
 /*
- * Начисление рефереру долю с подписки пользователя
+ * Начисление реферерам доли с подписки пользователя
  */
-const shareWithReferrer = async (userId, amount, refererUserId) => {
-	if (!userId || !amount || !refererUserId) return
+const shareWithReferrer = async ({ userId, amount, refererUserId }) => {
+	if (!userId || !refererUserId || !amount || amount === 1 || amount === -1) return
 
+	// Начисление бонуса рефереру 1-го уровня
 	const referalUser = await User.findByIdAndUpdate(refererUserId, {
-		$inc: {
-			'referral.balance': amount * (FIRST_STEP_REFERRAL / 100),
-		},
+		$inc: { 'referral.balance': amount * (FIRST_STEP_REFERRAL / 100) },
 	})
 
+	// Начисление бонуса рефереру 2-го уровня
 	if (referalUser.refererUserId) {
-		await User.findByIdAndUpdate(referalUser.refererUserId, {
-			$inc: {
-				'referral.balance': amount * (SECOND_STEP_REFERRAL / 100),
-			},
-		})
+		await User.updateOne(
+			{ _id: referalUser.refererUserId },
+			{ $inc: { 'referral.balance': amount * (SECOND_STEP_REFERRAL / 100) } }
+		)
 	}
 }
 

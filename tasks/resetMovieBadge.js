@@ -1,16 +1,23 @@
 const movie = require('../models/movie')
 
+/**
+ * Сron-задача для сброса старых бейджев фильмам/сериалам при заврешении времени
+ */
 const resetMovieBadge = async () => {
 	try {
+		const start = new Date()
+		const finish = new Date(start - 60 * 1000)
+
 		const movies = await movie.find({
 			'badge.finishAt': {
-				$lte: new Date(),
-				$gte: new Date(new Date() - 60 * 1000),
+				$lte: finish,
+				$exists: true,
 			},
 		})
 
 		for (const movie of movies) {
-			movie.badge = {}
+			delete movie.badge
+
 			await movie.save()
 		}
 	} catch (error) {

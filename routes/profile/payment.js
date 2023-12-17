@@ -13,14 +13,8 @@ const resSuccess = require('../../helpers/resSuccess')
  */
 
 router.get('/', verify.token, async (req, res) => {
-	const cursorId = mongoose.Types.ObjectId(req.query.cursorId)
+	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
-
-	const cursorMatch = req.query.cursorId
-		? {
-				_id: { $lt: cursorId },
-		  }
-		: null
 
 	const searchMatch = {
 		userId: req.user._id,
@@ -34,7 +28,7 @@ router.get('/', verify.token, async (req, res) => {
 			},
 			{
 				status: {
-					$in: ['success', 'CONFIRMED', 'AUTHORIZED', 'PARTIAL_REFUNDED', 'REFUNDED'],
+					$in: ['success', 'CONFIRMED', 'AUTHORIZED', 'PARTIAL_REFUNDED', 'REFUNDED', 'REVERSED'],
 				},
 			},
 		],
@@ -100,7 +94,6 @@ router.get('/', verify.token, async (req, res) => {
 						{
 							$match: {
 								...searchMatch,
-								...cursorMatch,
 							},
 						},
 						{
@@ -121,18 +114,16 @@ router.get('/', verify.token, async (req, res) => {
 								tariffPrice: true,
 								promocodeId: true,
 								refundedAmount: true,
-								notificationType: true,
 								tariffPrice: true,
 								tariff: {
 									_id: true,
 									name: true,
 								},
-								amount: {
-									$cond: ['$withdrawAmount', '$withdrawAmount', '$amount'],
-								},
+								amount: { $cond: ['$withdrawAmount', '$withdrawAmount', '$amount'] },
 							},
 						},
 						{ $sort: { _id: -1 } },
+						{ $skip: skip },
 						{ $limit: limit },
 					],
 				},

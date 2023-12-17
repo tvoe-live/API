@@ -100,6 +100,7 @@ router.post('/', verify.token, async (req, res) => {
 		mailer(message)
 
 		return res.status(200).json({
+			alert: true,
 			success: true,
 			msg: 'Жалоба отправлена',
 		})
