@@ -23,8 +23,6 @@ const filterUsersOptions = {
 
 // Получение списка пользователей
 router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) => {
-	// router.get('/', getSearchQuery, async (req, res) => {
-
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
@@ -41,8 +39,13 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 		],
 	}
 
-	const tariffFilterParam = req.query.tariffId && {
-		'subscribe.tariffId': mongoose.Types.ObjectId(req.query.tariffId),
+	let tariffFilterParam
+
+	if (req.query.tariffName) {
+		const { _id: tariffId } = await Tariff.findOne({ name: req.query.tariffName })
+		tariffFilterParam = {
+			'subscribe.tariffId': mongoose.Types.ObjectId(tariffId),
+		}
 	}
 
 	try {
