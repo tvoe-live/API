@@ -13,7 +13,7 @@ const promocodeSchema = new mongoose.Schema(
 		tariffName: {
 			// Вид тарифа
 			type: String,
-			enum: ['1 месяц', '3 месяца', '6 месяцев', 'universal'],
+			enum: ['1 месяц', '3 месяца', '6 месяцев', '12 месяцев', 'universal'],
 		},
 		discountFormat: {
 			// Формат скидки
