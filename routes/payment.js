@@ -138,7 +138,7 @@ router.get('/tariffs', async (req, res) => {
 				let bonucesPromocodes
 
 				const existBenefitsFromPromocodes = benefitsFromPromocodes.find(
-					(benefit) => benefit._id === tariff.name
+					(benefit) => benefit._id === tariff.name || benefit._id === 'universal'
 				)
 
 				if (existBenefitsFromPromocodes) {
@@ -160,7 +160,10 @@ router.get('/tariffs', async (req, res) => {
 
 								case 'rubles':
 									const currentPriceRublesDiscount = tariff.price - item.sizeDiscount
-									if (currentPriceRublesDiscount < acc.bestPrice) {
+									if (
+										currentPriceRublesDiscount < acc.bestPrice &&
+										currentPriceRublesDiscount >= 1
+									) {
 										acc.bestPrice = currentPriceRublesDiscount
 										acc.info = {
 											sizeDiscount: item.sizeDiscount,
@@ -176,8 +179,8 @@ router.get('/tariffs', async (req, res) => {
 						},
 						{ bestPrice: Number(tariff.price) }
 					)
-
-					bonucesPromocodes = benefitsWithBestPrice
+					if (benefitsWithBestPrice.bestPrice < tariff.price)
+						bonucesPromocodes = benefitsWithBestPrice
 				}
 
 				if (subscribeTariff) {
@@ -229,6 +232,8 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		})
 	}
 
+	const { price: selectedTarifPrice } = await Tariff.findOne({ _id: selectedTariffId })
+
 	const benefitsFromPromocodes = await PromocodeLog.aggregate([
 		{
 			$match: {
@@ -277,6 +282,22 @@ router.post('/createPayment', verify.token, async (req, res) => {
 						},
 					},
 					{
+						$addFields: {
+							tariff: {
+								$cond: [
+									{ $eq: ['$tariffName', 'universal'] },
+									{
+										_id: selectedTariffId,
+										price: selectedTarifPrice,
+									},
+									{
+										$arrayElemAt: ['$tariff', 0],
+									},
+								],
+							},
+						},
+					},
+					{
 						$project: {
 							tariffName: true,
 							discountFormat: true,
@@ -288,7 +309,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 				as: 'promocode',
 			},
 		},
-		{ $unwind: { path: '$promocode' } },
+		{ $unwind: { path: '$promocode', preserveNullAndEmptyArrays: true } },
 		{
 			$project: {
 				promocodeId: '$promocodeId',
@@ -299,7 +320,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 				tariffId: '$promocode.tariff._id',
 			},
 		},
-		{ $unwind: { path: '$price' } },
+		{ $unwind: { path: '$price', preserveNullAndEmptyArrays: true } },
 		{
 			$group: {
 				_id: { tariffName: '$tariffName', discountFormat: '$discountFormat' }, // группируем по уникальным значениям полей _id и discountFormat

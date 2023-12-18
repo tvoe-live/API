@@ -124,15 +124,29 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 			alert: true,
 		})
 
-	const existTariff = await Tariff.findOne({ name: tariffName })
-	if (!existTariff) return resError({ res, msg: 'Указанного тарифа не существует', alert: true })
+	if (tariffName !== 'universal') {
+		const existTariff = await Tariff.findOne({ name: tariffName })
+		if (!existTariff) return resError({ res, msg: 'Указанного тарифа не существует', alert: true })
+
+		if (discountFormat === 'rubles' && (sizeDiscount < 1 || sizeDiscount > existTariff.price - 1)) {
+			return resError({ res, msg: 'Не допустимая величина скидки', alert: true })
+		}
+	} else {
+		const allTariffs = await Tariff.find()
+
+		// Находим цену самого дорого тарифа
+		const maxPrice = allTariffs.reduce((accum, currentEl) => {
+			if (currentEl.price > accum) accum = currentEl.price
+			return accum
+		}, allTariffs[0]?.price)
+
+		if (discountFormat === 'rubles' && (sizeDiscount < 1 || sizeDiscount > maxPrice - 1)) {
+			return resError({ res, msg: 'Не допустимая величина скидки', alert: true })
+		}
+	}
 
 	if (discountFormat === 'percentages' && (sizeDiscount < 1 || sizeDiscount > 99)) {
 		return resError({ res, msg: 'Не допустимый процент скидки', alert: true })
-	}
-
-	if (discountFormat === 'rubles' && (sizeDiscount < 1 || sizeDiscount > existTariff.price - 1)) {
-		return resError({ res, msg: 'Не допустимая величина скидки', alert: true })
 	}
 
 	const existPromocode = await Promocode.findOne({ value, deleted: { $ne: true } })
