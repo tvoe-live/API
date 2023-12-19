@@ -467,6 +467,11 @@ router.get('/withdrawals', verify.token, verify.isAdmin, getSearchQuery, async (
 
 	const mainAgregation = [
 		{
+			$match: {
+				status: 'pending',
+			},
+		},
+		{
 			$lookup: {
 				from: 'users',
 				localField: 'userId',
@@ -541,23 +546,7 @@ router.get('/withdrawals', verify.token, verify.isAdmin, getSearchQuery, async (
 					// Список
 					items: [
 						...mainAgregation,
-						{
-							$addFields: {
-								statusMatch: {
-									$cond: {
-										if: { $eq: ['$status', 'pending'] },
-										then: 1,
-										else: 0,
-									},
-								},
-							},
-						},
-						{
-							$sort: {
-								statusMatch: -1,
-								createdAt: -1,
-							},
-						},
+						{ $sort: { createdAt: -1 } },
 						{
 							$project: {
 								amount: true,
@@ -587,6 +576,141 @@ router.get('/withdrawals', verify.token, verify.isAdmin, getSearchQuery, async (
 		resError(res, error)
 	}
 })
+
+/**
+ * Роут для получения истории по выводам ( отклоненные и одобренные заявки)
+ */
+router.get(
+	'/withdrawals/history',
+	verify.token,
+	verify.isAdmin,
+	getSearchQuery,
+	async (req, res) => {
+		const skip = +req.query.skip || 0
+		const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
+
+		const searchMatch = req.RegExpQuery && {
+			$or: [
+				...(checkValidId(req.searchQuery)
+					? [{ _id: mongoose.Types.ObjectId(req.searchQuery) }]
+					: []),
+				{ email: req.RegExpQuery },
+				{ firstname: req.RegExpQuery },
+			],
+		}
+
+		const mainAgregation = [
+			{
+				$match: {
+					status: { $ne: 'pending' },
+				},
+			},
+			{
+				$lookup: {
+					from: 'users',
+					localField: 'userId',
+					foreignField: '_id',
+					pipeline: [
+						{
+							$match: {
+								...searchMatch,
+							},
+						},
+						{
+							$project: {
+								_id: true,
+								avatar: true,
+								firstname: true,
+								phone: '$authPhone',
+								tariffId: '$subscribe.tariffId',
+								role: true,
+							},
+						},
+						{
+							$lookup: {
+								from: 'tariffs',
+								localField: 'tariffId',
+								foreignField: '_id',
+								pipeline: [
+									{
+										$project: {
+											name: true,
+										},
+									},
+								],
+								as: 'tariff',
+							},
+						},
+						{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
+						{
+							$project: {
+								tariffName: '$tariff.name',
+								role: true,
+								avatar: true,
+								firstname: true,
+								phone: true,
+								role: true,
+							},
+						},
+					],
+					as: 'user',
+				},
+			},
+			{
+				$unwind: { path: '$user', preserveNullAndEmptyArrays: false },
+			},
+		]
+
+		try {
+			const result = await ReferralWithdrawalLog.aggregate([
+				{
+					$facet: {
+						// Всего записей
+						totalSize: [
+							...mainAgregation,
+							{
+								$group: {
+									_id: null,
+									count: { $sum: 1 },
+								},
+							},
+							{ $project: { _id: false } },
+							{ $limit: 1 },
+						],
+						// Список
+						items: [
+							...mainAgregation,
+							{ $sort: { createdAt: -1 } },
+							{
+								$project: {
+									amount: true,
+									card: true,
+									createdAt: true,
+									user: true,
+									status: true,
+								},
+							},
+							{ $skip: skip },
+							{ $limit: limit },
+						],
+					},
+				},
+				{ $limit: 1 },
+				{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
+				{
+					$project: {
+						totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+						items: '$items',
+					},
+				},
+			])
+
+			return res.status(200).json(result[0])
+		} catch (error) {
+			resError(res, error)
+		}
+	}
+)
 
 /**
  * Роут для получения пользователей, которые зарегистрировались по реферальной программе

@@ -43,19 +43,65 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 		],
 	}
 
+	const mainAgregation = [
+		{
+			$match: {
+				$or: [{ status: 'success' }, { status: 'CONFIRMED' }, { status: 'AUTHORIZED' }],
+				...dateFilterParam,
+				...tariffFilterParam,
+			},
+		},
+		{
+			$lookup: {
+				from: 'tariffs',
+				localField: 'tariffId',
+				foreignField: '_id',
+				pipeline: [
+					{
+						$project: {
+							_id: false,
+							name: true,
+						},
+					},
+				],
+				as: 'tariff',
+			},
+		},
+		{ $unwind: { path: '$tariff' } },
+		{
+			$lookup: {
+				from: 'users',
+				localField: 'userId',
+				foreignField: '_id',
+				pipeline: [
+					{
+						$match: {
+							...searchMatch,
+						},
+					},
+					{
+						$project: {
+							role: true,
+							phone: '$authPhone',
+							avatar: true,
+							subscribe: true,
+							firstname: true,
+						},
+					},
+				],
+				as: 'user',
+			},
+		},
+		{ $unwind: { path: '$user' } },
+	]
+
 	try {
 		const result = await PaymentLog.aggregate([
 			{
 				$facet: {
 					// Всего записей
 					totalSize: [
-						{
-							$match: {
-								$or: [{ status: 'success' }, { status: 'CONFIRMED' }, { status: 'AUTHORIZED' }],
-								...dateFilterParam,
-								...tariffFilterParam,
-							},
-						},
+						...mainAgregation,
 						{
 							$group: {
 								_id: null,
@@ -67,55 +113,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 					],
 					// Список
 					items: [
-						{
-							$match: {
-								$or: [{ status: 'success' }, { status: 'CONFIRMED' }, { status: 'AUTHORIZED' }],
-								...dateFilterParam,
-								...tariffFilterParam,
-							},
-						},
-						{
-							$lookup: {
-								from: 'tariffs',
-								localField: 'tariffId',
-								foreignField: '_id',
-								pipeline: [
-									{
-										$project: {
-											_id: false,
-											name: true,
-										},
-									},
-								],
-								as: 'tariff',
-							},
-						},
-						{ $unwind: { path: '$tariff' } },
-						{
-							$lookup: {
-								from: 'users',
-								localField: 'userId',
-								foreignField: '_id',
-								pipeline: [
-									{
-										$match: {
-											...searchMatch,
-										},
-									},
-									{
-										$project: {
-											role: true,
-											phone: '$authPhone',
-											avatar: true,
-											subscribe: true,
-											firstname: true,
-										},
-									},
-								],
-								as: 'user',
-							},
-						},
-						{ $unwind: { path: '$user' } },
+						...mainAgregation,
 						{
 							$project: {
 								user: true,
@@ -139,11 +137,9 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 				},
 			},
 			{ $limit: 1 },
-			{ $unwind: { path: '$totalAmount', preserveNullAndEmptyArrays: true } },
 			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 			{
 				$project: {
-					totalAmount: { $cond: ['$totalAmount.count', '$totalAmount.count', 0] },
 					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
 					items: '$items',
 				},

@@ -159,14 +159,13 @@ router.get('/tariffs', async (req, res) => {
 									return acc
 
 								case 'rubles':
-									const currentPriceRublesDiscount = tariff.price - item.sizeDiscount
-									if (
-										currentPriceRublesDiscount < acc.bestPrice &&
-										currentPriceRublesDiscount >= 1
-									) {
+									let currentPriceRublesDiscount = tariff.price - item.sizeDiscount
+									if (currentPriceRublesDiscount < 1) currentPriceRublesDiscount = 1
+									if (currentPriceRublesDiscount < acc.bestPrice) {
 										acc.bestPrice = currentPriceRublesDiscount
 										acc.info = {
-											sizeDiscount: item.sizeDiscount,
+											sizeDiscount:
+												item.sizeDiscount > tariff.price ? tariff.price - 1 : item.sizeDiscount,
 											discountFormat: item.discountFormat,
 											promocodeId: item.promocodeId,
 										}
@@ -213,6 +212,7 @@ router.get('/tariffs', async (req, res) => {
 /*
  * Создание платежа (Tinkoff)
  */
+
 router.post('/createPayment', verify.token, async (req, res) => {
 	const { selectedTariffId } = req.body
 
@@ -380,7 +380,15 @@ router.post('/createPayment', verify.token, async (req, res) => {
 												currentPrice: {
 													$cond: [
 														{ $eq: ['$$this.discountFormat', 'rubles'] },
-														{ $subtract: ['$initialPrice', '$$this.sizeDiscount'] },
+														{
+															$cond: {
+																if: {
+																	$lt: [{ $subtract: ['$initialPrice', '$$this.sizeDiscount'] }, 1],
+																},
+																then: 1,
+																else: { $subtract: ['$initialPrice', '$$this.sizeDiscount'] },
+															},
+														},
 														{
 															$multiply: [
 																'$initialPrice',
