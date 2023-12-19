@@ -33,7 +33,6 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 					totalSize: [
 						{
 							$match: {
-								...searchMoviesMatch,
 								...dateFilterParam,
 							},
 						},
@@ -42,7 +41,14 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 								from: 'movies',
 								localField: 'movieId',
 								foreignField: '_id',
-								pipeline: [{ $project: { _id: true } }],
+								pipeline: [
+									{
+										$match: {
+											...searchMoviesMatch,
+										},
+									},
+									{ $project: { _id: true } },
+								],
 								as: 'movie',
 							},
 						},

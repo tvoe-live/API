@@ -109,6 +109,8 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 		isOnlyForNewUsers = true,
 	} = req.body
 
+	const lowerCaseValue = value.toLowerCase()
+
 	if (!discountFormat) return resError({ res, msg: 'Не передан discountFormat', alert: true })
 	if (discountFormat !== 'free' && !sizeDiscount)
 		return resError({ res, msg: 'Не передан sizeDiscount', alert: true })
@@ -149,13 +151,13 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 		return resError({ res, msg: 'Не допустимый процент скидки', alert: true })
 	}
 
-	const existPromocode = await Promocode.findOne({ value, deleted: { $ne: true } })
+	const existPromocode = await Promocode.findOne({ value: lowerCaseValue, deleted: { $ne: true } })
 	if (existPromocode)
 		return resError({ res, msg: 'Промокод с таким названием уже существует', alert: true })
 
 	try {
 		await Promocode.create({
-			value,
+			value: lowerCaseValue,
 			maxAmountActivation,
 			discountFormat,
 			sizeDiscount,
@@ -334,7 +336,8 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 					as: 'tariff',
 				},
 			},
-			{ $unwind: { path: '$tariff' } },
+			{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
+
 			{
 				$lookup: {
 					from: 'promocodeslogs',
@@ -434,6 +437,7 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 		])
 		return res.status(200).json(result[0])
 	} catch (err) {
+		console.log('err:', err)
 		return resError({ res, msg: err })
 	}
 })
