@@ -138,7 +138,7 @@ router.get('/tariffs', async (req, res) => {
 				let bonucesPromocodes
 
 				const existBenefitsFromPromocodes = benefitsFromPromocodes.find(
-					(benefit) => benefit._id === tariff.name
+					(benefit) => benefit._id === tariff.name || benefit._id === 'universal'
 				)
 
 				if (existBenefitsFromPromocodes) {
@@ -159,11 +159,13 @@ router.get('/tariffs', async (req, res) => {
 									return acc
 
 								case 'rubles':
-									const currentPriceRublesDiscount = tariff.price - item.sizeDiscount
+									let currentPriceRublesDiscount = tariff.price - item.sizeDiscount
+									if (currentPriceRublesDiscount < 1) currentPriceRublesDiscount = 1
 									if (currentPriceRublesDiscount < acc.bestPrice) {
 										acc.bestPrice = currentPriceRublesDiscount
 										acc.info = {
-											sizeDiscount: item.sizeDiscount,
+											sizeDiscount:
+												item.sizeDiscount > tariff.price ? tariff.price - 1 : item.sizeDiscount,
 											discountFormat: item.discountFormat,
 											promocodeId: item.promocodeId,
 										}
@@ -176,8 +178,8 @@ router.get('/tariffs', async (req, res) => {
 						},
 						{ bestPrice: Number(tariff.price) }
 					)
-
-					bonucesPromocodes = benefitsWithBestPrice
+					if (benefitsWithBestPrice.bestPrice < tariff.price)
+						bonucesPromocodes = benefitsWithBestPrice
 				}
 
 				if (subscribeTariff) {
@@ -210,6 +212,7 @@ router.get('/tariffs', async (req, res) => {
 /*
  * Создание платежа (Tinkoff)
  */
+
 router.post('/createPayment', verify.token, async (req, res) => {
 	const { selectedTariffId } = req.body
 
@@ -228,6 +231,8 @@ router.post('/createPayment', verify.token, async (req, res) => {
 			msg: 'Не валидное значение selectedTariffId',
 		})
 	}
+
+	const { price: selectedTarifPrice } = await Tariff.findOne({ _id: selectedTariffId })
 
 	const benefitsFromPromocodes = await PromocodeLog.aggregate([
 		{
@@ -277,6 +282,22 @@ router.post('/createPayment', verify.token, async (req, res) => {
 						},
 					},
 					{
+						$addFields: {
+							tariff: {
+								$cond: [
+									{ $eq: ['$tariffName', 'universal'] },
+									{
+										_id: selectedTariffId,
+										price: selectedTarifPrice,
+									},
+									{
+										$arrayElemAt: ['$tariff', 0],
+									},
+								],
+							},
+						},
+					},
+					{
 						$project: {
 							tariffName: true,
 							discountFormat: true,
@@ -288,7 +309,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 				as: 'promocode',
 			},
 		},
-		{ $unwind: { path: '$promocode' } },
+		{ $unwind: { path: '$promocode', preserveNullAndEmptyArrays: true } },
 		{
 			$project: {
 				promocodeId: '$promocodeId',
@@ -299,7 +320,7 @@ router.post('/createPayment', verify.token, async (req, res) => {
 				tariffId: '$promocode.tariff._id',
 			},
 		},
-		{ $unwind: { path: '$price' } },
+		{ $unwind: { path: '$price', preserveNullAndEmptyArrays: true } },
 		{
 			$group: {
 				_id: { tariffName: '$tariffName', discountFormat: '$discountFormat' }, // группируем по уникальным значениям полей _id и discountFormat
@@ -359,7 +380,15 @@ router.post('/createPayment', verify.token, async (req, res) => {
 												currentPrice: {
 													$cond: [
 														{ $eq: ['$$this.discountFormat', 'rubles'] },
-														{ $subtract: ['$initialPrice', '$$this.sizeDiscount'] },
+														{
+															$cond: {
+																if: {
+																	$lt: [{ $subtract: ['$initialPrice', '$$this.sizeDiscount'] }, 1],
+																},
+																then: 1,
+																else: { $subtract: ['$initialPrice', '$$this.sizeDiscount'] },
+															},
+														},
 														{
 															$multiply: [
 																'$initialPrice',
@@ -517,28 +546,23 @@ router.post('/createPayment', verify.token, async (req, res) => {
 	await PaymentLog.updateOne({ _id: paymentLog._id }, { $set: { token } })
 
 	// Формирование платежа
-	const { data: initPaymentData } = await axios({
-		method: 'POST',
-		url: `https://securepay.tinkoff.ru/v2/Init`,
-		headers: {
-			'Content-Type': 'application/json',
+	const { data: initPaymentData } = await axios.post('https://securepay.tinkoff.ru/v2/Init', {
+		...terminalParams,
+		DATA: {
+			account: req.user._id,
+			Phone: req.user.authPhone,
+			//Email: 'no-relpy@tvoe.team',
+			DefaultCard: 'none',
+			//TinkoffPayWeb: 'true',
+			//YandexPayWeb: 'true',
+			Device: req.useragent.isDesktop ? 'Desktop' : 'Mobile',
+			DeviceOs: req.useragent.os,
+			DeviceWebView: 'true',
+			DeviceBrowser: req.useragent.browser,
+			//NotificationEnableSource: 'TinkoffPay',
+			//QR: 'true',
 		},
-		data: {
-			...terminalParams,
-			DATA: {
-				account: req.user._id,
-				DefaultCard: 'none',
-				//TinkoffPayWeb: 'true',
-				//YandexPayWeb: 'true',
-				Device: req.useragent.isDesktop ? 'Desktop' : 'Mobile',
-				DeviceOs: req.useragent.os,
-				DeviceWebView: 'true',
-				DeviceBrowser: req.useragent.browser,
-				//NotificationEnableSource: 'TinkoffPay',
-				//QR: 'true',
-			},
-			token: token,
-		},
+		token: token,
 	})
 
 	return res.status(200).json({
@@ -665,7 +689,7 @@ router.post('/notification', async (req, res) => {
 			)
 
 			// Вернуть 1 рубль пользователю за оплату пробного тарифа
-			if (amount === 1) {
+			if (+amount === 1) {
 				const cancelToken = getToken({
 					TerminalKey: process.env.PAYMENT_TERMINAL_KEY,
 					Password: process.env.PAYMENT_TERMINAL_PASSWORD,
@@ -675,8 +699,8 @@ router.post('/notification', async (req, res) => {
 				await axios.post('https://securepay.tinkoff.ru/v2/Cancel', {
 					TerminalKey: process.env.PAYMENT_TERMINAL_KEY,
 					Password: process.env.PAYMENT_TERMINAL_PASSWORD,
+					PaymentId: String(paymentId),
 					Token: cancelToken,
-					PaymentId: paymentId,
 				})
 
 				break
@@ -706,7 +730,7 @@ router.post('/notification', async (req, res) => {
 			break
 		case 'REFUNDED': // Произведён возврат
 		case 'PARTIAL_REFUNDED': // Произведён частичный возврат
-			// Не изменять пользователя при подписки за 1₽
+			// Не изменять пользователя при подписки за 1 ₽
 			if (amount === 1) break
 
 			// Проверить доступен ли еще предыдущий тариф

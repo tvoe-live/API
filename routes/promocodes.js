@@ -21,9 +21,10 @@ const getTrimDate = require('../helpers/getTrimDate')
  */
 router.patch('/activate', verify.token, async (req, res) => {
 	const { value } = req.body
+	const lowerCaseValue = value.toLowerCase()
 
 	try {
-		const promocode = await Promocode.findOne({ value })
+		const promocode = await Promocode.findOne({ value: lowerCaseValue })
 
 		if (!promocode || promocode.deleted || promocode.startAt > new Date() || !promocode.isActive) {
 			return resError({ res, msg: 'Данный промокод не существует' })
@@ -51,6 +52,19 @@ router.patch('/activate', verify.token, async (req, res) => {
 		if (promocodeLog) {
 			return resError({ res, msg: 'Данный промокод уже применен' })
 		}
+
+		if (promocode.discountFormat === 'free' && promocode.tariffName == 'univeral') {
+			return resError({ res, msg: 'Неверный промокод' })
+		}
+
+		await PromocodesLog.updateMany(
+			{
+				userId: req.user._id,
+				isCancelled: { $ne: true },
+				isPurchaseCompleted: { $ne: true },
+			},
+			{ $set: { isCancelled: true } }
+		)
 
 		// Создание лога об активации промокода
 		await PromocodesLog.create({ promocodeId: promocode._id, userId: req.user._id })

@@ -109,6 +109,8 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 		isOnlyForNewUsers = true,
 	} = req.body
 
+	const lowerCaseValue = value.toLowerCase()
+
 	if (!discountFormat) return resError({ res, msg: 'Не передан discountFormat', alert: true })
 	if (discountFormat !== 'free' && !sizeDiscount)
 		return resError({ res, msg: 'Не передан sizeDiscount', alert: true })
@@ -124,24 +126,38 @@ router.post('/', verify.token, verify.isAdmin, async (req, res) => {
 			alert: true,
 		})
 
-	const existTariff = await Tariff.findOne({ name: tariffName })
-	if (!existTariff) return resError({ res, msg: 'Указанного тарифа не существует', alert: true })
+	if (tariffName !== 'universal') {
+		const existTariff = await Tariff.findOne({ name: tariffName })
+		if (!existTariff) return resError({ res, msg: 'Указанного тарифа не существует', alert: true })
+
+		if (discountFormat === 'rubles' && (sizeDiscount < 1 || sizeDiscount > existTariff.price - 1)) {
+			return resError({ res, msg: 'Не допустимая величина скидки', alert: true })
+		}
+	} else {
+		const allTariffs = await Tariff.find()
+
+		// Находим цену самого дорого тарифа
+		const maxPrice = allTariffs.reduce((accum, currentEl) => {
+			if (currentEl.price > accum) accum = currentEl.price
+			return accum
+		}, allTariffs[0]?.price)
+
+		if (discountFormat === 'rubles' && (sizeDiscount < 1 || sizeDiscount > maxPrice - 1)) {
+			return resError({ res, msg: 'Не допустимая величина скидки', alert: true })
+		}
+	}
 
 	if (discountFormat === 'percentages' && (sizeDiscount < 1 || sizeDiscount > 99)) {
 		return resError({ res, msg: 'Не допустимый процент скидки', alert: true })
 	}
 
-	if (discountFormat === 'rubles' && (sizeDiscount < 1 || sizeDiscount > existTariff.price - 1)) {
-		return resError({ res, msg: 'Не допустимая величина скидки', alert: true })
-	}
-
-	const existPromocode = await Promocode.findOne({ value, deleted: { $ne: true } })
+	const existPromocode = await Promocode.findOne({ value: lowerCaseValue, deleted: { $ne: true } })
 	if (existPromocode)
 		return resError({ res, msg: 'Промокод с таким названием уже существует', alert: true })
 
 	try {
 		await Promocode.create({
-			value,
+			value: lowerCaseValue,
 			maxAmountActivation,
 			discountFormat,
 			sizeDiscount,
@@ -320,7 +336,8 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 					as: 'tariff',
 				},
 			},
-			{ $unwind: { path: '$tariff' } },
+			{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
+
 			{
 				$lookup: {
 					from: 'promocodeslogs',
@@ -420,6 +437,7 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 		])
 		return res.status(200).json(result[0])
 	} catch (err) {
+		console.log('err:', err)
 		return resError({ res, msg: err })
 	}
 })
