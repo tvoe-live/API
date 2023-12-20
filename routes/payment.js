@@ -546,28 +546,23 @@ router.post('/createPayment', verify.token, async (req, res) => {
 	await PaymentLog.updateOne({ _id: paymentLog._id }, { $set: { token } })
 
 	// Формирование платежа
-	const { data: initPaymentData } = await axios({
-		method: 'POST',
-		url: `https://securepay.tinkoff.ru/v2/Init`,
-		headers: {
-			'Content-Type': 'application/json',
+	const { data: initPaymentData } = await axios.post('https://securepay.tinkoff.ru/v2/Init', {
+		...terminalParams,
+		DATA: {
+			account: req.user._id,
+			Phone: req.user.authPhone,
+			//Email: 'no-relpy@tvoe.team',
+			DefaultCard: 'none',
+			//TinkoffPayWeb: 'true',
+			//YandexPayWeb: 'true',
+			Device: req.useragent.isDesktop ? 'Desktop' : 'Mobile',
+			DeviceOs: req.useragent.os,
+			DeviceWebView: 'true',
+			DeviceBrowser: req.useragent.browser,
+			//NotificationEnableSource: 'TinkoffPay',
+			//QR: 'true',
 		},
-		data: {
-			...terminalParams,
-			DATA: {
-				account: req.user._id,
-				DefaultCard: 'none',
-				//TinkoffPayWeb: 'true',
-				//YandexPayWeb: 'true',
-				Device: req.useragent.isDesktop ? 'Desktop' : 'Mobile',
-				DeviceOs: req.useragent.os,
-				DeviceWebView: 'true',
-				DeviceBrowser: req.useragent.browser,
-				//NotificationEnableSource: 'TinkoffPay',
-				//QR: 'true',
-			},
-			token: token,
-		},
+		token: token,
 	})
 
 	return res.status(200).json({
@@ -694,7 +689,7 @@ router.post('/notification', async (req, res) => {
 			)
 
 			// Вернуть 1 рубль пользователю за оплату пробного тарифа
-			if (amount === 1) {
+			if (+amount === 1) {
 				const cancelToken = getToken({
 					TerminalKey: process.env.PAYMENT_TERMINAL_KEY,
 					Password: process.env.PAYMENT_TERMINAL_PASSWORD,
@@ -704,8 +699,8 @@ router.post('/notification', async (req, res) => {
 				await axios.post('https://securepay.tinkoff.ru/v2/Cancel', {
 					TerminalKey: process.env.PAYMENT_TERMINAL_KEY,
 					Password: process.env.PAYMENT_TERMINAL_PASSWORD,
+					PaymentId: String(paymentId),
 					Token: cancelToken,
-					PaymentId: paymentId,
 				})
 
 				break
@@ -735,7 +730,7 @@ router.post('/notification', async (req, res) => {
 			break
 		case 'REFUNDED': // Произведён возврат
 		case 'PARTIAL_REFUNDED': // Произведён частичный возврат
-			// Не изменять пользователя при подписки за 1₽
+			// Не изменять пользователя при подписки за 1 ₽
 			if (amount === 1) break
 
 			// Проверить доступен ли еще предыдущий тариф
