@@ -23,7 +23,7 @@ router.patch('/activate', verify.token, async (req, res) => {
 	const { value } = req.body
 	try {
 		const regex = new RegExp(['^', value, '$'].join(''), 'i')
-		const promocode = await Promocode.findOne({ value: regex, deleted: { $ne: null } })
+		const promocode = await Promocode.findOne({ value: regex, deleted: { $ne: true } })
 
 		if (!promocode || promocode.deleted || promocode.startAt > new Date() || !promocode.isActive) {
 			return resError({ res, msg: 'Данный промокод не существует' })
