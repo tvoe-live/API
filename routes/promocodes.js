@@ -21,10 +21,9 @@ const getTrimDate = require('../helpers/getTrimDate')
  */
 router.patch('/activate', verify.token, async (req, res) => {
 	const { value } = req.body
-	const lowerCaseValue = value.toLowerCase()
-
 	try {
-		const promocode = await Promocode.findOne({ value: lowerCaseValue })
+		const regex = new RegExp(['^', value, '$'].join(''), 'i')
+		const promocode = await Promocode.findOne({ value: regex })
 
 		if (!promocode || promocode.deleted || promocode.startAt > new Date() || !promocode.isActive) {
 			return resError({ res, msg: 'Данный промокод не существует' })
