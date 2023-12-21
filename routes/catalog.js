@@ -19,7 +19,21 @@ router.get('/pages', async (req, res) => {
 			showGenreName,
 		})
 
-		return res.status(200).json(result)
+		const finishResult = []
+
+		for (let i = 0; i < result.length; i++) {
+			const current = result[i]
+			finishResult.push(current)
+			if (
+				Object.keys(current).length > 1 &&
+				'categoryAlias' in current &&
+				current.categoryAlias !== 'collections'
+			) {
+				finishResult.push({ ...current, categoryAlias: 'collections' })
+			}
+		}
+
+		return res.status(200).json(finishResult)
 	} catch (error) {
 		return res.json(error)
 	}
