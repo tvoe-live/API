@@ -77,7 +77,7 @@ router.patch('/activate', verify.token, async (req, res) => {
 			})
 
 			promocode.currentAmountActivation += 1
-			promocode.save()
+			await promocode.save()
 		} else {
 			if (promocodeLog.isCancelled) {
 				promocodeLog.isCancelled = false
@@ -86,7 +86,7 @@ router.patch('/activate', verify.token, async (req, res) => {
 
 		if (promocode.discountFormat === 'free') {
 			promocodeLog.isPurchaseCompleted = true
-			promocodeLog.save()
+			await promocodeLog.save()
 
 			const tariff = await Tariff.findOne({ name: promocode.tariffName })
 			const user = await User.findOne({ _id: req.user._id })
@@ -119,6 +119,8 @@ router.patch('/activate', verify.token, async (req, res) => {
 				discountFormat: 'free',
 			})
 		}
+
+		await promocodeLog.save()
 
 		return resSuccess({
 			res,
