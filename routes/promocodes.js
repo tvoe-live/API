@@ -52,6 +52,10 @@ router.patch('/activate', verify.token, async (req, res) => {
 			return resError({ res, msg: 'Данный промокод уже применен' })
 		}
 
+		if (promocodeLog && !promocodeLog?.isCancelled) {
+			return resError({ res, msg: 'Данный промокод уже активирован' })
+		}
+
 		if (promocode.discountFormat === 'free' && promocode.tariffName == 'univeral') {
 			return resError({ res, msg: 'Неверный промокод' })
 		}
