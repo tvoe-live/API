@@ -10,7 +10,7 @@ const moviePageLogSchema = new mongoose.Schema(
 		referer: String,
 		startTime: Number,
 		endTime: Number,
-		isDeletedFromContinueWathcing: Boolean,
+		deletionDate: Date,
 		userId: {
 			type: mongoose.Schema.Types.ObjectId,
 			index: true,

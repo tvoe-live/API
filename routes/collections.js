@@ -395,7 +395,7 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 		movieId: true,
 		endTime: true,
 		updatedAt: true,
-		isDeletedFromContinueWathcing: true,
+		deletionDate: true,
 		updatedAt: true,
 		movie: {
 			name: '$movie.name',
@@ -445,7 +445,16 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 				},
 			},
 		],
-		isDeletedFromContinueWathcing: { $ne: true },
+		$or: [
+			{
+				deletionDate: { $exists: false }, // Поле deletionDate не существует
+			},
+			{
+				$expr: {
+					$lt: ['$deletionDate', '$updatedAt'], // Поле deletionDate меньше чем поле updatedAt
+				},
+			},
+		],
 	}
 
 	try {
@@ -536,7 +545,7 @@ router.delete('/continueWatching/:id', verify.token, async (req, res) => {
 			{ _id: mongoose.Types.ObjectId(logId) },
 			{
 				$set: {
-					isDeletedFromContinueWathcing: true,
+					deletionDate: new Date(),
 				},
 			}
 		)
