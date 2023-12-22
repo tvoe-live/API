@@ -411,16 +411,13 @@ router.post('/publish', verify.token, verify.isAdmin, async (req, res) => {
 	try {
 		const { isDeleted, isPublished } = await MovieRating.findOne({ _id })
 
-		if (isDeleted && !isPublished) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Невозможно опубликовать удаленный отзыв',
-			})
-		}
-
 		const set = {
 			isPublished: !isPublished,
+		}
+
+		if (isDeleted && !isPublished) {
+			set.isDeleted = false
+			set.deletingInfo = null
 		}
 
 		await MovieRating.updateOne({ _id }, { $set: set })
