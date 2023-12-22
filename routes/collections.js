@@ -396,6 +396,7 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 		endTime: true,
 		updatedAt: true,
 		isDeletedFromContinueWathcing: true,
+		updatedAt: true,
 		movie: {
 			name: '$movie.name',
 			alias: '$movie.alias',
@@ -490,8 +491,7 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 						{ $match: match },
 						{
 							$sort: {
-								'seriaInfo.season': -1,
-								'seriaInfo.episode': -1,
+								updatedAt: -1,
 							},
 						},
 						{
@@ -503,6 +503,7 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 								updatedAt: { $first: '$updatedAt' },
 								movie: { $first: '$movie' },
 								seriaInfo: { $first: '$seriaInfo' },
+								updatedAt: { $first: '$updatedAt' },
 							},
 						},
 						{ $sort: { updatedAt: -1 } },
