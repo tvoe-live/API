@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const Movie = require('../models/movie')
+const User = require('../models/user')
 const resError = require('../helpers/resError')
 const resSuccess = require('../helpers/resSuccess')
 const movieOperations = require('../helpers/movieOperations')
@@ -356,12 +357,15 @@ router.get('/', async (req, res) => {
 	}
 })
 
-router.get('/continueWatching', verify.token, async (req, res) => {
+// router.get('/continueWatching', verify.token, async (req, res) => {
+router.get('/continueWatching', async (req, res) => {
+	const user = await User.findOne({ _id: '6480807e904d20e5d4c1b6db' })
+	req.user = user
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
 
 	const titlesDuration = 10 * 60
-
+	console.log('123')
 	const lookup = {
 		from: 'movies',
 		localField: 'movieId',
@@ -396,6 +400,7 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 		endTime: true,
 		updatedAt: true,
 		isDeletedFromContinueWathcing: true,
+		updatedAt: true,
 		movie: {
 			name: '$movie.name',
 			alias: '$movie.alias',
@@ -490,8 +495,7 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 						{ $match: match },
 						{
 							$sort: {
-								'seriaInfo.season': -1,
-								'seriaInfo.episode': -1,
+								updatedAt: -1,
 							},
 						},
 						{
@@ -503,6 +507,7 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 								updatedAt: { $first: '$updatedAt' },
 								movie: { $first: '$movie' },
 								seriaInfo: { $first: '$seriaInfo' },
+								updatedAt: { $first: '$updatedAt' },
 							},
 						},
 						{ $sort: { updatedAt: -1 } },
@@ -523,6 +528,7 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 
 		return res.status(200).json(logs[0])
 	} catch (e) {
+		console.log('e:', e)
 		return res.json(e)
 	}
 })
