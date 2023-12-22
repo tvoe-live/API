@@ -2071,12 +2071,16 @@ paths:
         content:
           application/json:
             schema:
-              type: array
-              uniqueItems: true
-              description: Массив из Id уведомлений (mongoose.ObjectId)
-              minItems: 0
-              items:
-                type: string
+              type: object
+              description: Ключи - виды уведомлений, значения - булевый тип, определяйющий включение если извлечение заданного типа уведомлений из списка выключенных уведомлений. False - для добавления заданного вида уведомлений в список выключенных, true - для извлечения из выключенных
+              properties:
+                ids:
+                  type: array
+                  uniqueItems: true
+                  description: Массив из Id уведомлений (mongoose.ObjectId)
+                  minItems: 0
+                  items:
+                    type: string
       responses:
         '200':
           description: OK

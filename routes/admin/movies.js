@@ -463,6 +463,7 @@ router.delete('/rating', verify.token, verify.isManager, async (req, res) => {
 			{
 				$set: {
 					isDeleted: true,
+					isPublished: false,
 					deletingInfo: {
 						...(!!comment && { comment }),
 						...(reasons && reasons.length ? { reasons } : { reasons: [] }),

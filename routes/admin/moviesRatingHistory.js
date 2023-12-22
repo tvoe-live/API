@@ -456,6 +456,7 @@ router.delete('/rating', verify.token, async (req, res) => {
 			{
 				$set: {
 					isDeleted: true,
+					isPublished: false,
 				},
 				$inc: { __v: 1 },
 			}
