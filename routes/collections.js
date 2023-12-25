@@ -451,7 +451,14 @@ router.get('/continueWatching', verify.token, async (req, res) => {
 			},
 			{
 				$expr: {
-					$lt: ['$deletionDate', '$updatedAt'], // Поле deletionDate меньше чем поле updatedAt
+					$lt: [
+						{
+							$substr: ['$deletionDate', 0, 19],
+						},
+						{
+							$substr: ['$updatedAt', 0, 19],
+						},
+					],
 				},
 			},
 		],
@@ -541,16 +548,14 @@ router.delete('/continueWatching/:id', verify.token, async (req, res) => {
 	const logId = req.params.id
 
 	try {
-		const result = await MoviePageLog.findOneAndUpdate(
-			{ _id: mongoose.Types.ObjectId(logId) },
-			{
-				$set: {
-					deletionDate: new Date(),
-				},
-			}
+		const moviePageLog = await MoviePageLog.findOne({ _id: mongoose.Types.ObjectId(logId) })
+
+		await MoviePageLog.updateMany(
+			{ userId: req.user._id, movieId: moviePageLog.movieId },
+			{ $set: { deletionDate: new Date() } }
 		)
 
-		if (!result) {
+		if (!moviePageLog) {
 			return resError({ res, msg: `Не найдено записи по указанному logId ${logId}` })
 		}
 
