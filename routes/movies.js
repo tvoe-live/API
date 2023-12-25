@@ -515,6 +515,108 @@ router.get('/movie', async (req, res) => {
 	}
 })
 
+// Получение отзывов к определенному фильму
+router.get('/:id/reviews', async (req, res) => {
+	const skip = +req.query.skip || 0
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
+
+	const movieId = mongoose.Types.ObjectId(req.params.id)
+
+	const movie = await Movie.findOne(movieId, {
+		name: true,
+	})
+	if (!movie) return resError({ res, msg: 'Фильм c таким селектором не существует' })
+
+	try {
+		MovieRating.aggregate(
+			[
+				{
+					$facet: {
+						// Всего записей
+						totalSize: [
+							{
+								$match: {
+									review: { $ne: null },
+									isDeleted: { $ne: true },
+									isPublished: true,
+									movieId,
+								},
+							},
+							{
+								$group: {
+									_id: null,
+									count: { $sum: 1 },
+								},
+							},
+							{ $limit: 1 },
+						],
+
+						items: [
+							{
+								$match: {
+									review: { $ne: null },
+									isDeleted: { $ne: true },
+									isPublished: true,
+									movieId,
+								},
+							},
+							{
+								$project: {
+									movieId: true,
+									userId: true,
+									rating: true,
+									updatedAt: true,
+									review: true,
+								},
+							},
+							{
+								$lookup: {
+									from: 'users',
+									localField: 'userId',
+									foreignField: '_id',
+									pipeline: [
+										{
+											$project: {
+												firstname: true,
+												lastname: true,
+												displayName: true,
+												avatar: true,
+											},
+										},
+									],
+									as: 'user',
+								},
+							},
+							{
+								$project: {
+									userId: false,
+									movieId: false,
+								},
+							},
+							{ $unwind: '$user' },
+							{ $sort: { updatedAt: -1 } },
+							{ $skip: skip },
+							{ $limit: limit },
+						],
+					},
+				},
+				{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
+				{
+					$project: {
+						totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+						items: '$items',
+					},
+				},
+			],
+			(err, result) => {
+				return res.status(200).json(result[0])
+			}
+		)
+	} catch (err) {
+		return resError({ res, msg: err })
+	}
+})
+
 // Получить рейтинг и комментарий, поставленный пользователем
 router.get('/rating', verify.token, async (req, res) => {
 	const { movieId } = req.query
