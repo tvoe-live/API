@@ -6,7 +6,6 @@ const resSuccess = require('../helpers/resSuccess')
 const movieOperations = require('../helpers/movieOperations')
 const verify = require('../middlewares/verify')
 const MoviePageLog = require('../models/moviePageLog')
-const User = require('../models/user')
 const mongoose = require('mongoose')
 
 const carousel = [
@@ -357,11 +356,7 @@ router.get('/', async (req, res) => {
 	}
 })
 
-// router.get('/continueWatching', verify.token, async (req, res) => {
-router.get('/continueWatching', async (req, res) => {
-	const user = await User.findOne({ _id: '6480807e904d20e5d4c1b6db' })
-	req.user = user
-
+router.get('/continueWatching', verify.token, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
 
