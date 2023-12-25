@@ -8,6 +8,7 @@ const Movie = require('../../models/movie')
 const getSearchQuery = require('../../middlewares/getSearchQuery')
 const getBoolean = require('../../helpers/getBoolean')
 const resSuccess = require('../../helpers/resSuccess')
+const isValidObjectId = require('../../helpers/isValidObjectId')
 
 /*
  * Админ-панель > История рейтингов
@@ -25,6 +26,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 				: []),
 			{ email: req.RegExpQuery },
 			{ firstname: req.RegExpQuery },
+			{ authPhone: req.RegExpQuery },
 		],
 	}
 
@@ -39,11 +41,79 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 								from: 'movies',
 								localField: 'movieId',
 								foreignField: '_id',
-								pipeline: [{ $project: { _id: true } }],
+								pipeline: [
+									{
+										$project: {
+											_id: false,
+											name: true,
+											poster: {
+												src: true,
+											},
+											alias: true,
+											publishedAt: true,
+										},
+									},
+								],
 								as: 'movie',
 							},
 						},
 						{ $unwind: { path: '$movie' } },
+						{
+							$lookup: {
+								from: 'users',
+								localField: 'userId',
+								foreignField: '_id',
+								pipeline: [
+									{
+										$match: {
+											...searchMatch,
+										},
+									},
+									{
+										$project: {
+											role: true,
+											avatar: true,
+											firstname: true,
+											tariffId: '$subscribe.tariffId',
+											phone: '$authPhone',
+										},
+									},
+									{
+										$lookup: {
+											from: 'tariffs',
+											localField: 'tariffId',
+											foreignField: '_id',
+											pipeline: [
+												{
+													$project: {
+														name: true,
+													},
+												},
+											],
+											as: 'tariff',
+										},
+									},
+									{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
+									{
+										$project: {
+											tariffName: '$tariff.name',
+											role: true,
+											avatar: true,
+											firstname: true,
+											phone: true,
+										},
+									},
+								],
+								as: 'user',
+							},
+						},
+						{
+							$unwind: {
+								path: '$user',
+								// preserveNullAndEmptyArrays: !req.searchQuery,
+								preserveNullAndEmptyArrays: false,
+							},
+						},
 						{
 							$group: {
 								_id: null,
@@ -129,7 +199,8 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 						{
 							$unwind: {
 								path: '$user',
-								preserveNullAndEmptyArrays: !req.searchQuery,
+								// preserveNullAndEmptyArrays: !req.searchQuery,
+								preserveNullAndEmptyArrays: false,
 							},
 						},
 						{
@@ -340,16 +411,13 @@ router.post('/publish', verify.token, verify.isAdmin, async (req, res) => {
 	try {
 		const { isDeleted, isPublished } = await MovieRating.findOne({ _id })
 
-		if (isDeleted && !isPublished) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Невозможно опубликовать удаленный отзыв',
-			})
-		}
-
 		const set = {
 			isPublished: !isPublished,
+		}
+
+		if (isDeleted && !isPublished) {
+			set.isDeleted = false
+			set.deletingInfo = null
 		}
 
 		await MovieRating.updateOne({ _id }, { $set: set })
@@ -388,6 +456,7 @@ router.delete('/rating', verify.token, async (req, res) => {
 			{
 				$set: {
 					isDeleted: true,
+					isPublished: false,
 				},
 				$inc: { __v: 1 },
 			}

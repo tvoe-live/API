@@ -43,35 +43,51 @@ router.patch('/activate', verify.token, async (req, res) => {
 				return resError({ res, msg: 'Промокод доступен только новым пользователям' })
 		}
 
-		const promocodeLog = await PromocodesLog.findOne({
+		let promocodeLog = await PromocodesLog.findOne({
 			promocodeId: promocode._id,
 			userId: req.user._id,
 		})
 
-		if (promocodeLog) {
+		if (promocodeLog && promocodeLog?.isPurchaseCompleted) {
 			return resError({ res, msg: 'Данный промокод уже применен' })
+		}
+
+		if (promocodeLog && !promocodeLog?.isCancelled) {
+			return resError({ res, msg: 'Данный промокод уже активирован' })
 		}
 
 		if (promocode.discountFormat === 'free' && promocode.tariffName == 'univeral') {
 			return resError({ res, msg: 'Неверный промокод' })
 		}
 
-		await PromocodesLog.updateMany(
-			{
+		if (!promocodeLog) {
+			await PromocodesLog.updateMany(
+				{
+					userId: req.user._id,
+					isCancelled: { $ne: true },
+					isPurchaseCompleted: { $ne: true },
+				},
+				{ $set: { isCancelled: true } }
+			)
+
+			// Создание лога об активации промокода
+			promocodeLog = await PromocodesLog.create({
+				promocodeId: promocode._id,
 				userId: req.user._id,
-				isCancelled: { $ne: true },
-				isPurchaseCompleted: { $ne: true },
-			},
-			{ $set: { isCancelled: true } }
-		)
+			})
 
-		// Создание лога об активации промокода
-		await PromocodesLog.create({ promocodeId: promocode._id, userId: req.user._id })
-
-		promocode.currentAmountActivation += 1
-		promocode.save()
+			promocode.currentAmountActivation += 1
+			await promocode.save()
+		} else {
+			if (promocodeLog.isCancelled) {
+				promocodeLog.isCancelled = false
+			}
+		}
 
 		if (promocode.discountFormat === 'free') {
+			promocodeLog.isPurchaseCompleted = true
+			await promocodeLog.save()
+
 			const tariff = await Tariff.findOne({ name: promocode.tariffName })
 			const user = await User.findOne({ _id: req.user._id })
 
@@ -103,6 +119,8 @@ router.patch('/activate', verify.token, async (req, res) => {
 				discountFormat: 'free',
 			})
 		}
+
+		await promocodeLog.save()
 
 		return resSuccess({
 			res,
