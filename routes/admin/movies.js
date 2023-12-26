@@ -26,6 +26,13 @@ const moviesFilterOptions = {
 		$and: [{ publishedAt: { $exists: true } }, { publishedAt: { $not: { $eq: null } } }],
 	},
 	notpublished: { $or: [{ publishedAt: { $exists: false } }, { publishedAt: null }] },
+	reload: {
+		$or: [
+			{ 'trailer.version': { $ne: 2 } },
+			{ 'films.$.version': { $ne: 2 } },
+			{ 'series.$.$.version': { $ne: 2 } },
+		],
+	},
 }
 
 /*
