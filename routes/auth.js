@@ -349,6 +349,22 @@ router.post('/sms/login', async (req, res) => {
 			})
 		}
 
+		// Случай модератора
+		if (phone == 70000000000) {
+			// Создание записи в журнале авторизаций через смс
+			await PhoneChecking.create({
+				phone,
+				code: '0000',
+				isConfirmed: false,
+				attemptAmount: 3,
+				ip,
+				isCancelled: false,
+				type: 'authorization',
+			})
+
+			return resSuccess({ res, msg: 'Сообщение с кодом отправлено по указанному номеру телефона' })
+		}
+
 		const prevPhoneChecking2 = await PhoneChecking.find({
 			phone,
 		})
@@ -517,6 +533,7 @@ router.post('/sms/compare', async (req, res) => {
 				authPhone: phone,
 				autoPayment: true,
 				lastVisitAt: Date.now(),
+				...(phone == 70000000000 && { role: 'store-moderator' }), // Если зашел модератор то устанавливаем ему соответствующую роль
 			}).save()
 
 			if (refererUserId) {

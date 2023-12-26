@@ -195,7 +195,7 @@ router.get('/profile', verify.token, verify.isAdmin, async (req, res) => {
 
 router.patch('/profile', verify.token, verify.isAdmin, async (req, res) => {
 	try {
-		const { _id, role, tariffId } = req.body
+		const { _id, role, tariffId, reasonBan, banFinistAt, banCancel } = req.body
 		const userId = mongoose.Types.ObjectId(_id)
 
 		const user = await User.findOne(
@@ -207,8 +207,67 @@ router.patch('/profile', verify.token, verify.isAdmin, async (req, res) => {
 				deleted: true,
 				firstname: true,
 				subscribe: true,
+				banned: true,
 			}
 		)
+
+		if (!user) {
+			return resError({
+				res,
+				alert: true,
+				msg: `Пользователь c id ${_id} не найден`,
+			})
+		}
+
+		if (banCancel) {
+			if (user && !user.banned) {
+				return resError({
+					res,
+					alert: true,
+					msg: 'Пользователь не забанен',
+				})
+			}
+
+			await User.updateOne(
+				{ _id: userId },
+				{
+					$set: {
+						banned: null,
+					},
+				}
+			)
+
+			return resSuccess({
+				res,
+				msg: 'Бан отменен',
+			})
+		}
+
+		if (reasonBan) {
+			const startAt = new Date()
+			const finishAt = 'banFinistAt' in req.body ? new Date(banFinistAt) : null
+
+			await User.updateOne(
+				{ _id: userId },
+				{
+					$set: {
+						banned: {
+							startAt,
+							finishAt,
+							reason: reasonBan,
+						},
+					},
+				}
+			)
+
+			return resSuccess({
+				res,
+				msg: 'Пользователь забанен',
+				startAt,
+				finishAt,
+				reasonBan,
+			})
+		}
 
 		if (tariffId === 'null') {
 			await User.updateOne({ _id: userId }, { $unset: { subscribe: null } })

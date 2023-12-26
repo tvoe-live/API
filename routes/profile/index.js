@@ -32,6 +32,7 @@ router.get('/', verify.token, async (req, res) => {
 			role: true,
 			avatar: true,
 			deleted: true,
+			banned: true,
 			authPhone: true,
 			firstname: true,
 			subscribe: true,
