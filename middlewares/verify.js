@@ -51,7 +51,7 @@ const token = async (req, res, next) => {
 			type: 'error',
 			message: 'Не удалось получить токен',
 		})
-	}
+	} else if (!token) return
 
 	try {
 		const decodedData = jwt.verify(token, process.env.JWT_TOKEN_SECRET, {
@@ -127,12 +127,6 @@ const token = async (req, res, next) => {
 			})
 		}
 
-		// if (user.subscribe && new Date() >= user.subscribe.finishAt) {
-		// 	user.subscribe = null
-
-		// 	await User.updateOne({ _id: userId }, { $unset: { subscribe: null } }, { timestamps: false })
-		// }
-
 		user.token = token
 
 		req.user = user
@@ -141,8 +135,6 @@ const token = async (req, res, next) => {
 	} catch (error) {
 		console.log(error)
 		if (!res) return
-
-		//await logout({ res });
 
 		return res.status(401).json({
 			error,

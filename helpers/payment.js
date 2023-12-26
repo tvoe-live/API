@@ -1,5 +1,7 @@
+const axios = require('axios')
 const crypto = require('crypto')
 const User = require('../models/user')
+const PaymentLog = require('../models/paymentLog')
 const { FIRST_STEP_REFERRAL, SECOND_STEP_REFERRAL } = require('../constants')
 const { API_URL, PAYMENT_TERMINAL_KEY, PAYMENT_TERMINAL_PASSWORD } = process.env
 
@@ -7,15 +9,20 @@ const { API_URL, PAYMENT_TERMINAL_KEY, PAYMENT_TERMINAL_PASSWORD } = process.env
  * Функции для платежной системы
  */
 
+/*
+ * Формирование платежной информации терминала для банка
+ */
 const getTerminalParams = ({
 	amount,
 	orderId,
 	tariffName,
 	failURL = null,
 	successURL = null,
-	userId = null,
-	userEmail = null,
-	userPhone = null,
+	user = {
+		_id: null,
+		email: null,
+		phone: null,
+	},
 }) => ({
 	TerminalKey: PAYMENT_TERMINAL_KEY, // ID терминала
 	Password: PAYMENT_TERMINAL_PASSWORD,
@@ -28,9 +35,10 @@ const getTerminalParams = ({
 	Amount: amount * 100,
 	Description: `Подписка на ${tariffName}`,
 	Recurrent: 'Y', // Рекуррентный платеж
-	CustomerKey: userId, // Идентификатор клиента в системе Мерчанта
+	CustomerKey: user._id, // Идентификатор клиента в системе Мерчанта
 	PayType: 'O', // Тип проведения платежа ("O" - одностадийная оплата)
 	Language: 'ru', // Язык платежной формы
+
 	Receipt: {
 		Items: [
 			{
@@ -45,8 +53,8 @@ const getTerminalParams = ({
 		],
 		FfdVersion: '1.05',
 		Taxation: 'usn_income',
-		Email: userEmail || 'no-relpy@tvoe.team',
-		Phone: userPhone || '+74956635979',
+		Email: user.email || 'no-relpy@tvoe.team',
+		Phone: user.phone || '+74956635979',
 	},
 })
 
@@ -63,6 +71,41 @@ const getToken = (params) => {
 	const token = crypto.createHash('sha256').update(concatStr).digest('hex')
 
 	return token
+}
+
+/*
+ * Вернуть 1 рубль пользователю за оплату пробного тарифа
+ */
+const paymentCancelTrialTariff = async ({ paymentId }) => {
+	if (!paymentId) return
+
+	paymentId = String(paymentId)
+
+	const cancelToken = getToken({
+		TerminalKey: PAYMENT_TERMINAL_KEY,
+		Password: PAYMENT_TERMINAL_PASSWORD,
+		PaymentId: paymentId,
+	})
+
+	const { data } = await axios.post('https://securepay.tinkoff.ru/v2/Cancel', {
+		TerminalKey: PAYMENT_TERMINAL_KEY,
+		Password: PAYMENT_TERMINAL_PASSWORD,
+		PaymentId: paymentId,
+		Token: cancelToken,
+	})
+
+	// Обработка ошибки: Невозможно отменить транзакцию в статусе REFUNDED
+	// Устанавливаем, что возврат уже произведен
+	if (data.ErrorCode === '4') {
+		await PaymentLog.updateOne(
+			{ paymentId },
+			{
+				$set: {
+					status: 'REFUNDED',
+				},
+			}
+		)
+	}
 }
 
 /*
@@ -89,4 +132,5 @@ module.exports = {
 	getToken,
 	getTerminalParams,
 	shareWithReferrer,
+	paymentCancelTrialTariff,
 }
