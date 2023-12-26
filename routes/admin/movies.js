@@ -26,6 +26,13 @@ const moviesFilterOptions = {
 		$and: [{ publishedAt: { $exists: true } }, { publishedAt: { $not: { $eq: null } } }],
 	},
 	notpublished: { $or: [{ publishedAt: { $exists: false } }, { publishedAt: null }] },
+	reload: {
+		$or: [
+			{ 'trailer.version': { $ne: 2 } },
+			{ 'films.$.version': { $ne: 2 } },
+			{ 'series.$.$.version': { $ne: 2 } },
+		],
+	},
 }
 
 /*
@@ -96,6 +103,27 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 						{ $project: { _id: false } },
 						{ $limit: 1 },
 					],
+					// Требующие перезагрузки
+					totalSizeReload: [
+						{
+							$match: {
+								...searchMatch,
+								$or: [
+									{ 'trailer.version': { $ne: 2 } },
+									{ 'films.$.version': { $ne: 2 } },
+									{ 'series.$.$.version': { $ne: 2 } },
+								],
+							},
+						},
+						{
+							$group: {
+								_id: null,
+								count: { $sum: 1 },
+							},
+						},
+						{ $project: { _id: false } },
+						{ $limit: 1 },
+					],
 					// Список
 					items: [
 						{
@@ -140,6 +168,7 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 			{ $unwind: { path: '$totalSizePublished', preserveNullAndEmptyArrays: true } },
 			{ $unwind: { path: '$totalSizeUnpublished', preserveNullAndEmptyArrays: true } },
+			{ $unwind: { path: '$totalSizeReload', preserveNullAndEmptyArrays: true } },
 			{
 				$project: {
 					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
@@ -148,6 +177,9 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 					},
 					totalSizeUnpublished: {
 						$cond: ['$totalSizeUnpublished.count', '$totalSizeUnpublished.count', 0],
+					},
+					totalSizeReload: {
+						$cond: ['$totalSizeReloadcount', '$totalSizeReload.count', 0],
 					},
 					items: '$items',
 				},

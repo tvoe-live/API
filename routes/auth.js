@@ -349,6 +349,22 @@ router.post('/sms/login', async (req, res) => {
 			})
 		}
 
+		// Случай модератора
+		if (phone == 70000000000) {
+			// Создание записи в журнале авторизаций через смс
+			await PhoneChecking.create({
+				phone,
+				code: '1234',
+				isConfirmed: false,
+				attemptAmount: 3,
+				ip,
+				isCancelled: false,
+				type: 'authorization',
+			})
+
+			return resSuccess({ res, msg: 'Сообщение с кодом отправлено по указанному номеру телефона' })
+		}
+
 		const prevPhoneChecking2 = await PhoneChecking.find({
 			phone,
 		})
@@ -469,13 +485,17 @@ router.post('/sms/compare', async (req, res) => {
 	let hourAgo = new Date()
 	hourAgo.setHours(hourAgo.getHours() - 1)
 
-	const phoneCheckingLog = await PhoneChecking.findOne({
+	const phoneCheckingLogArr = await PhoneChecking.find({
 		phone,
 		isConfirmed: false,
 		isCancelled: false,
 		type: 'authorization',
 		createdAt: { $gt: hourAgo },
 	})
+		.sort({ createdAt: -1 })
+		.limit(1)
+
+	const phoneCheckingLog = phoneCheckingLogArr[0]
 
 	if (phoneCheckingLog) {
 		if (phoneCheckingLog.attemptAmount === 0) {
@@ -517,6 +537,7 @@ router.post('/sms/compare', async (req, res) => {
 				authPhone: phone,
 				autoPayment: true,
 				lastVisitAt: Date.now(),
+				...(phone == 70000000000 && { role: 'store-moderator' }), // Если зашел модератор то устанавливаем ему соответствующую роль
 			}).save()
 
 			if (refererUserId) {
