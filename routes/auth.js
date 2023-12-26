@@ -354,7 +354,7 @@ router.post('/sms/login', async (req, res) => {
 			// Создание записи в журнале авторизаций через смс
 			await PhoneChecking.create({
 				phone,
-				code: '0000',
+				code: '1111',
 				isConfirmed: false,
 				attemptAmount: 3,
 				ip,
