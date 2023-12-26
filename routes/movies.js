@@ -256,6 +256,7 @@ router.get('/movie', async (req, res) => {
 		qualities: true,
 		audio: true,
 		subtitles: true,
+		files: true,
 		status: true,
 	}
 
