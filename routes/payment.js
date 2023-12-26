@@ -10,7 +10,12 @@ const resError = require('../helpers/resError')
 const PaymentLog = require('../models/paymentLog')
 const PromocodeLog = require('../models/promocodeLog')
 const isValidObjectId = require('../helpers/isValidObjectId')
-const { getToken, getTerminalParams, shareWithReferrer } = require('../helpers/payment')
+const {
+	getToken,
+	getTerminalParams,
+	shareWithReferrer,
+	paymentCancelTrialTariff,
+} = require('../helpers/payment')
 
 /*
  * Тарифы, создание и обработка платежей
@@ -532,11 +537,13 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		orderId: paymentLog._id,
 		amount: price,
 		tariffName: selectedTariff.name,
-		userId: req.user._id,
-		userEmail: req.user.email,
-		userPhone: req.user.phone,
 		successURL: successURL.href,
 		failURL: failURL.href,
+		user: {
+			_id: req.user._id,
+			email: req.user.email,
+			phone: req.user.phone,
+		},
 	})
 
 	// Получить токен для проверки подлинности запросов
@@ -601,7 +608,7 @@ router.post('/notification', async (req, res) => {
 	// Получить токен для проверки подлинности запросов
 	const token = getToken(body)
 	// Проверка токена
-	if (token !== req.body.Token) return resError({ res, msg: 'Неверные данные' })
+	if (req.body.Token && token !== req.body.Token) return resError({ res, msg: 'Неверные данные' })
 
 	amount = amount / 100 // Перевести с копеек в рубли
 
@@ -690,22 +697,11 @@ router.post('/notification', async (req, res) => {
 
 			// Вернуть 1 рубль пользователю за оплату пробного тарифа
 			if (+amount === 1) {
-				const cancelToken = getToken({
-					TerminalKey: process.env.PAYMENT_TERMINAL_KEY,
-					Password: process.env.PAYMENT_TERMINAL_PASSWORD,
-					PaymentId: String(paymentId),
-				})
-
-				await axios.post('https://securepay.tinkoff.ru/v2/Cancel', {
-					TerminalKey: process.env.PAYMENT_TERMINAL_KEY,
-					Password: process.env.PAYMENT_TERMINAL_PASSWORD,
-					PaymentId: String(paymentId),
-					Token: cancelToken,
-				})
-
+				await paymentCancelTrialTariff({ paymentId })
 				break
 			}
 
+			// Поделиться с реферерами долей с дохода от оплаты
 			await shareWithReferrer({
 				amount,
 				userId: user._id,
@@ -737,8 +733,8 @@ router.post('/notification', async (req, res) => {
 			const lastActivePayment = await PaymentLog.findOne({
 				userId: user._id,
 				type: 'paid',
-				$or: [{ status: 'success' }, { status: 'CONFIRMED' }, { status: 'AUTHORIZED' }],
-				finishAt: { $gt: new Date() },
+				finishAt: { $gte: new Date() },
+				status: { $in: ['success', 'CONFIRMED', 'AUTHORIZED'] },
 			}).sort({ _id: -1 })
 
 			if (!!lastActivePayment) {
@@ -756,6 +752,7 @@ router.post('/notification', async (req, res) => {
 						},
 					},
 					{
+						timestamps: false,
 						$unset: {
 							rebillId: false,
 						},
