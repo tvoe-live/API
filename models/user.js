@@ -79,7 +79,7 @@ const userSchema = new mongoose.Schema(
 			userIds: [mongoose.Schema.Types.ObjectId], // ID приглашенных пользователей по реферальной программе
 		},
 
-		role: String, // Роль пользователя: admin или manager. Для обычных пользователей это поле отсутствует, у них нет роли.
+		role: String, // Роль пользователя: admin или manager. Для обычных пользователей это поле отсутствует, у них нет роли. Еще существует роль store-moderator для модератора мобильных приложений в маркетплейсе
 		lastVisitAt: Date, // Дата последнего визита
 		banned: Object, // Дата блокировки и восстановления
 		deleted: Object, // Дата удаления и восстановления
