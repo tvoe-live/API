@@ -485,13 +485,17 @@ router.post('/sms/compare', async (req, res) => {
 	let hourAgo = new Date()
 	hourAgo.setHours(hourAgo.getHours() - 1)
 
-	const phoneCheckingLog = await PhoneChecking.findOne({
+	const phoneCheckingLogArr = await PhoneChecking.find({
 		phone,
 		isConfirmed: false,
 		isCancelled: false,
 		type: 'authorization',
 		createdAt: { $gt: hourAgo },
 	})
+		.sort({ createdAt: -1 })
+		.limit(1)
+
+	const phoneCheckingLog = phoneCheckingLogArr[0]
 
 	if (phoneCheckingLog) {
 		if (phoneCheckingLog.attemptAmount === 0) {
