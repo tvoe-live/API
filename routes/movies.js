@@ -494,7 +494,7 @@ router.get('/movie', async (req, res) => {
 					}
 				}
 
-				switch (data.categoryAlias) {
+				switch (data?.categoryAlias) {
 					case 'films':
 						data.sources = data.films[0] || null
 						break
@@ -505,8 +505,8 @@ router.get('/movie', async (req, res) => {
 						break
 				}
 
-				delete data.films
-				delete data.series
+				if (!!data.films) delete data.films
+				if (!!data.series) delete data.series
 
 				return res.status(200).json(data)
 			}

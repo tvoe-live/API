@@ -1,9 +1,14 @@
+const axios = require('axios')
 const User = require('../models/user')
 const tariff = require('../models/tariff')
-const { default: axios } = require('axios')
-const paymentLog = require('../models/paymentLog')
+const PaymentLog = require('../models/paymentLog')
 const notification = require('../models/notification')
-const { getToken, getTerminalParams, shareWithReferrer } = require('../helpers/payment')
+const {
+	getToken,
+	getTerminalParams,
+	shareWithReferrer,
+	paymentCancelTrialTariff,
+} = require('../helpers/payment')
 
 const recurrentPayment = async () => {
 	try {
@@ -24,6 +29,27 @@ const recurrentPayment = async () => {
 				autoPayment: true,
 			}
 		)
+
+		// Выборка всех платежей, где не вернулся 1₽ при пробной подписки
+		const paymentsWithoutRefundOf1Rub = await PaymentLog.find(
+			{
+				type: 'paid',
+				amount: 1,
+				tariffPrice: 1,
+				status: { $in: ['CONFIRMED', 'AUTHORIZED'] },
+			},
+			{
+				_id: false,
+				paymentId: true,
+			}
+		)
+
+		// Вернуть повторно 1₽ пользователям за оплату пробного тарифа, которым возврат не дошел
+		if (paymentsWithoutRefundOf1Rub.length) {
+			for (const paymentLog of paymentsWithoutRefundOf1Rub) {
+				await paymentCancelTrialTariff({ paymentId: paymentLog.paymentId })
+			}
+		}
 
 		// Завершить, если нет пользователей для выполнения платежей
 		if (!users.length) return
@@ -64,7 +90,7 @@ const recurrentPayment = async () => {
 			})
 
 			// Создание платежного лога
-			const userPaymentLog = await paymentLog.create({
+			const userPaymentLog = await PaymentLog.create({
 				type: 'paid',
 				userId: user._id,
 				isChecked: false,
@@ -79,8 +105,11 @@ const recurrentPayment = async () => {
 				amount: userTariff.price,
 				orderId: userPaymentLog._id,
 				tariffName: userTariff.name,
-				userEmail: user.email,
-				userPhone: user.phone,
+				user: {
+					_id: user._id,
+					email: user.email,
+					phone: user.phone,
+				},
 			})
 
 			const token = getToken(terminalParams)
