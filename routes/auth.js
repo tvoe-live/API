@@ -315,32 +315,6 @@ router.post('/sms/login', async (req, res) => {
 			})
 		}
 
-		//Поиск пользователя в БД
-		let user = await User.findOne({
-			authPhone: phone,
-			$or: [
-				{ deleted: null },
-				{
-					$and: [{ deleted: { $exists: true } }, { 'deleted.finish': { $gt: new Date() } }],
-				},
-			],
-		})
-		// Обработка случая когда юзер в бане
-		if (
-			user.banned &&
-			(!user.banned.finishAt ||
-				(user.banned.finishAt && new Date() < new Date(user.banned.finishAt)))
-		) {
-			const msg = !!user.banned.finishAt
-				? `Ваш аккаунт заблокирован до ${user.banned.finishAt}`
-				: 'Ваш аккаунт заблокирован'
-			return resError({
-				res,
-				alert: false,
-				msg,
-			})
-		}
-
 		let minuteAgo = new Date()
 		minuteAgo.setSeconds(minuteAgo.getSeconds() - 90)
 
