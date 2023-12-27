@@ -315,7 +315,32 @@ router.post('/sms/login', async (req, res) => {
 			})
 		}
 
-		let minuteAgo = new Date()
+		// // Поиск пользователя в БД
+		// let user = await User.findOne({
+		// 	authPhone: phone,
+		// 	$or: [
+		// 		{ banned: null },
+		// 		{
+		// 			$and: [{ banned: { $exists: true } }, { 'banned.finish': { $lt: new Date() } }],
+		// 		},
+		// 	],
+		// })
+
+		// Поиск пользователя в БД
+		// let user = await User.findOne({
+		// 	authPhone: phone,
+		// 	$or: [
+		// 		{ deleted: null },
+		// 		{
+		// 			$and: [{ deleted: { $exists: true } }, { 'deleted.finish': { $gt: new Date() } }],
+		// 		},
+		// 	],
+		// })
+
+		// if (user.banned){
+
+		// }
+
 		minuteAgo.setSeconds(minuteAgo.getSeconds() - 90)
 
 		const previousPhoneCheckingMinute = await PhoneChecking.find({
