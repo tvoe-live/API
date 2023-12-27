@@ -291,13 +291,13 @@ router.post('/sms/login', async (req, res) => {
 	const ip = req.headers['x-real-ip']
 
 	try {
-		if (req.useragent?.isBot) {
-			return resError({
-				res,
-				alert: true,
-				msg: 'Обнаружен бот',
-			})
-		}
+		// if (req.useragent?.isBot) {
+		// 	return resError({
+		// 		res,
+		// 		alert: true,
+		// 		msg: 'Обнаружен бот',
+		// 	})
+		// }
 
 		if (!phone) {
 			return resError({
@@ -315,32 +315,33 @@ router.post('/sms/login', async (req, res) => {
 			})
 		}
 
-		// // Поиск пользователя в БД
-		// let user = await User.findOne({
-		// 	authPhone: phone,
-		// 	$or: [
-		// 		{ banned: null },
-		// 		{
-		// 			$and: [{ banned: { $exists: true } }, { 'banned.finish': { $lt: new Date() } }],
-		// 		},
-		// 	],
-		// })
+		//Поиск пользователя в БД
+		let user = await User.findOne({
+			authPhone: phone,
+			$or: [
+				{ deleted: null },
+				{
+					$and: [{ deleted: { $exists: true } }, { 'deleted.finish': { $gt: new Date() } }],
+				},
+			],
+		})
+		// Обработка случая когда юзер в бане
+		if (
+			user.banned &&
+			(!user.banned.finishAt ||
+				(user.banned.finishAt && new Date() < new Date(user.banned.finishAt)))
+		) {
+			const msg = !!user.banned.finishAt
+				? `Ваш аккаунт заблокирован до ${user.banned.finishAt}`
+				: 'Ваш аккаунт заблокирован'
+			return resError({
+				res,
+				alert: false,
+				msg,
+			})
+		}
 
-		// Поиск пользователя в БД
-		// let user = await User.findOne({
-		// 	authPhone: phone,
-		// 	$or: [
-		// 		{ deleted: null },
-		// 		{
-		// 			$and: [{ deleted: { $exists: true } }, { 'deleted.finish': { $gt: new Date() } }],
-		// 		},
-		// 	],
-		// })
-
-		// if (user.banned){
-
-		// }
-
+		let minuteAgo = new Date()
 		minuteAgo.setSeconds(minuteAgo.getSeconds() - 90)
 
 		const previousPhoneCheckingMinute = await PhoneChecking.find({
