@@ -42,6 +42,31 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
+	function needReload(seasons, films, trailer) {
+		if (trailer && trailer.src && trailer.version !== 2) return true
+
+		for (let j = 0; j < films.length; j++) {
+			if (!('version' in films[j]) || films[j].version !== 2) {
+				return true
+			}
+		}
+
+		for (let i = 0; i < seasons.length; i++) {
+			const season = seasons[i]
+			for (let j = 0; j < season.length; j++) {
+				if (!('version' in season[j]) || season[j].version !== 2) {
+					return true
+				}
+			}
+		}
+
+		return false
+	}
+
+	const matchReload = req.query.status === 'reload' && {
+		needReload: true,
+	}
+
 	const movieFilterParam = req.query.status && moviesFilterOptions[`${req.query.status}`]
 
 	const searchMatch = req.RegExpQuery && {
@@ -54,10 +79,26 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 				$facet: {
 					// Всего записей
 					totalSize: [
+						...(req.query.status === 'reload'
+							? [
+									{
+										$addFields: {
+											needReload: {
+												$function: {
+													body: needReload,
+													args: ['$series', '$films', '$trailer'],
+													lang: 'js',
+												},
+											},
+										},
+									},
+							  ]
+							: []),
 						{
 							$match: {
 								...searchMatch,
 								...movieFilterParam,
+								...matchReload,
 							},
 						},
 						{
@@ -106,13 +147,19 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 					// Требующие перезагрузки
 					totalSizeReload: [
 						{
+							$addFields: {
+								needReload: {
+									$function: {
+										body: needReload,
+										args: ['$series', '$films', '$trailer'],
+										lang: 'js',
+									},
+								},
+							},
+						},
+						{
 							$match: {
-								...searchMatch,
-								$or: [
-									{ 'trailer.version': { $ne: 2 } },
-									{ 'films.$.version': { $ne: 2 } },
-									{ 'series.$.$.version': { $ne: 2 } },
-								],
+								needReload: true,
 							},
 						},
 						{
@@ -126,13 +173,29 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 					],
 					// Список
 					items: [
+						...(req.query.status === 'reload'
+							? [
+									{
+										$addFields: {
+											needReload: {
+												$function: {
+													body: needReload,
+													args: ['$series', '$films', '$trailer'],
+													lang: 'js',
+												},
+											},
+										},
+									},
+							  ]
+							: []),
 						{
 							$match: {
 								...searchMatch,
 								...movieFilterParam,
+								...matchReload,
 							},
 						},
-						{ $project: { __v: false } },
+						{ $project: { __v: false, needReload: false } },
 						{
 							$lookup: {
 								from: 'moviepagelogs',
@@ -179,7 +242,7 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 						$cond: ['$totalSizeUnpublished.count', '$totalSizeUnpublished.count', 0],
 					},
 					totalSizeReload: {
-						$cond: ['$totalSizeReloadcount', '$totalSizeReload.count', 0],
+						$cond: ['$totalSizeReload.count', '$totalSizeReload.count', 0],
 					},
 					items: '$items',
 				},

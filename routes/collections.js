@@ -75,7 +75,7 @@ router.get('/', async (req, res) => {
 	}
 
 	const projectRatingMore7 = {
-		_id: false,
+		_id: true,
 		name: true,
 		badge: true,
 		ageLevel: true,
