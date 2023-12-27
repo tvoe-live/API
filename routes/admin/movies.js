@@ -38,7 +38,8 @@ const moviesFilterOptions = {
 /*
  * Получение списка записей
  */
-router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res) => {
+// router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res) => {
+router.get('/', getSearchQuery, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
@@ -50,11 +51,13 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 		if (!trailer || trailer.version !== 2) return true
 
 		if (categoryAlias === 'films') {
-			if (!films[0] || !('version' in films[0]) || films[0].version !== 2) {
-				return true
-			} else {
-				return false
+			for (let j = 0; j < films.length; j++) {
+				if (!('version' in films[j]) || films[j].version !== 2) {
+					return true
+				}
 			}
+
+			return false
 		} else {
 			if (!seasons.length) return true
 
@@ -87,10 +90,26 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 				$facet: {
 					// Всего записей
 					totalSize: [
+						...(req.query.status === 'reload'
+							? [
+									{
+										$addFields: {
+											needReload: {
+												$function: {
+													body: defineVersion,
+													args: ['$categoryAlias', '$series', '$films', '$trailer'],
+													lang: 'js',
+												},
+											},
+										},
+									},
+							  ]
+							: []),
 						{
 							$match: {
 								...searchMatch,
 								...movieFilterParam,
+								...matchReload,
 							},
 						},
 						{
@@ -154,16 +173,6 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 								needReload: true,
 							},
 						},
-						// {
-						// 	$match: {
-						// 		...searchMatch,
-						// 		$or: [
-						// 			{ 'trailer.version': { $ne: 2 } },
-						// 			{ 'films.$.version': { $ne: 2 } },
-						// 			{ 'series.$.$.version': { $ne: 2 } },
-						// 		],
-						// 	},
-						// },
 						{
 							$group: {
 								_id: null,
@@ -182,7 +191,7 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 											needReload: {
 												$function: {
 													body: defineVersion,
-													args: ['$categoryAlias', '$series', '$films'],
+													args: ['$categoryAlias', '$series', '$films', '$trailer'],
 													lang: 'js',
 												},
 											},
