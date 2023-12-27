@@ -291,13 +291,13 @@ router.post('/sms/login', async (req, res) => {
 	const ip = req.headers['x-real-ip']
 
 	try {
-		// if (req.useragent?.isBot) {
-		// 	return resError({
-		// 		res,
-		// 		alert: true,
-		// 		msg: 'Обнаружен бот',
-		// 	})
-		// }
+		if (req.useragent?.isBot) {
+			return resError({
+				res,
+				alert: true,
+				msg: 'Обнаружен бот',
+			})
+		}
 
 		if (!phone) {
 			return resError({
