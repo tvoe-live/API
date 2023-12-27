@@ -26,13 +26,6 @@ const moviesFilterOptions = {
 		$and: [{ publishedAt: { $exists: true } }, { publishedAt: { $not: { $eq: null } } }],
 	},
 	notpublished: { $or: [{ publishedAt: { $exists: false } }, { publishedAt: null }] },
-	reload: {
-		$or: [
-			{ 'trailer.version': { $ne: 2 } },
-			{ 'films.$.version': { $ne: 2 } },
-			{ 'series.$.$.version': { $ne: 2 } },
-		],
-	},
 }
 
 /*
@@ -41,6 +34,9 @@ const moviesFilterOptions = {
 router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
+
+	let query = req.searchQuery?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+	const editSpace = query?.replace(/ /gi, '\\s.*')
 
 	function needReload(seasons, films, trailer) {
 		if (trailer && trailer.src && trailer.version !== 2) return true
@@ -61,6 +57,10 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 		}
 
 		return false
+	}
+
+	function toLowerCase(name, editSpace) {
+		return name.toLowerCase() === editSpace.toLowerCase()
 	}
 
 	const matchReload = req.query.status === 'reload' && {
@@ -188,6 +188,28 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 									},
 							  ]
 							: []),
+						...(!!req.RegExpQuery
+							? [
+									{
+										$addFields: {
+											exactNameMatch: {
+												$function: {
+													body: toLowerCase,
+													args: ['$name', editSpace],
+													lang: 'js',
+												},
+											},
+											nameMatch: {
+												$cond: {
+													if: { $regexMatch: { input: '$name', regex: editSpace } },
+													then: 1,
+													else: 0,
+												},
+											},
+										},
+									},
+							  ]
+							: []),
 						{
 							$match: {
 								...searchMatch,
@@ -221,7 +243,18 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 								moviepagelog: false,
 							},
 						},
-						{ $sort: { raisedUpAt: -1, _id: -1 } },
+						...(!!req.RegExpQuery
+							? [
+									{
+										$sort: {
+											exactNameMatch: -1,
+											nameMatch: -1,
+											raisedUpAt: -1,
+											_id: -1,
+										},
+									},
+							  ]
+							: [{ $sort: { raisedUpAt: -1, _id: -1 } }]),
 						{ $skip: skip },
 						{ $limit: limit },
 					],
