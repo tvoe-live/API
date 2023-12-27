@@ -38,13 +38,12 @@ const moviesFilterOptions = {
 /*
  * Получение списка записей
  */
-// router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res) => {
-router.get('/', getSearchQuery, async (req, res) => {
+router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	function needReload(seasons, films, trailer) {
-		if (trailer && trailer.version !== 2) return true
+		if (trailer && trailer.src && trailer.version !== 2) return true
 
 		for (let j = 0; j < films.length; j++) {
 			if (!('version' in films[j]) || films[j].version !== 2) {
