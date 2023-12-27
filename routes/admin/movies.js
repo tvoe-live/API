@@ -43,35 +43,25 @@ router.get('/', getSearchQuery, async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
-	function defineVersion(categoryAlias, seasons, films, trailer) {
-		if (!categoryAlias) {
-			return true
+	function needReload(seasons, films, trailer) {
+		if (trailer && trailer.version !== 2) return true
+
+		for (let j = 0; j < films.length; j++) {
+			if (!('version' in films[j]) || films[j].version !== 2) {
+				return true
+			}
 		}
 
-		if (!trailer || trailer.version !== 2) return true
-
-		if (categoryAlias === 'films') {
-			for (let j = 0; j < films.length; j++) {
-				if (!('version' in films[j]) || films[j].version !== 2) {
+		for (let i = 0; i < seasons.length; i++) {
+			const season = seasons[i]
+			for (let j = 0; j < season.length; j++) {
+				if (!('version' in season[j]) || season[j].version !== 2) {
 					return true
 				}
 			}
-
-			return false
-		} else {
-			if (!seasons.length) return true
-
-			for (let i = 0; i < seasons.length; i++) {
-				const season = seasons[i]
-				for (let j = 0; j < season.length; j++) {
-					if (!('version' in season[j]) || season[j].version !== 2) {
-						return true
-					}
-				}
-			}
-
-			return false
 		}
+
+		return false
 	}
 
 	const matchReload = req.query.status === 'reload' && {
@@ -96,8 +86,8 @@ router.get('/', getSearchQuery, async (req, res) => {
 										$addFields: {
 											needReload: {
 												$function: {
-													body: defineVersion,
-													args: ['$categoryAlias', '$series', '$films', '$trailer'],
+													body: needReload,
+													args: ['$series', '$films', '$trailer'],
 													lang: 'js',
 												},
 											},
@@ -161,8 +151,8 @@ router.get('/', getSearchQuery, async (req, res) => {
 							$addFields: {
 								needReload: {
 									$function: {
-										body: defineVersion,
-										args: ['$categoryAlias', '$series', '$films', '$trailer'],
+										body: needReload,
+										args: ['$series', '$films', '$trailer'],
 										lang: 'js',
 									},
 								},
@@ -190,8 +180,8 @@ router.get('/', getSearchQuery, async (req, res) => {
 										$addFields: {
 											needReload: {
 												$function: {
-													body: defineVersion,
-													args: ['$categoryAlias', '$series', '$films', '$trailer'],
+													body: needReload,
+													args: ['$series', '$films', '$trailer'],
 													lang: 'js',
 												},
 											},
