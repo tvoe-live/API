@@ -521,14 +521,18 @@ router.get('/:alias/reviews', async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
-	const { _id: movieId } = await Movie.findOne(
+	const {
+		_id: movieId,
+		name,
+		rating,
+	} = await Movie.findOne(
 		{ alias: req.params.alias },
 		{
 			name: true,
 			alias: true,
+			rating: true,
 		}
 	)
-
 	if (!movieId) return resError({ res, msg: 'Фильм c таким селектором не существует' })
 
 	try {
@@ -595,6 +599,12 @@ router.get('/:alias/reviews', async (req, res) => {
 								$project: {
 									userId: false,
 									movieId: false,
+								},
+							},
+							{
+								$addFields: {
+									movieName: name,
+									movieRating: rating,
 								},
 							},
 							{ $unwind: '$user' },

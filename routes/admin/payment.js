@@ -80,12 +80,35 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 						},
 					},
 					{
+						$addFields: {
+							isBanned: {
+								$cond: {
+									if: {
+										$and: [
+											{ $ne: ['$banned', null] },
+
+											{
+												$or: [
+													{ $eq: ['$banned.finishAt', null] },
+													{ $gt: ['$banned.finishAt', new Date()] },
+												],
+											},
+										],
+									},
+									then: true,
+									else: false,
+								},
+							},
+						},
+					},
+					{
 						$project: {
 							role: true,
 							phone: '$authPhone',
 							avatar: true,
 							subscribe: true,
 							firstname: true,
+							isBanned: true,
 						},
 					},
 				],
