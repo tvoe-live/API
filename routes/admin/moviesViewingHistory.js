@@ -107,6 +107,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 											role: true,
 											avatar: true,
 											firstname: true,
+											banned: true,
 											tariffId: '$subscribe.tariffId',
 											phone: '$authPhone',
 										},
@@ -134,6 +135,29 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 											avatar: true,
 											firstname: true,
 											phone: true,
+											banned: true,
+										},
+									},
+									{
+										$addFields: {
+											isBanned: {
+												$cond: {
+													if: {
+														$and: [
+															{ $ne: ['$banned', null] },
+
+															{
+																$or: [
+																	{ $eq: ['$banned.finishAt', null] },
+																	{ $gt: ['$banned.finishAt', new Date()] },
+																],
+															},
+														],
+													},
+													then: true,
+													else: false,
+												},
+											},
 										},
 									},
 								],

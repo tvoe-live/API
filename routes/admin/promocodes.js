@@ -366,6 +366,7 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 											referral: true,
 											phone: '$authPhone',
 											tariffId: '$subscribe.tariffId',
+											banned: true,
 										},
 									},
 									{
@@ -385,6 +386,28 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 									},
 									{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
 									{
+										$addFields: {
+											isBanned: {
+												$cond: {
+													if: {
+														$and: [
+															{ $ne: ['$banned', null] },
+
+															{
+																$or: [
+																	{ $eq: ['$banned.finishAt', null] },
+																	{ $gt: ['$banned.finishAt', new Date()] },
+																],
+															},
+														],
+													},
+													then: true,
+													else: false,
+												},
+											},
+										},
+									},
+									{
 										$project: {
 											tariffName: '$tariff.name',
 											role: true,
@@ -393,6 +416,7 @@ router.get('/count', verify.token, verify.isAdmin, async (req, res) => {
 											lastname: true,
 											referral: true,
 											phone: true,
+											isBanned: true,
 										},
 									},
 								],

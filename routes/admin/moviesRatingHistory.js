@@ -163,6 +163,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 											role: true,
 											avatar: true,
 											firstname: true,
+											banned: true,
 											tariffId: '$subscribe.tariffId',
 											phone: '$authPhone',
 										},
@@ -184,12 +185,35 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 									},
 									{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
 									{
+										$addFields: {
+											isBanned: {
+												$cond: {
+													if: {
+														$and: [
+															{ $ne: ['$banned', null] },
+
+															{
+																$or: [
+																	{ $eq: ['$banned.finishAt', null] },
+																	{ $gt: ['$banned.finishAt', new Date()] },
+																],
+															},
+														],
+													},
+													then: true,
+													else: false,
+												},
+											},
+										},
+									},
+									{
 										$project: {
 											tariffName: '$tariff.name',
 											role: true,
 											avatar: true,
 											firstname: true,
 											phone: true,
+											isBanned: true,
 										},
 									},
 								],
@@ -328,6 +352,7 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 											firstname: true,
 											tariffId: '$subscribe.tariffId',
 											phone: '$authPhone',
+											banned: true,
 										},
 									},
 									{
@@ -347,12 +372,35 @@ router.get('/reviews', verify.token, verify.isAdmin, async (req, res) => {
 									},
 									{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
 									{
+										$addFields: {
+											isBanned: {
+												$cond: {
+													if: {
+														$and: [
+															{ $ne: ['$banned', null] },
+
+															{
+																$or: [
+																	{ $eq: ['$banned.finishAt', null] },
+																	{ $gt: ['$banned.finishAt', new Date()] },
+																],
+															},
+														],
+													},
+													then: true,
+													else: false,
+												},
+											},
+										},
+									},
+									{
 										$project: {
 											tariffName: '$tariff.name',
 											role: true,
 											avatar: true,
 											firstname: true,
 											phone: true,
+											isBanned: true,
 										},
 									},
 								],

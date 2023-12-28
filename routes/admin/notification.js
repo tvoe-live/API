@@ -7,7 +7,7 @@ const verify = require('../../middlewares/verify')
 const { uploadImageToS3 } = require('../../helpers/uploadImage')
 const router = express.Router()
 
-// const resSuccess = require('../../helpers/resSuccess')
+const resSuccess = require('../../helpers/resSuccess')
 // const getBoolean = require('../../helpers/getBoolean')
 const mongoose = require('mongoose')
 
