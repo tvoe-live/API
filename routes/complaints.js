@@ -14,6 +14,26 @@ const reasonsDict = {
 	AGE_LIMIT_VIOLATION: 'Нарушение возрастного ограничения',
 }
 
+function defineSeria(seasons, videoId) {
+	if (!seasons.length) return null
+
+	for (let i = 0; i < seasons.length; i++) {
+		const season = seasons[i]
+
+		for (let j = 0; j < season.length; j++) {
+			const episode = season[j]
+			if (String(episode._id) === String(videoId)) {
+				return {
+					season: i + 1,
+					episode: j + 1,
+					seriaDuration: episode.duration,
+					thumbnail: episode.thumbnail,
+				}
+			}
+		}
+	}
+}
+
 // Отправка жалобы
 router.post('/', verify.token, async (req, res) => {
 	let { text, reasons, movieId, videoId } = req.body
@@ -27,7 +47,10 @@ router.post('/', verify.token, async (req, res) => {
 		})
 	}
 
-	const { name, alias } = await Movie.findOne({ _id: movieId }, { name: true, alias: true })
+	const { name, alias, categoryAlias, series } = await Movie.findOne(
+		{ _id: movieId },
+		{ name: true, alias: true, categoryAlias: true, series: true }
+	)
 	const { firstname, lastname, authPhone } = await User.findOne(
 		{ _id: userId },
 		{ firstname: true, lastname: true, authPhone: true }
@@ -66,7 +89,16 @@ router.post('/', verify.token, async (req, res) => {
 	}
 
 	try {
-		let textForMail = `Поступила жалоба на фильм '${name}' (videoId ='${videoId}', movieId ='${movieId}') ${process.env.CLIENT_URL}/p/${alias}`
+		const movieCategory = categoryAlias === 'films' ? 'фильм' : 'сериал'
+
+		let serialInfo = ''
+
+		if (categoryAlias === 'serials') {
+			const { season, episode } = defineSeria(series, videoId)
+			serialInfo = `, сезон ${season}, серия ${episode}`
+		}
+
+		let textForMail = `Поступила жалоба на ${movieCategory} '${name}' (videoId ='${videoId}', movieId ='${movieId}'${serialInfo}) ${process.env.CLIENT_URL}/p/${alias}`
 
 		if (reasons && reasons?.length) {
 			const reasonsText = reasons?.map((reason) => `"${reasonsDict[reason]}" `)
@@ -90,6 +122,7 @@ router.post('/', verify.token, async (req, res) => {
 		if (authPhone) {
 			textForMail += `.\nЕго номер телефона ${authPhone}. `
 		}
+		console.log('textForMail:', textForMail)
 
 		const message = {
 			to: process.env.CONTENT_DEPARTMENT_EMAIL,

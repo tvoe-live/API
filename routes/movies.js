@@ -517,16 +517,19 @@ router.get('/movie', async (req, res) => {
 })
 
 // Получение отзывов к определенному фильму
-router.get('/:id/reviews', async (req, res) => {
+router.get('/:alias/reviews', async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
-	const movieId = mongoose.Types.ObjectId(req.params.id)
+	const { _id: movieId } = await Movie.findOne(
+		{ alias: req.params.alias },
+		{
+			name: true,
+			alias: true,
+		}
+	)
 
-	const movie = await Movie.findOne(movieId, {
-		name: true,
-	})
-	if (!movie) return resError({ res, msg: 'Фильм c таким селектором не существует' })
+	if (!movieId) return resError({ res, msg: 'Фильм c таким селектором не существует' })
 
 	try {
 		MovieRating.aggregate(
