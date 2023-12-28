@@ -35,7 +35,7 @@ router.get('/', getSearchQuery, verify.token, verify.isAdmin, async (req, res) =
 
 	const query = req.searchQuery?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 	const editSpace = query?.replace(/ /gi, '\\s.*')
-	const RegExpQuery = new RegExp(editSpace?.replace(/[eё]/gi, '[её]'), 'i')
+	const RegExpQuery = new RegExp(editSpace?.replace(/[её]/gi, '[её]'), 'i')
 
 	const notificationFilterParams =
 		req.query.status && filterNotificationOptions[`${req.query.status}`]
@@ -82,7 +82,6 @@ router.get('/', getSearchQuery, verify.token, verify.isAdmin, async (req, res) =
 								$project: {
 									receiversIds: false,
 									__v: false,
-									createdAt: false,
 								},
 							},
 							{
@@ -106,6 +105,12 @@ router.get('/', getSearchQuery, verify.token, verify.isAdmin, async (req, res) =
 											},
 										},
 									},
+								},
+							},
+							{ $sort: { createdAt: -1 } },
+							{
+								$project: {
+									createdAt: false,
 								},
 							},
 							{ $skip: skip },
