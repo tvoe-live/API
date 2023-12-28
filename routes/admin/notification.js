@@ -21,7 +21,7 @@ const uploadMemoryStorage = multer({ storage: memoryStorage })
 
 const filterNotificationOptions = {
 	system: { type: 'SERVICE_NEWS' },
-	discount: { type: 'GIFT_AND_PROMOTIONS' },
+	discount: { type: 'GIFTS_AND_PROMOTIONS' },
 	profile: { type: 'PROFILE' },
 	unique: { type: 'CINEMA_NEWS' },
 }
