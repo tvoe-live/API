@@ -601,12 +601,6 @@ router.get('/:alias/reviews', async (req, res) => {
 									movieId: false,
 								},
 							},
-							{
-								$addFields: {
-									movieName: name,
-									movieRating: rating,
-								},
-							},
 							{ $unwind: '$user' },
 							{ $sort: { updatedAt: -1 } },
 							{ $skip: skip },
@@ -616,9 +610,16 @@ router.get('/:alias/reviews', async (req, res) => {
 				},
 				{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 				{
+					$addFields: {
+						movieRating: rating,
+					},
+				},
+				{
 					$project: {
 						totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
 						items: '$items',
+						movieName: name,
+						movieRating: '$movieRating',
 					},
 				},
 			],
@@ -627,6 +628,7 @@ router.get('/:alias/reviews', async (req, res) => {
 			}
 		)
 	} catch (err) {
+		console.log('err:', err)
 		return resError({ res, msg: err })
 	}
 })

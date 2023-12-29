@@ -188,7 +188,7 @@ router.post(
 			return resSuccess({
 				res,
 				alert: true,
-				msg: 'Уведомление обновлено',
+				msg: 'Уведомление создано',
 				id: response._id,
 				title,
 				description,

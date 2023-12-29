@@ -28,6 +28,9 @@ const moviesFilterOptions = {
 	notpublished: { $or: [{ publishedAt: { $exists: false } }, { publishedAt: null }] },
 }
 
+const sortValues = [1, -1]
+const sortTypes = ['_id', 'amountWatching']
+
 /*
  * Получение списка записей
  */
@@ -37,6 +40,11 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 
 	let query = req.searchQuery?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 	const editSpace = query?.replace(/ /gi, '\\s.*')
+
+	const sortValue = sortValues.includes(Number(req.query.sortValue))
+		? Number(req.query.sortValue)
+		: -1
+	const sortType = sortTypes.includes(req.query.sortType) ? req.query.sortType : '_id'
 
 	function needReload(seasons, films, trailer) {
 		if (trailer && trailer.src && trailer.version !== 2) return true
@@ -65,6 +73,10 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 
 	const matchReload = req.query.status === 'reload' && {
 		needReload: true,
+	}
+
+	const matchCategoryAlias = req.query.categoryAlias && {
+		categoryAlias: req.query.categoryAlias,
 	}
 
 	const movieFilterParam = req.query.status && moviesFilterOptions[`${req.query.status}`]
@@ -99,6 +111,7 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 								...searchMatch,
 								...movieFilterParam,
 								...matchReload,
+								...matchCategoryAlias,
 							},
 						},
 						{
@@ -115,6 +128,7 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 						{
 							$match: {
 								...searchMatch,
+								...matchCategoryAlias,
 								publishedAt: { $ne: null },
 							},
 						},
@@ -132,6 +146,7 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 						{
 							$match: {
 								...searchMatch,
+								...matchCategoryAlias,
 								publishedAt: null,
 							},
 						},
@@ -160,6 +175,7 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 						{
 							$match: {
 								needReload: true,
+								...matchCategoryAlias,
 							},
 						},
 						{
@@ -215,6 +231,7 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 								...searchMatch,
 								...movieFilterParam,
 								...matchReload,
+								...matchCategoryAlias,
 							},
 						},
 						{ $project: { __v: false, needReload: false } },
@@ -249,12 +266,19 @@ router.get('/', verify.token, verify.isManager, getSearchQuery, async (req, res)
 										$sort: {
 											exactNameMatch: -1,
 											nameMatch: -1,
-											raisedUpAt: -1,
-											_id: -1,
+											...(!req.query.sortValue && !req.query.sortType && { raisedUpAt: -1 }),
+											[sortType]: sortValue,
 										},
 									},
 							  ]
-							: [{ $sort: { raisedUpAt: -1, _id: -1 } }]),
+							: [
+									{
+										$sort: {
+											...(!req.query.sortValue && !req.query.sortType && { raisedUpAt: -1 }),
+											[sortType]: sortValue,
+										},
+									},
+							  ]),
 						{ $skip: skip },
 						{ $limit: limit },
 					],
