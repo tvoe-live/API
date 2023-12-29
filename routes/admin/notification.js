@@ -153,7 +153,7 @@ router.post(
 
 		if (!title) return resError({ res, msg: 'Не передан title' })
 		if (!type) return resError({ res, msg: 'Не передан type' })
-		if (!willPublishedAt)
+		if (!('willPublishedAt' in req.body))
 			return resError({
 				res,
 				msg: 'Не передана дата и время публикации - параметр willPublishedAt',
@@ -236,7 +236,7 @@ router.patch('/', verify.token, uploadMemoryStorage.single('file'), async (req, 
 		if (title) notification.title = title
 		if (description) notification.description = description
 		if (type) notification.type = type
-		if (willPublishedAt) notification.willPublishedAt = willPublishedAt
+		if ('willPublishedAt' in req.body) notification.willPublishedAt = willPublishedAt
 		if (link) notification.link = link
 		if (receiversIds) notification.receiversIds = receiversIds
 
@@ -334,6 +334,7 @@ router.get('/count', verify.token, verify.isManager, async (req, res) => {
 			receiversIds: notification.receiversIds,
 			createdAt: notification.createdAt,
 			updatedAt: notification.updatedAt,
+			link: notification.link,
 		}
 
 		return res.status(200).json(response)
