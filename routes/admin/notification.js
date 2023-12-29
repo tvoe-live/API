@@ -179,7 +179,7 @@ router.post(
 				type,
 				link,
 				receiversIds,
-				willPublishedAt: new Date(willPublishedAt),
+				willPublishedAt: willPublishedAt ? new Date(willPublishedAt) : null,
 				img: {
 					_id: fileIdForDB,
 					src: fileSrcForDB,
@@ -236,7 +236,7 @@ router.patch('/', verify.token, uploadMemoryStorage.single('file'), async (req, 
 		if (title) notification.title = title
 		if (description) notification.description = description
 		if (type) notification.type = type
-		if ('willPublishedAt' in req.body) notification.willPublishedAt = willPublishedAt
+		if ('willPublishedAt' in req.body) notification.willPublishedAt = new Date(willPublishedAt)
 		if (link) notification.link = link
 		if (receiversIds) notification.receiversIds = receiversIds
 
