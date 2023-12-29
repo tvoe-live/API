@@ -628,7 +628,6 @@ router.get('/:alias/reviews', async (req, res) => {
 			}
 		)
 	} catch (err) {
-		console.log('err:', err)
 		return resError({ res, msg: err })
 	}
 })
