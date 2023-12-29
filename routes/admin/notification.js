@@ -291,7 +291,10 @@ router.delete('/', verify.token, verify.isManager, async (req, res) => {
  *  Количество просмотров у одного уведомления
  */
 router.get('/count', verify.token, verify.isManager, async (req, res) => {
+	const id = req.query.id
 	if (!id) return resError({ res, msg: 'Не передан id' })
+
+	const notification = await Notification.findOne({ _id: id })
 
 	try {
 		const result = await NotificationReadLog.aggregate([
@@ -317,13 +320,23 @@ router.get('/count', verify.token, verify.isManager, async (req, res) => {
 			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 			{
 				$project: {
-					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+					amountActivation: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
 					id: id,
 				},
 			},
 		])
+		const response = {
+			...result[0],
+			title: notification.title,
+			description: notification.description,
+			type: notification.type,
+			willPublishedAt: notification.willPublishedAt,
+			receiversIds: notification.receiversIds,
+			createdAt: notification.createdAt,
+			updatedAt: notification.updatedAt,
+		}
 
-		return res.status(200).json(result[0])
+		return res.status(200).json(response)
 	} catch (err) {
 		return resError({ res, msg: err })
 	}
