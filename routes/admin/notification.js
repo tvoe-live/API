@@ -2,6 +2,8 @@ const express = require('express')
 const multer = require('multer')
 const resError = require('../../helpers/resError')
 const Notification = require('../../models/notification')
+const NotificationReadLog = require('../../models/notificationReadLog')
+
 const getSearchQuery = require('../../middlewares/getSearchQuery')
 const verify = require('../../middlewares/verify')
 const { uploadImageToS3 } = require('../../helpers/uploadImage')
@@ -31,7 +33,7 @@ const filterNotificationOptions = {
  */
 router.get('/', getSearchQuery, verify.token, verify.isAdmin, async (req, res) => {
 	const skip = +req.query.skip || 0
-	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	const query = req.searchQuery?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 	const editSpace = query?.replace(/ /gi, '\\s.*')
@@ -289,7 +291,6 @@ router.delete('/', verify.token, verify.isManager, async (req, res) => {
  *  Количество просмотров у одного уведомления
  */
 router.get('/count', verify.token, verify.isManager, async (req, res) => {
-	const id = req.query.id
 	if (!id) return resError({ res, msg: 'Не передан id' })
 
 	try {
