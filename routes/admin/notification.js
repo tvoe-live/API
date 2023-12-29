@@ -185,14 +185,15 @@ router.post(
 					src: fileSrcForDB,
 				},
 			})
-
-			return res.status(200).json({
-				success: true,
+			return resSuccess({
+				res,
+				alert: true,
+				msg: 'Уведомление обновлено',
 				id: response._id,
 				title,
 				description,
 				link,
-				type,
+				notificationType: type,
 				receiversIds,
 				willPublishedAt,
 				img: response.img,
@@ -236,7 +237,8 @@ router.patch('/', verify.token, uploadMemoryStorage.single('file'), async (req, 
 		if (title) notification.title = title
 		if (description) notification.description = description
 		if (type) notification.type = type
-		if ('willPublishedAt' in req.body) notification.willPublishedAt = new Date(willPublishedAt)
+		if ('willPublishedAt' in req.body)
+			notification.willPublishedAt = willPublishedAt ? new Date(willPublishedAt) : willPublishedAt
 		if (link) notification.link = link
 		if (receiversIds) notification.receiversIds = receiversIds
 
