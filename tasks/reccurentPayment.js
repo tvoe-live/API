@@ -1,6 +1,7 @@
 const axios = require('axios')
 const User = require('../models/user')
 const tariff = require('../models/tariff')
+const { NO_REPLY_EMAIL } = require('../constants')
 const PaymentLog = require('../models/paymentLog')
 const notification = require('../models/notification')
 const {
@@ -128,7 +129,7 @@ const recurrentPayment = async () => {
 				Password: process.env.PAYMENT_TERMINAL_PASSWORD,
 				PaymentId: String(initPayment.PaymentId),
 				RebillId: user.rebillId,
-				Email: 'no-relpy@tvoe.team',
+				Email: NO_REPLY_EMAIL,
 			})
 
 			const { data: chargePayment } = await axios.post('https://securepay.tinkoff.ru/v2/Charge', {
@@ -137,7 +138,7 @@ const recurrentPayment = async () => {
 				PaymentId: initPayment.PaymentId,
 				RebillId: user.rebillId,
 				Token: chargeToken,
-				InfoEmail: 'no-relpy@tvoe.team',
+				InfoEmail: NO_REPLY_EMAIL,
 			})
 
 			if (chargePayment.Status === 'REJECTED' || +chargePayment.ErrorCode > 0) {

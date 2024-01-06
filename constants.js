@@ -8,6 +8,10 @@ module.exports = Object.freeze({
 	FIRST_STEP_REFERRAL: 20, // Процент бонуса первого уровня в реф. программе
 	SECOND_STEP_REFERRAL: 10, // Процент бонуса второго уровня в реф. программе
 
+	NO_REPLY_EMAIL: 'no-reply@tvoe.team', // Почта для принятия любых незначимых или мусорных сообщений
+	CONTENT_DEPARTMENT_EMAIL: 'content@tvoe.team', // Почта для принятия сообщений в отдел контента
+	SUPPORT_DEPARTMENT_EMAIL: 'support@tvoe.team', // Почта для принятия сообщений в отдел технической поддержки
+
 	// Задачи для CRON
 	CRON_TASKS: [
 		{

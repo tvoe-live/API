@@ -1,9 +1,10 @@
-const { API_URL, PAYMENT_TERMINAL_PASSWORD } = process.env
+const { PAYMENT_TERMINAL_PASSWORD } = process.env
 const express = require('express')
 const router = express.Router()
 const axios = require('axios')
 const mongoose = require('mongoose')
 const User = require('../models/user')
+const sleep = require('../helpers/sleep')
 const Tariff = require('../models/tariff')
 const verify = require('../middlewares/verify')
 const resError = require('../helpers/resError')
@@ -558,7 +559,6 @@ router.post('/createPayment', verify.token, async (req, res) => {
 		DATA: {
 			account: req.user._id,
 			Phone: req.user.authPhone,
-			//Email: 'no-relpy@tvoe.team',
 			DefaultCard: 'none',
 			//TinkoffPayWeb: 'true',
 			//YandexPayWeb: 'true',
@@ -696,8 +696,11 @@ router.post('/notification', async (req, res) => {
 			)
 
 			// Вернуть 1 рубль пользователю за оплату пробного тарифа
+			// По рекомендации банка добавлена задержка в 5 секунд
 			if (+amount === 1) {
+				await sleep(5000)
 				await paymentCancelTrialTariff({ paymentId })
+
 				break
 			}
 
