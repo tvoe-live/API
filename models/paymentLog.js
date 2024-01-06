@@ -25,9 +25,11 @@ const paymentLogSchema = new mongoose.Schema(
 				'issued-by-admin', // Выдан администратором
 			],
 		},
-		isChecked: Boolean, // Проверен ли пользователем статус подписки
 		startAt: Date, // Дата начала действия тарифа
 		finishAt: Date, // Дата конца действия тарифа
+		isChecked: Boolean, // Проверен ли пользователем статус подписки
+		countAttemptsRefunded: Number, // Количество попыток возврата
+		countAttemptsAutopayments: Number, // Количество попыток автосписания
 
 		// Данные от Тинькофф Кассы
 		terminalKey: String, // Идентификатор терминала. Выдается Мерчанту Тинькофф Кассой при заведении терминала.
@@ -37,6 +39,7 @@ const paymentLogSchema = new mongoose.Schema(
 		orderId: mongoose.Schema.Types.ObjectId, // Идентификатор заказа в системе Мерчанта
 		success: Boolean, // Выполнение платежа
 		isReccurent: {
+			// Рекуррентный ли платеж
 			type: Boolean,
 			default: false,
 		},

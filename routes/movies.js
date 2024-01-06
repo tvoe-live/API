@@ -3,12 +3,12 @@ const router = express.Router()
 const Movie = require('../models/movie')
 const resError = require('../helpers/resError')
 const verify = require('../middlewares/verify')
+const resSuccess = require('../helpers/resSuccess')
 const MovieRating = require('../models/movieRating')
 const MoviePageLog = require('../models/moviePageLog')
 const MovieFavorite = require('../models/movieFavorite')
 const MovieBookmark = require('../models/movieBookmark')
 const movieOperations = require('../helpers/movieOperations')
-const resSuccess = require('../helpers/resSuccess')
 
 const mongoose = require('mongoose')
 
@@ -521,14 +521,18 @@ router.get('/:alias/reviews', async (req, res) => {
 	const skip = +req.query.skip || 0
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
-	const { _id: movieId } = await Movie.findOne(
+	const {
+		_id: movieId,
+		name,
+		rating,
+	} = await Movie.findOne(
 		{ alias: req.params.alias },
 		{
 			name: true,
 			alias: true,
+			rating: true,
 		}
 	)
-
 	if (!movieId) return resError({ res, msg: 'Фильм c таким селектором не существует' })
 
 	try {
@@ -606,9 +610,16 @@ router.get('/:alias/reviews', async (req, res) => {
 				},
 				{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 				{
+					$addFields: {
+						movieRating: rating,
+					},
+				},
+				{
 					$project: {
 						totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
 						items: '$items',
+						movieName: name,
+						movieRating: '$movieRating',
 					},
 				},
 			],

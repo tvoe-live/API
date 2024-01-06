@@ -19,6 +19,24 @@ const filterUsersOptions = {
 	notactive: { lastVisitAt: { $lt: new Date(new Date() - 1000 * 60 * 60 * 24 * 30) } }, // если юзер ни разу заходил  на сервис за последние 30 дней
 	deleted: { deleted: { $exists: true } },
 	admin: { role: 'admin' },
+	banned: {
+		$and: [
+			{ banned: { $exists: true } },
+			{ banned: { $ne: null } },
+			{
+				$or: [
+					{ 'banned.finishAt': { $exists: false } },
+					{ 'banned.finishAt': { $eq: null } },
+					{
+						'banned.finishAt': {
+							$exists: true,
+							$gt: new Date(),
+						},
+					},
+				],
+			},
+		],
+	},
 }
 
 // Получение списка пользователей
@@ -27,7 +45,6 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	const userFilterParam = req.query.status && filterUsersOptions[`${req.query.status}`]
-
 	const searchMatch = req.RegExpQuery && {
 		$or: [
 			...(isValidObjectId(req.searchQuery)
@@ -89,6 +106,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 								createdAt: true,
 								subscribe: true,
 								lastVisitAt: true,
+								banned: true,
 								phone: '$authPhone',
 							},
 						},
@@ -109,6 +127,28 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 						},
 						{ $unwind: { path: '$tariff', preserveNullAndEmptyArrays: true } },
 						{
+							$addFields: {
+								isBanned: {
+									$cond: {
+										if: {
+											$and: [
+												{ $ne: ['$banned', null] },
+
+												{
+													$or: [
+														{ $eq: ['$banned.finishAt', null] },
+														{ $gt: ['$banned.finishAt', new Date()] },
+													],
+												},
+											],
+										},
+										then: true,
+										else: false,
+									},
+								},
+							},
+						},
+						{
 							$project: {
 								role: true,
 								email: true,
@@ -120,6 +160,7 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 								lastVisitAt: true,
 								phone: true,
 								tariffName: '$tariff.name',
+								isBanned: true,
 							},
 						},
 						{ $sort: { _id: -1 } },
@@ -181,11 +222,29 @@ router.get('/profile', verify.token, verify.isAdmin, async (req, res) => {
 				deleted: true,
 				firstname: true,
 				subscribe: true,
+				banned: true,
 			}
 		)
 
+		const isBanned = Boolean(
+			user.banned &&
+				(!user.banned.finishAt ||
+					(user.banned.finishAt && new Date() < new Date(user.banned.finishAt)))
+		)
+
+		const userInfo = {
+			role: user.role,
+			email: user.email,
+			avatar: user.avatar,
+			deleted: user.deleted,
+			firstname: user.firstname,
+			subscribe: user.subscribe,
+			banned: user.banned,
+			isBanned: isBanned,
+		}
+
 		return res.status(200).json({
-			user,
+			user: userInfo,
 			tariffs,
 		})
 	} catch (err) {

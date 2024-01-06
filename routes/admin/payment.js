@@ -46,7 +46,8 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 	const mainAgregation = [
 		{
 			$match: {
-				$or: [{ status: 'success' }, { status: 'CONFIRMED' }, { status: 'AUTHORIZED' }],
+				type: 'paid',
+				status: { $in: ['success', 'CONFIRMED', 'AUTHORIZED'] },
 				...dateFilterParam,
 				...tariffFilterParam,
 			},
@@ -80,12 +81,35 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 						},
 					},
 					{
+						$addFields: {
+							isBanned: {
+								$cond: {
+									if: {
+										$and: [
+											{ $ne: ['$banned', null] },
+
+											{
+												$or: [
+													{ $eq: ['$banned.finishAt', null] },
+													{ $gt: ['$banned.finishAt', new Date()] },
+												],
+											},
+										],
+									},
+									then: true,
+									else: false,
+								},
+							},
+						},
+					},
+					{
 						$project: {
 							role: true,
 							phone: '$authPhone',
 							avatar: true,
 							subscribe: true,
 							firstname: true,
+							isBanned: true,
 						},
 					},
 				],
@@ -116,15 +140,17 @@ router.get('/', verify.token, verify.isAdmin, getSearchQuery, async (req, res) =
 						...mainAgregation,
 						{
 							$project: {
+								type: true,
 								user: true,
 								tariff: true,
 								status: true,
 								startAt: true,
 								finishAt: true,
 								updatedAt: true,
+								isReccurent: true,
+								tariffPrice: true,
 								promocodeId: true,
 								refundedAmount: true,
-								tariffPrice: true,
 								amount: {
 									$cond: ['$withdrawAmount', '$withdrawAmount', '$amount'],
 								},

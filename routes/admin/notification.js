@@ -2,12 +2,14 @@ const express = require('express')
 const multer = require('multer')
 const resError = require('../../helpers/resError')
 const Notification = require('../../models/notification')
+const NotificationReadLog = require('../../models/notificationReadLog')
+
 const getSearchQuery = require('../../middlewares/getSearchQuery')
 const verify = require('../../middlewares/verify')
 const { uploadImageToS3 } = require('../../helpers/uploadImage')
 const router = express.Router()
 
-// const resSuccess = require('../../helpers/resSuccess')
+const resSuccess = require('../../helpers/resSuccess')
 // const getBoolean = require('../../helpers/getBoolean')
 const mongoose = require('mongoose')
 
@@ -21,7 +23,7 @@ const uploadMemoryStorage = multer({ storage: memoryStorage })
 
 const filterNotificationOptions = {
 	system: { type: 'SERVICE_NEWS' },
-	discount: { type: 'GIFT_AND_PROMOTIONS' },
+	discount: { type: 'GIFTS_AND_PROMOTIONS' },
 	profile: { type: 'PROFILE' },
 	unique: { type: 'CINEMA_NEWS' },
 }
@@ -31,11 +33,11 @@ const filterNotificationOptions = {
  */
 router.get('/', getSearchQuery, verify.token, verify.isAdmin, async (req, res) => {
 	const skip = +req.query.skip || 0
-	const limit = +(req.query.limit > 0 && req.query.limit <= 20 ? req.query.limit : 20)
+	const limit = +(req.query.limit > 0 && req.query.limit <= 100 ? req.query.limit : 100)
 
 	const query = req.searchQuery?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 	const editSpace = query?.replace(/ /gi, '\\s.*')
-	const RegExpQuery = new RegExp(editSpace?.replace(/[eё]/gi, '[её]'), 'i')
+	const RegExpQuery = new RegExp(editSpace?.replace(/[её]/gi, '[её]'), 'i')
 
 	const notificationFilterParams =
 		req.query.status && filterNotificationOptions[`${req.query.status}`]
@@ -82,7 +84,6 @@ router.get('/', getSearchQuery, verify.token, verify.isAdmin, async (req, res) =
 								$project: {
 									receiversIds: false,
 									__v: false,
-									createdAt: false,
 								},
 							},
 							{
@@ -106,6 +107,12 @@ router.get('/', getSearchQuery, verify.token, verify.isAdmin, async (req, res) =
 											},
 										},
 									},
+								},
+							},
+							{ $sort: { createdAt: -1 } },
+							{
+								$project: {
+									createdAt: false,
 								},
 							},
 							{ $skip: skip },
@@ -146,7 +153,7 @@ router.post(
 
 		if (!title) return resError({ res, msg: 'Не передан title' })
 		if (!type) return resError({ res, msg: 'Не передан type' })
-		if (!willPublishedAt)
+		if (!('willPublishedAt' in req.body))
 			return resError({
 				res,
 				msg: 'Не передана дата и время публикации - параметр willPublishedAt',
@@ -172,20 +179,21 @@ router.post(
 				type,
 				link,
 				receiversIds,
-				willPublishedAt: new Date(willPublishedAt),
+				willPublishedAt: willPublishedAt ? new Date(willPublishedAt) : null,
 				img: {
 					_id: fileIdForDB,
 					src: fileSrcForDB,
 				},
 			})
-
-			return res.status(200).json({
-				success: true,
+			return resSuccess({
+				res,
+				alert: true,
+				msg: 'Уведомление создано',
 				id: response._id,
 				title,
 				description,
 				link,
-				type,
+				notificationType: type,
 				receiversIds,
 				willPublishedAt,
 				img: response.img,
@@ -229,7 +237,8 @@ router.patch('/', verify.token, uploadMemoryStorage.single('file'), async (req, 
 		if (title) notification.title = title
 		if (description) notification.description = description
 		if (type) notification.type = type
-		if (willPublishedAt) notification.willPublishedAt = willPublishedAt
+		if ('willPublishedAt' in req.body)
+			notification.willPublishedAt = willPublishedAt ? new Date(willPublishedAt) : willPublishedAt
 		if (link) notification.link = link
 		if (receiversIds) notification.receiversIds = receiversIds
 
@@ -287,6 +296,8 @@ router.get('/count', verify.token, verify.isManager, async (req, res) => {
 	const id = req.query.id
 	if (!id) return resError({ res, msg: 'Не передан id' })
 
+	const notification = await Notification.findOne({ _id: id })
+
 	try {
 		const result = await NotificationReadLog.aggregate([
 			{
@@ -311,13 +322,24 @@ router.get('/count', verify.token, verify.isManager, async (req, res) => {
 			{ $unwind: { path: '$totalSize', preserveNullAndEmptyArrays: true } },
 			{
 				$project: {
-					totalSize: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
+					amountActivation: { $cond: ['$totalSize.count', '$totalSize.count', 0] },
 					id: id,
 				},
 			},
 		])
+		const response = {
+			...result[0],
+			title: notification.title,
+			description: notification.description,
+			type: notification.type,
+			willPublishedAt: notification.willPublishedAt,
+			receiversIds: notification.receiversIds,
+			createdAt: notification.createdAt,
+			updatedAt: notification.updatedAt,
+			link: notification.link,
+		}
 
-		return res.status(200).json(result[0])
+		return res.status(200).json(response)
 	} catch (err) {
 		return resError({ res, msg: err })
 	}
