@@ -3,12 +3,12 @@ const router = express.Router()
 const Movie = require('../models/movie')
 const resError = require('../helpers/resError')
 const verify = require('../middlewares/verify')
+const resSuccess = require('../helpers/resSuccess')
 const MovieRating = require('../models/movieRating')
 const MoviePageLog = require('../models/moviePageLog')
 const MovieFavorite = require('../models/movieFavorite')
 const MovieBookmark = require('../models/movieBookmark')
 const movieOperations = require('../helpers/movieOperations')
-const resSuccess = require('../helpers/resSuccess')
 
 const mongoose = require('mongoose')
 

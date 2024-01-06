@@ -5,7 +5,7 @@ const Movie = require('../models/movie')
 const verify = require('../middlewares/verify')
 const resError = require('../helpers/resError')
 const mailer = require('../helpers/nodemailer')
-require('dotenv').config()
+const { CONTENT_DEPARTMENT_EMAIL } = require('../constants')
 
 const reasonsDict = {
 	BAD_QUALITY_VIDEO: 'Плохое качество видео',
@@ -125,7 +125,7 @@ router.post('/', verify.token, async (req, res) => {
 		console.log('textForMail:', textForMail)
 
 		const message = {
-			to: process.env.CONTENT_DEPARTMENT_EMAIL,
+			to: CONTENT_DEPARTMENT_EMAIL,
 			subject: 'Жалоба',
 			text: textForMail,
 		}

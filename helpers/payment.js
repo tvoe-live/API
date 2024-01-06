@@ -2,8 +2,8 @@ const axios = require('axios')
 const crypto = require('crypto')
 const User = require('../models/user')
 const PaymentLog = require('../models/paymentLog')
-const { FIRST_STEP_REFERRAL, SECOND_STEP_REFERRAL } = require('../constants')
 const { API_URL, PAYMENT_TERMINAL_KEY, PAYMENT_TERMINAL_PASSWORD } = process.env
+const { NO_REPLY_EMAIL, FIRST_STEP_REFERRAL, SECOND_STEP_REFERRAL } = require('../constants')
 
 /*
  * Функции для платежной системы
@@ -53,7 +53,7 @@ const getTerminalParams = ({
 		],
 		FfdVersion: '1.05',
 		Taxation: 'usn_income',
-		Email: user.email || 'no-relpy@tvoe.team',
+		Email: user.email || NO_REPLY_EMAIL,
 		Phone: user.phone || '+74956635979',
 	},
 })
