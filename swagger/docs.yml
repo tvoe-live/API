@@ -348,6 +348,10 @@ components:
                           type: array
                           items:
                             type: number
+                        2160p:
+                          type: array
+                          items:
+                            type: number
                     thumbnails:
                       type: number
                       description: Количество склеек миниатюр
@@ -413,6 +417,10 @@ components:
                         items:
                           type: number
                       1080p:
+                        type: array
+                        items:
+                          type: number
+                      2160p:
                         type: array
                         items:
                           type: number
